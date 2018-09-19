@@ -24,9 +24,12 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 
 set(PROJECT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
+add_subdirectory(${PROJECT_SOURCE_DIR}/lib/glfw-3.2.1)
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
+
+
 
 
 # add_executable(${project_name} ${project_name}.cpp utils.cpp)
