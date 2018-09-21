@@ -5,11 +5,13 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS} )
 
 # Add GLAD
-target_include_directories(${PROJECT_NAME} PRIVATE ${GLAD_DIR}/include)
-target_link_libraries(${PROJECT_NAME} glad ${CMAKE_DL_LIBS})
+# target_include_directories(${PROJECT_NAME} PRIVATE ${GLAD_DIR}/include)
+# target_link_libraries(${PROJECT_NAME} glad ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 
 # Add GLFW
-target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+# target_link_libraries(${PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 # target_include_directories(${PROJECT_NAME} PRIVATE ${GLFW_DIR}/include)
 
 

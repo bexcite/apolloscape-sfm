@@ -4,11 +4,15 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(${project_name})
 
+set(CMAKE_BUILD_TYPE Debug)
+
 # set(CMAKE_CXX_STANDARD 11)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-unused-variable -pedantic -Werror")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -00")
-set(CMAKE_CXX_FLAGS_RELEASE "-03")
+# add_compile_options(-Wall)
+
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-unused-variable -pedantic -Werror")
+# set(CMAKE_CXX_FLAGS_DEBUG "-g -00")
+# set(CMAKE_CXX_FLAGS_RELEASE "-03")
 
 # include_directories(${PROJECT_SOURCE_DIR})
 
@@ -25,7 +29,9 @@ message("Project Name =======: " ${PROJECT_NAME})
 set(GLAD_DIR ${PROJECT_SOURCE_DIR}/lib/glad)
 set(GLAD_INCLUDE_DIRS ${GLAD_DIR}/include)
 add_library(glad ${GLAD_DIR}/src/glad.c)
-target_include_directories(glad PRIVATE ${GLAD_INCLUDE_DIRS})
+target_include_directories(glad PUBLIC ${GLAD_INCLUDE_DIRS})
+target_link_libraries(glad)
+# target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})
 
 # enable_testing()
 
