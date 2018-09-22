@@ -11,6 +11,8 @@
 
 #include <iostream>
 
+#include "cv_gl/shader.h"
+
 
 // Define Some Constants
 const int kWindowWidth = 1280;
@@ -39,9 +41,20 @@ const char* fragmentShaderSource = "#version 330 core\n"
   "}\n\0";
 
 
+// #define TEST_ENABLE
+
+void test_shader() {
+  Shader shader(
+    "../shaders/one.vs",
+    "../shaders/one.fs");
+  shader.PrintHello();
+}
+
+
 
 int main(int argc, char* argv[]) {
-  std::cout << "Hello world!" << std::endl;
+  // std::cout << "Hello world!" << std::endl;
+
 
 
 
@@ -80,6 +93,23 @@ int main(int argc, char* argv[]) {
   fprintf(stderr, "OpenGL Vendor %s\n", glGetString(GL_VENDOR));
   fprintf(stderr, "OpenGL Renderer %s\n", glGetString(GL_RENDERER));
 
+
+#ifdef TEST_ENABLE
+  test_shader();
+  // Rendering Loop
+  while (glfwWindowShouldClose(window) == false) {
+    processInput(window);
+    // Flip Buffers and Draw
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+  glfwTerminate();
+  return 0;
+#endif
+
+
+
+  /*
   //  Create vertexShader
   int success;
   char infoLog[512];
@@ -120,12 +150,17 @@ int main(int argc, char* argv[]) {
   }
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
+  */
+
+  Shader shader(
+    "../shaders/one.vs",
+    "../shaders/one.fs");
 
   // setup vertex data
   float vertices[] = {
-    0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,   // top right 0
-    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom right 1
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left 2
+    0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // top right 0
+    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom right 1
+    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,  // bottom left 2
     -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,   // top left 3
     0.0f, 0.75f, 0.0f, 0.0f, 1.0f, 0.0f,   // center top 4
     0.0f, -0.75f, 0.0f, 0.0f, 0.0f, 1.0f   // center bottom 5
@@ -197,9 +232,12 @@ int main(int argc, char* argv[]) {
 
       float greenValue = (sin(timeValue) / 2.0f + 0.5f);
 
-      int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-      glUseProgram(shaderProgram);
-      glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+      // int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+      // glUseProgram(shaderProgram);
+      // glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
+      shader.Use();
+      shader.SetVector4f("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
 
       glBindVertexArray(VAO);
 
