@@ -20,5 +20,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 
 # target_link_libraries(${project_name} glfw)
 
+# Add stb_image
+target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

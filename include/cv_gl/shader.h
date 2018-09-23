@@ -23,6 +23,7 @@ class Shader {
   void SetFloat(const std::string &, const float) const;
   void SetVector4f(const std::string &, const float,
     const float, const float, const float) const;
+  void SetInt(const std::string &, const int) const;
 
  private:
   unsigned int id_;

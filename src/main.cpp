@@ -4,6 +4,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 // Standard Headers
 #include <cstdio>
 #include <cstdlib>
@@ -23,18 +26,21 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 
 // #define TEST_ENABLE
-
+/*
 void test_shader() {
   Shader shader(
     "../shaders/one.vs",
     "../shaders/one.fs");
   shader.PrintHello();
 }
+*/
 
 
 
 int main(int argc, char* argv[]) {
   // std::cout << "Hello world!" << std::endl;
+
+
 
   // Load GLFW and Create a Window
   glfwInit();
@@ -67,11 +73,10 @@ int main(int argc, char* argv[]) {
   // }
 
   gladLoadGL();
-  fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
-  fprintf(stderr, "OpenGL Vendor %s\n", glGetString(GL_VENDOR));
-  fprintf(stderr, "OpenGL Renderer %s\n", glGetString(GL_RENDERER));
+  fprintf(stderr, "OpenGL %s, %s, %s\n", glGetString(GL_VERSION),
+      glGetString(GL_VENDOR), glGetString(GL_RENDERER));
 
-
+/*
 #ifdef TEST_ENABLE
   test_shader();
   // Rendering Loop
@@ -84,7 +89,7 @@ int main(int argc, char* argv[]) {
   glfwTerminate();
   return 0;
 #endif
-
+*/
 
   //  Create shader program
   Shader shader(
@@ -93,12 +98,13 @@ int main(int argc, char* argv[]) {
 
   // setup vertex data
   float vertices[] = {
-    0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // top right 0
-    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom right 1
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,  // bottom left 2
-    -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,   // top left 3
-    0.0f, 0.75f, 0.0f, 0.0f, 1.0f, 0.0f,   // center top 4
-    0.0f, -0.75f, 0.0f, 0.0f, 0.0f, 1.0f   // center bottom 5
+    // coords 3         // color 3         // tex coords 2
+     0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // top right 0
+     0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,  // bottom right 1
+    -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // bottom left 2
+    -0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.4f, 0.6f   // top left 3
+    // 0.0f, 0.75f, 0.0f, 0.0f, 1.0f, 0.0f,   // center top 4
+    // 0.0f, -0.75f, 0.0f, 0.0f, 0.0f, 1.0f   // center bottom 5
   };
 
   // unsigned int indices[] = {
@@ -110,9 +116,9 @@ int main(int argc, char* argv[]) {
 
   unsigned int indices[] = {
     0, 1, 3,
-    1, 2, 3,
-    0, 3, 4,
-    1, 2, 5
+    1, 2, 3
+    // 0, 3, 4,
+    // 1, 2, 5
   };
 
   unsigned int VBO, VAO, EBO;
@@ -131,21 +137,89 @@ int main(int argc, char* argv[]) {
       GL_STATIC_DRAW);
 
   // position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
       (void*)0);
   glEnableVertexAttribArray(0);
 
   //color attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
       (void*)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
 
+  //tex coords
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+      (void*)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
+
+  // Ubind buffer
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  // Load and bind texture
+  unsigned int texture1, texture2;
+  unsigned char *tex_data;
+  int width, height, nr_channels;
+
+  // we need to flip all images for texture processing
+  stbi_set_flip_vertically_on_load(true);
+
+  // texture 1 setup
+  glGenTextures(1, &texture1);
+  glBindTexture(GL_TEXTURE_2D, texture1);
+
+  // set the texture wrapping/filtering options
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // load and generate the texture
+  tex_data = stbi_load("../data/170427_222949577_Camera_1.jpg",
+      &width, &height, &nr_channels, 0);
+  printf("Image 1: %d, %d, %d\n", width, height, nr_channels);
+  if (tex_data) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+        GL_UNSIGNED_BYTE, tex_data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+    std::cout << "Error loading texture 1" << std::endl;
+  }
+  stbi_image_free(tex_data);
+
+  // texture 2 setup
+  glGenTextures(1, &texture2);
+  glBindTexture(GL_TEXTURE_2D, texture2);
+
+  // set the texture wrapping/filtering options
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  tex_data = stbi_load("../data/170427_222949577_Camera_2.jpg",
+      &width, &height, &nr_channels, 0);
+  printf("Image 2: %d, %d, %d\n", width, height, nr_channels);
+  if (tex_data) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+        GL_UNSIGNED_BYTE, tex_data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  } else {
+    std::cout << "Error loading texture 2" << std::endl;
+  }
+  stbi_image_free(tex_data);
+
+  std::cout << "Textures: " << texture1 << ", " << texture2 << std::endl;
+
+
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   float timeSince = 0;
   unsigned int frame = 0;
+
+
+  // set shaders locations
+  shader.Use();
+  shader.SetInt("texture1", 0);
+  shader.SetInt("texture2", 1);
 
   // Rendering Loop
   while (glfwWindowShouldClose(window) == false) {
@@ -168,17 +242,30 @@ int main(int argc, char* argv[]) {
       float greenValue = (sin(timeValue) / 2.0f + 0.5f);
 
       shader.Use();
-      shader.SetVector4f("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
+      shader.SetVector4f("ourColor", greenValue, greenValue, greenValue, 1.0f);
 
+      // bind textures
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, texture1);
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, texture2);
+
+      // bind VAO data with vertex buffer, attributes and elements
       glBindVertexArray(VAO);
 
       // glDrawArrays(GL_TRIANGLES, 0, 6);
-      glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
       // Flip Buffers and Draw
       glfwSwapBuffers(window);
       glfwPollEvents();
   }
+
+  // clear gl objects
+  glDeleteVertexArrays(1, &VAO);
+  glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &EBO);
+
 
   glfwTerminate();
 
