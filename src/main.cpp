@@ -230,15 +230,43 @@ int main(int argc, char* argv[]) {
 
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  glEnable(GL_DEPTH_TEST);
 
   float timeSince = 0;
   unsigned int frame = 0;
 
 
-  // set shaders locations
   shader.Use();
+
+  // set shaders locations
   shader.SetInt("texture1", 0);
   shader.SetInt("texture2", 1);
+
+  // setup transforms
+
+
+  glm::mat4 view(1.0f);
+  view = glm::translate(view, glm::vec3(0.0f, 0.0f, -4.0f));
+
+  glm::mat4 projection(1.0f);
+  projection = glm::perspective(glm::radians(45.0f),
+      (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
+
+
+  glm::vec3 positions[] = {
+    glm::vec3( 0.0f,  0.0f,  0.0f),
+    glm::vec3( 2.0f,  5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3( 2.4f, -0.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3( 1.3f, -2.0f, -2.5f),
+    glm::vec3( 1.5f,  2.0f, -2.5f),
+    glm::vec3( 1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f)
+  };
+
+
 
   // shader.SetMatrix4fv("transform", glm::value_ptr(trans));
 
@@ -248,7 +276,7 @@ int main(int argc, char* argv[]) {
 
       // Background Fill Color
       glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       float timeValue = glfwGetTime();
       // std::cout << "getTime = " << timeValue << std::endl;
@@ -265,10 +293,18 @@ int main(int argc, char* argv[]) {
       shader.Use();
       shader.SetVector4f("ourColor", greenValue, greenValue, greenValue, 1.0f);
 
-      glm::mat4 transform;
-      transform = glm::rotate(trans, static_cast<float>(timeValue),
-          glm::vec3(0.0, 0.0, 1.0));
-      shader.SetMatrix4fv("transform", glm::value_ptr(trans));
+      // glm::mat4 transform;
+      // transform = glm::rotate(trans, static_cast<float>(timeValue),
+      //     glm::vec3(0.0, 0.0, 1.0));
+
+      glm::mat4 model(1.0f);
+      float rotation_angle = timeValue * glm::radians(50.0f);
+      // model = glm::rotate(model, rotation_angle,
+      //     glm::vec3(0.5f, 1.0f, 0.0f));
+      // shader.SetMatrix4fv("model", glm::value_ptr(model));
+
+      shader.SetMatrix4fv("view", glm::value_ptr(view));
+      shader.SetMatrix4fv("projection", glm::value_ptr(projection));
 
       // bind textures
       glActiveTexture(GL_TEXTURE0);
@@ -279,8 +315,19 @@ int main(int argc, char* argv[]) {
       // bind VAO data with vertex buffer, attributes and elements
       glBindVertexArray(VAO);
 
+      for (unsigned int i = 0; i < 10; ++i) {
+        glm::mat4 model_obj(1.0f);
+        model_obj = glm::translate(model, positions[i]);
+        float rot_angle = 20.0f * i + rotation_angle;
+        model_obj = glm::rotate(model_obj, rot_angle,
+              glm::vec3(1.0f, 0.3f, 0.5f));
+        shader.SetMatrix4fv("model", glm::value_ptr(model_obj));
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      }
+
       // glDrawArrays(GL_TRIANGLES, 0, 6);
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
       // Flip Buffers and Draw
       glfwSwapBuffers(window);
