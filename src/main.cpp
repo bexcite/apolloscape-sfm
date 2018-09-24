@@ -7,6 +7,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
+
 // Standard Headers
 #include <cstdio>
 #include <cstdlib>
@@ -39,6 +46,18 @@ void test_shader() {
 
 int main(int argc, char* argv[]) {
   // std::cout << "Hello world!" << std::endl;
+
+  // test glm
+  // glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
+  glm::mat4 trans(1.0f);
+  // trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
+  // trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+  trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+  // trans = glm::translate(trans, glm::vec3(0.5f, 0.5f, 0.0f));
+
+  // vec = trans * vec;
+  std::cout << "trans: \n" << glm::to_string(trans) << std::endl;
+  // std::cout << "vec: \n" << glm::to_string(vec) << std::endl;
 
 
 
@@ -221,6 +240,8 @@ int main(int argc, char* argv[]) {
   shader.SetInt("texture1", 0);
   shader.SetInt("texture2", 1);
 
+  // shader.SetMatrix4fv("transform", glm::value_ptr(trans));
+
   // Rendering Loop
   while (glfwWindowShouldClose(window) == false) {
       processInput(window);
@@ -243,6 +264,11 @@ int main(int argc, char* argv[]) {
 
       shader.Use();
       shader.SetVector4f("ourColor", greenValue, greenValue, greenValue, 1.0f);
+
+      glm::mat4 transform;
+      transform = glm::rotate(trans, static_cast<float>(timeValue),
+          glm::vec3(0.0, 0.0, 1.0));
+      shader.SetMatrix4fv("transform", glm::value_ptr(trans));
 
       // bind textures
       glActiveTexture(GL_TEXTURE0);

@@ -45,6 +45,7 @@ set(GLFW_DIR ${PROJECT_SOURCE_DIR}/lib/glfw-3.2.1)
 # set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
 add_subdirectory(${GLFW_DIR})
 
+# add libs
 add_subdirectory(${PROJECT_SOURCE_DIR}/lib)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/tests)

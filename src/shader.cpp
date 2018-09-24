@@ -29,7 +29,7 @@ Shader::Shader(const std::string& vertex_shader_path,
   vs_buffer << vsf.rdbuf();
   v_shader_code = vs_buffer.str();
 
-  std::cout << "Vertex content: \n" << v_shader_code << std::endl;
+  // std::cout << "Vertex content: \n" << v_shader_code << std::endl;
   vsf.close();
   const char* v_shader_code_cstr = v_shader_code.c_str();
 
@@ -39,7 +39,7 @@ Shader::Shader(const std::string& vertex_shader_path,
   std::stringstream fs_buffer;
   fs_buffer << fsf.rdbuf();
   f_shader_code = fs_buffer.str();
-  std::cout << "Fragment content: \n" << f_shader_code << std::endl;
+  // std::cout << "Fragment content: \n" << f_shader_code << std::endl;
   fsf.close();
   const char* f_shader_code_cstr = f_shader_code.c_str();
 
@@ -107,6 +107,11 @@ Shader::SetInt(const std::string& uniform_name, const int v) const {
   glUniform1i(uniform_location, v);
 }
 
+void
+Shader::SetMatrix4fv(const std::string& uniform_name, float* matrix) const {
+  int uniform_location = glGetUniformLocation(id_, uniform_name.c_str());
+  glUniformMatrix4fv(uniform_location, 1, GL_FALSE, matrix);
+}
 
 
 // void Shader::Use() {
