@@ -246,14 +246,15 @@ int main(int argc, char* argv[]) {
   // setup transforms
 
 
-  glm::mat4 view(1.0f);
-  view = glm::translate(view, glm::vec3(0.0f, 0.0f, -4.0f));
+  // glm::mat4 view(1.0f);
+  // view = glm::translate(view, glm::vec3(0.0f, 0.0f, -4.0f));
 
   glm::mat4 projection(1.0f);
   projection = glm::perspective(glm::radians(45.0f),
       (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
 
 
+  unsigned int n_pos = 10;
   glm::vec3 positions[] = {
     glm::vec3( 0.0f,  0.0f,  0.0f),
     glm::vec3( 2.0f,  5.0f, -15.0f),
@@ -269,8 +270,8 @@ int main(int argc, char* argv[]) {
 
 
   // Camera matrix
-  glm::vec3 camera_pos = glm::vec3(0.0f, 2.0f, 3.0f);
-  glm::vec3 camera_target = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 camera_pos = glm::vec3(2.0f, 0.0f, 3.0f);
+  glm::vec3 camera_target = glm::vec3(2.0f, 0.0f, 0.0f);
   glm::vec3 camera_direction = glm::normalize(camera_pos - camera_target);
 
   glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -302,8 +303,8 @@ int main(int argc, char* argv[]) {
 
   // std::cout << "look_at = " << glm::to_string(look_at) << std::endl;
 
-  glm::mat4 view1(1.0f);
-  view1 = glm::lookAt(camera_pos, camera_target, up);
+  glm::mat4 view(1.0f);
+  view = glm::lookAt(camera_pos, camera_target, up);
 
   std::cout << "================================" << std::endl;
   std::cout << "look_at tr  = " << glm::to_string(look_at) << std::endl;
@@ -313,17 +314,23 @@ int main(int argc, char* argv[]) {
       << std::endl;
 
   std::cout << "================================" << std::endl;
-  std::cout << "view1       = " << glm::to_string(view1)
+  std::cout << "view1       = " << glm::to_string(view)
       << std::endl;
 
-
-  glm::vec4 target1 = glm::affineInverse(look_at) * glm::vec4(camera_target, 1.0f);
-  glm::vec4 target2 = view1 * glm::vec4(camera_target, 1.0f);
+  glm::vec3 target_test(1.0f, 0.0f, 0.0f);
+  glm::vec4 target1 = glm::affineInverse(look_at) * glm::vec4(target_test, 1.0f);
+  glm::vec4 target2 = view * glm::vec4(target_test, 1.0f);
   std::cout << "-------------------------------" << std::endl;
   std::cout << "target1 = " << glm::to_string(target1)
       << std::endl;
   std::cout << "-------------------------------" << std::endl;
   std::cout << "target2 = " << glm::to_string(target2)
+      << std::endl;
+
+  std::cout << "-------------------------------" << std::endl;
+  glm::vec4 target_proj = projection * target1;
+  target_proj = target_proj / target_proj[3];
+  std::cout << "target proj = " << glm::to_string(target_proj)
       << std::endl;
 
 
@@ -375,12 +382,12 @@ int main(int argc, char* argv[]) {
       // bind VAO data with vertex buffer, attributes and elements
       glBindVertexArray(VAO);
 
-      for (unsigned int i = 0; i < 10; ++i) {
+      for (unsigned int i = 0; i < n_pos; ++i) {
         glm::mat4 model_obj(1.0f);
         model_obj = glm::translate(model, positions[i]);
-        float rot_angle = 20.0f * i + rotation_angle;
-        model_obj = glm::rotate(model_obj, rot_angle,
-              glm::vec3(1.0f, 0.3f, 0.5f));
+        // float rot_angle = 20.0f * i + rotation_angle;
+        // model_obj = glm::rotate(model_obj, rot_angle,
+        //       glm::vec3(1.0f, 0.3f, 0.5f));
         shader.SetMatrix4fv("model", glm::value_ptr(model_obj));
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
