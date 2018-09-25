@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
@@ -265,6 +266,65 @@ int main(int argc, char* argv[]) {
     glm::vec3( 1.5f,  0.2f, -1.5f),
     glm::vec3(-1.3f,  1.0f, -1.5f)
   };
+
+
+  // Camera matrix
+  glm::vec3 camera_pos = glm::vec3(0.0f, 2.0f, 3.0f);
+  glm::vec3 camera_target = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 camera_direction = glm::normalize(camera_pos - camera_target);
+
+  glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::vec3 camera_right = glm::normalize(glm::cross(up, camera_direction));
+
+  glm::vec3 camera_up = glm::normalize(
+      glm::cross(camera_direction, camera_right));
+
+  glm::mat4 look_at;
+  look_at[0] = glm::vec4(camera_right, camera_pos[0]);
+  look_at[1] = glm::vec4(camera_up, camera_pos[1]);
+  look_at[2] = glm::vec4(camera_direction, camera_pos[2]);
+  look_at[3] = glm::vec4(camera_pos, 1.0f);
+
+  // glm::mat4 tr(1.0f);
+  // tr = glm::translate(tr, camera_pos);
+  // glm::mat4 look_at_mult = look_at * tr;
+  // look_at = glm::translate(look_at, camera_pos);
+
+  // std::cout << "look_at mult = " << glm::to_string(look_at_mult) << std::endl;
+
+
+  // std::cout << "camera_direction (z) = " << glm::to_string(camera_direction)
+  //     << std::endl;
+  // std::cout << "camera_right (x) = " << glm::to_string(camera_right)
+  //     << std::endl;
+  // std::cout << "camera_up (y) = " << glm::to_string(camera_up)
+  //     << std::endl;
+
+  // std::cout << "look_at = " << glm::to_string(look_at) << std::endl;
+
+  glm::mat4 view1(1.0f);
+  view1 = glm::lookAt(camera_pos, camera_target, up);
+
+  std::cout << "================================" << std::endl;
+  std::cout << "look_at tr  = " << glm::to_string(look_at) << std::endl;
+
+  std::cout << "================================" << std::endl;
+  std::cout << "look_at inv = " << glm::to_string(glm::affineInverse(look_at))
+      << std::endl;
+
+  std::cout << "================================" << std::endl;
+  std::cout << "view1       = " << glm::to_string(view1)
+      << std::endl;
+
+
+  glm::vec4 target1 = glm::affineInverse(look_at) * glm::vec4(camera_target, 1.0f);
+  glm::vec4 target2 = view1 * glm::vec4(camera_target, 1.0f);
+  std::cout << "-------------------------------" << std::endl;
+  std::cout << "target1 = " << glm::to_string(target1)
+      << std::endl;
+  std::cout << "-------------------------------" << std::endl;
+  std::cout << "target2 = " << glm::to_string(target2)
+      << std::endl;
 
 
 
