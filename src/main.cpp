@@ -40,6 +40,7 @@ float delta_time, last_time = 0;
 void processInput(GLFWwindow *window);
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
 
 // #define TEST_ENABLE
@@ -80,6 +81,7 @@ int main(int argc, char* argv[]) {
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSetCursorPosCallback(window, mouse_callback);
+  glfwSetScrollCallback(window, scroll_callback);
 
   gladLoadGL();
   fprintf(stderr, "OpenGL %s, %s, %s\n", glGetString(GL_VERSION),
@@ -223,9 +225,6 @@ int main(int argc, char* argv[]) {
   shader.SetInt("texture1", 0);
   shader.SetInt("texture2", 1);
 
-  glm::mat4 projection(1.0f);
-  projection = glm::perspective(glm::radians(45.0f),
-      (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
 
 
   unsigned int n_pos = 10;
@@ -287,6 +286,10 @@ int main(int argc, char* argv[]) {
       // view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
       glm::mat4 view = camera.GetViewMatrix();
 
+      glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()),
+          (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
+
+
       shader.SetMatrix4fv("view", glm::value_ptr(view));
       shader.SetMatrix4fv("projection", glm::value_ptr(projection));
 
@@ -307,7 +310,9 @@ int main(int argc, char* argv[]) {
         //       glm::vec3(1.0f, 0.3f, 0.5f));
         shader.SetMatrix4fv("model", glm::value_ptr(model_obj));
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_LINES, 6, GL_UNSIGNED_INT, 0);
+
       }
 
       // glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -363,4 +368,8 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
   last_y = ypos;
 
   camera.ProcessMouseInput(xoffset, yoffset);
+}
+
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
+  camera.ProcessMouseScroll(yoffset);
 }

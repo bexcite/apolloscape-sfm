@@ -26,8 +26,10 @@ class Camera {
 
   void ProcessKeyboard(CameraMovement camera_movement, float delta_time);
   void ProcessMouseInput(float xoffset, float yoffset, bool constrain_pitch = true);
+  void ProcessMouseScroll(float yoffset);
 
   glm::mat4 GetViewMatrix() const;
+  float GetZoom() const;
 
 
  private:

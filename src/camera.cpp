@@ -29,6 +29,10 @@ glm::mat4 Camera::GetViewMatrix() const {
   return glm::lookAt(position_, position_ + front_, up_);
 }
 
+float Camera::GetZoom() const {
+  return zoom_;
+}
+
 void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
   float delta = movement_speed_ * delta_time;
   if (camera_movement == FORWARD) {
@@ -44,11 +48,18 @@ void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
 
 void Camera::ProcessMouseInput(float xoffset, float yoffset,
     bool constrain_pitch) {
-
   yaw_ -= mouse_sensitivity_ * xoffset;
   pitch_ += mouse_sensitivity_ * yoffset;
-
   UpdateCameraVectors(constrain_pitch);
+}
+
+void Camera::ProcessMouseScroll(float yoffset) {
+  zoom_ -= yoffset;
+  if (zoom_ < 1.0f) {
+    zoom_ = 1.0f;
+  } else if (zoom_ > 45.0f) {
+    zoom_ = 45.0f;
+  }
 }
 
 void Camera::UpdateCameraVectors(bool constrain_pitch) {
