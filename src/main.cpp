@@ -34,11 +34,6 @@ float last_x = kWindowWidth / 2;
 float last_y = kWindowHeight / 2;
 
 bool first_mouse;
-// float yaw = 90.0f, pitch = 0;
-// glm::vec3 camera_front = glm::vec3(0.0f, 0.0f, -1.0f);
-// glm::vec3 camera_pos = glm::vec3(2.0f, 0.0f, 3.0f);
-
-// glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 float delta_time, last_time = 0;
 
@@ -59,24 +54,7 @@ void test_shader() {
 
 Camera camera(glm::vec3(2.0f, 0.0f, 3.0f));
 
-
-
 int main(int argc, char* argv[]) {
-  // std::cout << "Hello world!" << std::endl;
-
-  // test glm
-  // glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
-  glm::mat4 trans(1.0f);
-  // trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
-  // trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-  trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
-  // trans = glm::translate(trans, glm::vec3(0.5f, 0.5f, 0.0f));
-
-  // vec = trans * vec;
-  std::cout << "trans: \n" << glm::to_string(trans) << std::endl;
-  // std::cout << "vec: \n" << glm::to_string(vec) << std::endl;
-
-
 
   // Load GLFW and Create a Window
   glfwInit();
@@ -96,20 +74,12 @@ int main(int argc, char* argv[]) {
       return EXIT_FAILURE;
   }
 
-  // GLFWglproc gls = glfwGetProcAddress("glGetString");
 
   // Create Context and Load OpenGL Functions
   glfwMakeContextCurrent(window);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSetCursorPosCallback(window, mouse_callback);
-
-
-
-  // if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-  //   fprintf(stderr, "Failed to initialize GLAD\n");
-  //   // return EXIT_FAILURE;
-  // }
 
   gladLoadGL();
   fprintf(stderr, "OpenGL %s, %s, %s\n", glGetString(GL_VERSION),
@@ -146,18 +116,9 @@ int main(int argc, char* argv[]) {
     // 0.0f, -0.75f, 0.0f, 0.0f, 0.0f, 1.0f   // center bottom 5
   };
 
-  // unsigned int indices[] = {
-  //   0, 1, 3,
-  //   1, 2, 3,
-  //   0, 3, 4,
-  //   1, 2, 5
-  // };
-
   unsigned int indices[] = {
     0, 1, 3,
     1, 2, 3
-    // 0, 3, 4,
-    // 1, 2, 5
   };
 
   unsigned int VBO, VAO, EBO;
@@ -262,12 +223,6 @@ int main(int argc, char* argv[]) {
   shader.SetInt("texture1", 0);
   shader.SetInt("texture2", 1);
 
-  // setup transforms
-
-
-  // glm::mat4 view(1.0f);
-  // view = glm::translate(view, glm::vec3(0.0f, 0.0f, -4.0f));
-
   glm::mat4 projection(1.0f);
   projection = glm::perspective(glm::radians(45.0f),
       (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
@@ -288,80 +243,10 @@ int main(int argc, char* argv[]) {
   };
 
 
-  // Camera matrix
-  // glm::vec3 camera_pos = glm::vec3(2.0f, 0.0f, 3.0f);
-
-  /*
-  glm::vec3 camera_target = glm::vec3(2.0f, 0.0f, 0.0f);
-  glm::vec3 camera_direction = glm::normalize(camera_pos - camera_target);
-
-
-  glm::vec3 camera_right = glm::normalize(glm::cross(up, camera_direction));
-
-  glm::vec3 camera_up = glm::normalize(
-      glm::cross(camera_direction, camera_right));
-
-  glm::mat4 look_at;
-  look_at[0] = glm::vec4(camera_right, camera_pos[0]);
-  look_at[1] = glm::vec4(camera_up, camera_pos[1]);
-  look_at[2] = glm::vec4(camera_direction, camera_pos[2]);
-  look_at[3] = glm::vec4(camera_pos, 1.0f);
-  */
-
-  // glm::mat4 tr(1.0f);
-  // tr = glm::translate(tr, camera_pos);
-  // glm::mat4 look_at_mult = look_at * tr;
-  // look_at = glm::translate(look_at, camera_pos);
-
-  // std::cout << "look_at mult = " << glm::to_string(look_at_mult) << std::endl;
-
-
-  // std::cout << "camera_direction (z) = " << glm::to_string(camera_direction)
-  //     << std::endl;
-  // std::cout << "camera_right (x) = " << glm::to_string(camera_right)
-  //     << std::endl;
-  // std::cout << "camera_up (y) = " << glm::to_string(camera_up)
-  //     << std::endl;
-
-  // std::cout << "look_at = " << glm::to_string(look_at) << std::endl;
-
-  glm::mat4 view(1.0f);
-
-  /*
-  view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
-
-  std::cout << "================================" << std::endl;
-  std::cout << "look_at tr  = " << glm::to_string(look_at) << std::endl;
-
-  std::cout << "================================" << std::endl;
-  std::cout << "look_at inv = " << glm::to_string(glm::affineInverse(look_at))
-      << std::endl;
-
-  std::cout << "================================" << std::endl;
-  std::cout << "view1       = " << glm::to_string(view)
-      << std::endl;
-
-  glm::vec3 target_test(1.0f, 0.0f, 0.0f);
-  glm::vec4 target1 = glm::affineInverse(look_at) * glm::vec4(target_test, 1.0f);
-  glm::vec4 target2 = view * glm::vec4(target_test, 1.0f);
-  std::cout << "-------------------------------" << std::endl;
-  std::cout << "target1 = " << glm::to_string(target1)
-      << std::endl;
-  std::cout << "-------------------------------" << std::endl;
-  std::cout << "target2 = " << glm::to_string(target2)
-      << std::endl;
-
-  std::cout << "-------------------------------" << std::endl;
-  glm::vec4 target_proj = projection * target1;
-  target_proj = target_proj / target_proj[3];
-  std::cout << "target proj = " << glm::to_string(target_proj)
-      << std::endl;
-
-  */
 
 
 
-  // shader.SetMatrix4fv("transform", glm::value_ptr(trans));
+
 
   // Rendering Loop
   while (glfwWindowShouldClose(window) == false) {
@@ -400,7 +285,7 @@ int main(int argc, char* argv[]) {
       // shader.SetMatrix4fv("model", glm::value_ptr(model));
 
       // view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
-      view = camera.GetViewMatrix();
+      glm::mat4 view = camera.GetViewMatrix();
 
       shader.SetMatrix4fv("view", glm::value_ptr(view));
       shader.SetMatrix4fv("projection", glm::value_ptr(projection));
@@ -447,22 +332,15 @@ int main(int argc, char* argv[]) {
 
 void processInput(GLFWwindow *window) {
 
-  // float camera_speed = 3.0f * delta_time;
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    // camera_pos += camera_speed * camera_front;
     camera.ProcessKeyboard(FORWARD, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    // camera_pos -= camera_speed * camera_front;
     camera.ProcessKeyboard(BACKWARD, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    // camera_pos -= camera_speed * glm::normalize(
-    //     glm::cross(camera_front, up));
     camera.ProcessKeyboard(LEFT, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    // camera_pos += camera_speed * glm::normalize(
-    //     glm::cross(camera_front, up));
     camera.ProcessKeyboard(RIGHT, delta_time);
   }
 }
@@ -480,31 +358,9 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 
   float xoffset = xpos - last_x;
   float yoffset = last_y - ypos;
-  // float sensitivity = 0.05;
 
   last_x = xpos;
   last_y = ypos;
 
   camera.ProcessMouseInput(xoffset, yoffset);
-
-  // yaw -= sensitivity * xoffset;
-  // pitch += sensitivity * yoffset;
-  //
-  // if (pitch > 89.0f) {
-  //   pitch = 89.0f;
-  // } else if (pitch < - 89.0f) {
-  //   pitch = -89.0f;
-  // }
-  //
-  // glm::vec3 front;
-  // front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-  // front.y = sin(glm::radians(pitch));
-  // front.z = - cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-  // camera_front = glm::normalize(front);
-
-  // std::cout << "mmmmmmmmmmmmmmmmmmmmm" << std::endl;
-  // std::cout << "mouse x, y = " << xpos << ", " << ypos << std::endl;
-  // std::cout << "xoff, yoff = " << xoffset << ", " << yoffset << std::endl;
-  // std::cout << "pitch, yaw = " << pitch << ", " << yaw << std::endl;
-  // std::cout << "camera_front = " << glm::to_string(camera_front) << std::endl;
 }
