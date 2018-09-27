@@ -1,6 +1,6 @@
 message("my INCLUDE DIRS = " ${PROJECT_INCLUDE_DIRS})
 
-add_executable(${PROJECT_NAME} main.cpp shader.cpp)
+add_executable(${PROJECT_NAME} main.cpp shader.cpp camera.cpp)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE_DIRS} )
 

@@ -23,6 +23,7 @@
 #include <iostream>
 
 #include "cv_gl/shader.h"
+#include "cv_gl/camera.h"
 
 
 // Define Some Constants
@@ -33,11 +34,11 @@ float last_x = kWindowWidth / 2;
 float last_y = kWindowHeight / 2;
 
 bool first_mouse;
-float yaw = 90.0f, pitch = 0;
-glm::vec3 camera_front = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 camera_pos = glm::vec3(2.0f, 0.0f, 3.0f);
+// float yaw = 90.0f, pitch = 0;
+// glm::vec3 camera_front = glm::vec3(0.0f, 0.0f, -1.0f);
+// glm::vec3 camera_pos = glm::vec3(2.0f, 0.0f, 3.0f);
 
-glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+// glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 float delta_time, last_time = 0;
 
@@ -55,6 +56,8 @@ void test_shader() {
   shader.PrintHello();
 }
 */
+
+Camera camera(glm::vec3(2.0f, 0.0f, 3.0f));
 
 
 
@@ -287,6 +290,8 @@ int main(int argc, char* argv[]) {
 
   // Camera matrix
   // glm::vec3 camera_pos = glm::vec3(2.0f, 0.0f, 3.0f);
+
+  /*
   glm::vec3 camera_target = glm::vec3(2.0f, 0.0f, 0.0f);
   glm::vec3 camera_direction = glm::normalize(camera_pos - camera_target);
 
@@ -301,6 +306,7 @@ int main(int argc, char* argv[]) {
   look_at[1] = glm::vec4(camera_up, camera_pos[1]);
   look_at[2] = glm::vec4(camera_direction, camera_pos[2]);
   look_at[3] = glm::vec4(camera_pos, 1.0f);
+  */
 
   // glm::mat4 tr(1.0f);
   // tr = glm::translate(tr, camera_pos);
@@ -320,6 +326,8 @@ int main(int argc, char* argv[]) {
   // std::cout << "look_at = " << glm::to_string(look_at) << std::endl;
 
   glm::mat4 view(1.0f);
+
+  /*
   view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
 
   std::cout << "================================" << std::endl;
@@ -348,6 +356,8 @@ int main(int argc, char* argv[]) {
   target_proj = target_proj / target_proj[3];
   std::cout << "target proj = " << glm::to_string(target_proj)
       << std::endl;
+
+  */
 
 
 
@@ -389,7 +399,8 @@ int main(int argc, char* argv[]) {
       //     glm::vec3(0.5f, 1.0f, 0.0f));
       // shader.SetMatrix4fv("model", glm::value_ptr(model));
 
-      view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
+      // view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
+      view = camera.GetViewMatrix();
 
       shader.SetMatrix4fv("view", glm::value_ptr(view));
       shader.SetMatrix4fv("projection", glm::value_ptr(projection));
@@ -436,19 +447,23 @@ int main(int argc, char* argv[]) {
 
 void processInput(GLFWwindow *window) {
 
-  float camera_speed = 3.0f * delta_time;
+  // float camera_speed = 3.0f * delta_time;
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    camera_pos += camera_speed * camera_front;
+    // camera_pos += camera_speed * camera_front;
+    camera.ProcessKeyboard(FORWARD, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    camera_pos -= camera_speed * camera_front;
+    // camera_pos -= camera_speed * camera_front;
+    camera.ProcessKeyboard(BACKWARD, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    camera_pos -= camera_speed * glm::normalize(
-        glm::cross(camera_front, up));
+    // camera_pos -= camera_speed * glm::normalize(
+    //     glm::cross(camera_front, up));
+    camera.ProcessKeyboard(LEFT, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    camera_pos += camera_speed * glm::normalize(
-        glm::cross(camera_front, up));
+    // camera_pos += camera_speed * glm::normalize(
+    //     glm::cross(camera_front, up));
+    camera.ProcessKeyboard(RIGHT, delta_time);
   }
 }
 
@@ -465,25 +480,27 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 
   float xoffset = xpos - last_x;
   float yoffset = last_y - ypos;
-  float sensitivity = 0.05;
+  // float sensitivity = 0.05;
 
   last_x = xpos;
   last_y = ypos;
 
-  yaw -= sensitivity * xoffset;
-  pitch += sensitivity * yoffset;
+  camera.ProcessMouseInput(xoffset, yoffset);
 
-  if (pitch > 89.0f) {
-    pitch = 89.0f;
-  } else if (pitch < - 89.0f) {
-    pitch = -89.0f;
-  }
-
-  glm::vec3 front;
-  front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-  front.y = sin(glm::radians(pitch));
-  front.z = - cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-  camera_front = glm::normalize(front);
+  // yaw -= sensitivity * xoffset;
+  // pitch += sensitivity * yoffset;
+  //
+  // if (pitch > 89.0f) {
+  //   pitch = 89.0f;
+  // } else if (pitch < - 89.0f) {
+  //   pitch = -89.0f;
+  // }
+  //
+  // glm::vec3 front;
+  // front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+  // front.y = sin(glm::radians(pitch));
+  // front.z = - cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+  // camera_front = glm::normalize(front);
 
   // std::cout << "mmmmmmmmmmmmmmmmmmmmm" << std::endl;
   // std::cout << "mouse x, y = " << xpos << ", " << ypos << std::endl;
