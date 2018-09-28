@@ -8,10 +8,6 @@
 
 #include "cv_gl/shader.h"
 
-void Shader::PrintHello() const {
-  std::cout << "Shader: Print Hello" << std::endl;
-}
-
 Shader::Shader() {
   std::cout << "Shader: Constructor 0 params" << std::endl;
 }

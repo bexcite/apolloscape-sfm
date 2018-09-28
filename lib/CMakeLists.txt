@@ -7,3 +7,9 @@ message("stb GLM_DIR = " ${GLM_DIR})
 
 set(GLM_TEST_ENABLE OFF)
 add_subdirectory(${GLM_DIR})
+
+set(ASSIMP_DIR ${PROJECT_SOURCE_DIR}/lib/assimp-4.1.0)
+option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
+option(ASSIMP_BUILD_SAMPLES OFF)
+option(ASSIMP_BUILD_TESTS OFF)
+add_subdirectory(${ASSIMP_DIR})

@@ -2,6 +2,8 @@
 #ifndef CV_GL_SHADER_H_
 #define CV_GL_SHADER_H_
 
+#include <glad/glad.h>
+
 #include <iostream>
 #include <string>
 
@@ -17,7 +19,6 @@ class Shader {
 
   Shader(const std::string& vertex_shader_path,
          const std::string& fragment_shader_path);
-  void PrintHello() const;
   void Use() const { glUseProgram(id_); }
   unsigned int GetId() const { return id_; }
   void SetFloat(const std::string &, const float) const;

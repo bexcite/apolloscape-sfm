@@ -1,6 +1,6 @@
 message("my INCLUDE DIRS = " ${PROJECT_INCLUDE_DIRS})
 
-add_executable(${PROJECT_NAME} main.cpp shader.cpp camera.cpp)
+add_executable(${PROJECT_NAME} main.cpp shader.cpp camera.cpp mesh.cpp)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE_DIRS} )
 
@@ -24,6 +24,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glm)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

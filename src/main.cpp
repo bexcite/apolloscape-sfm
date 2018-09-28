@@ -1,5 +1,22 @@
 // Copyright Pavlo 2017
 
+// Links
+
+// OpenCV Camera to OpenGL Projection
+// https://blog.noctua-software.com/opencv-opengl-projection-matrix.html
+
+// calculating OpenGL perspective matrix from OpenCV intrinsic matrix
+// http://kgeorge.github.io/2014/03/08/calculating-opengl-perspective-matrix-from-opencv-intrinsic-matrix
+
+// OpenGL 3.2 API Quick Reference Card
+// http://www.glprogramming.com/manpages/opengl-quick-reference-card.pdf
+
+// Calibrated Cameras in OpenGL without glFrustum
+// http://ksimek.github.io/2013/06/03/calibrated_cameras_in_opengl/
+
+// A trip through the Graphics Pipeline 2011: Index [IN-DEPTH]
+// https://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/
+
 // System Headers
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -24,6 +41,7 @@
 
 #include "cv_gl/shader.h"
 #include "cv_gl/camera.h"
+#include "cv_gl/mesh.h"
 
 
 // Define Some Constants
@@ -44,18 +62,47 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
 
 // #define TEST_ENABLE
-/*
-void test_shader() {
-  Shader shader(
-    "../shaders/one.vs",
-    "../shaders/one.fs");
-  shader.PrintHello();
+
+void test_mesh() {
+  // Shader shader(
+  //   "../shaders/one.vs",
+  //   "../shaders/one.fs");
+  // shader.PrintHello();
+  std::cout << "hello from mesh testing" << std::endl;
+  Vertex v = {.position = {0.0f, 0.0f, 0.0f}};
+  std::vector<Vertex> vertices = {
+    {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+    {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+  };
+  std::vector<unsigned int> indices = {0, 1, 3, 1, 2, 3};
+  std::vector<Texture> textures;
+  Mesh mesh(vertices, indices, textures);
+  std::cout << "print = " << glm::to_string(vertices[0].position) << std::endl;
+  std::cout << "print 2 = " << *(((float *)&vertices[0]) + 15) << std::endl;
 }
-*/
+
 
 Camera camera(glm::vec3(2.0f, 0.0f, 3.0f));
 
 int main(int argc, char* argv[]) {
+
+#ifdef TEST_ENABLE
+  test_mesh();
+  // Rendering Loop
+  /*
+  while (glfwWindowShouldClose(window) == false) {
+    processInput(window);
+    // Flip Buffers and Draw
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+  glfwTerminate();
+  */
+  return 0;
+#endif
+
 
   // Load GLFW and Create a Window
   glfwInit();
@@ -87,20 +134,8 @@ int main(int argc, char* argv[]) {
   fprintf(stderr, "OpenGL %s, %s, %s\n", glGetString(GL_VERSION),
       glGetString(GL_VENDOR), glGetString(GL_RENDERER));
 
-/*
-#ifdef TEST_ENABLE
-  test_shader();
-  // Rendering Loop
-  while (glfwWindowShouldClose(window) == false) {
-    processInput(window);
-    // Flip Buffers and Draw
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  }
-  glfwTerminate();
-  return 0;
-#endif
-*/
+
+
 
   //  Create shader program
   Shader shader(
@@ -221,9 +256,9 @@ int main(int argc, char* argv[]) {
 
   shader.Use();
 
-  // set shaders locations
-  shader.SetInt("texture1", 0);
-  shader.SetInt("texture2", 1);
+  // set texture locations
+  // shader.SetInt("texture1", 0);
+  // shader.SetInt("texture2", 1);
 
 
 
@@ -296,8 +331,11 @@ int main(int argc, char* argv[]) {
       // bind textures
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, texture1);
+      shader.SetInt("texture1", 0);
+
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, texture2);
+      shader.SetInt("texture2", 1);
 
       // bind VAO data with vertex buffer, attributes and elements
       glBindVertexArray(VAO);
@@ -310,8 +348,8 @@ int main(int argc, char* argv[]) {
         //       glm::vec3(1.0f, 0.3f, 0.5f));
         shader.SetMatrix4fv("model", glm::value_ptr(model_obj));
 
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glDrawElements(GL_LINES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // glDrawElements(GL_LINES, 6, GL_UNSIGNED_INT, 0);
 
       }
 

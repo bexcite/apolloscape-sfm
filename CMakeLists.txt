@@ -39,10 +39,10 @@ set(PROJECT_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include)
 
 
 set(GLFW_DIR ${PROJECT_SOURCE_DIR}/lib/glfw-3.2.1)
-# set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
-# set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
-# set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
-# set(GLFW_INSTALL OFF CACHE INTERNAL "Generate installation target")
+set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_TESTS OFF)
+set(GLFW_BUILD_DOCS OFF)
+set(GLFW_INSTALL OFF)
 add_subdirectory(${GLFW_DIR})
 
 # add libs
