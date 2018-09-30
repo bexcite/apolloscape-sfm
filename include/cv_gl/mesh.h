@@ -33,7 +33,7 @@ class Mesh {
   Mesh(const std::vector<Vertex>& vertices,
        const std::vector<unsigned int>& indices,
        const std::vector<Texture>& textures);
-
+  Mesh(const Mesh& mesh);
   Mesh operator=(const Mesh& mesh);
 
   ~Mesh();
@@ -47,7 +47,7 @@ private:
   unsigned int vao_, vbo_, ebo_;
   void SetupMesh();
 
-  Mesh(const Mesh& mesh);
+
 
 };
 

@@ -14,6 +14,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <memory>
+
 
 
 unsigned int TextureFromFile(const char* path, const std::string& directory,
@@ -26,14 +28,14 @@ public:
     LoadModel(path);
   }
   void Draw(const Shader& shader);
-  std::vector<Mesh> meshes_;
+  std::vector<std::shared_ptr<Mesh> > meshes_;
 private:
   std::string directory_;
   std::vector<Texture> textures_loaded_;
 
   void LoadModel(const std::string& path);
   void ProcessNode(const aiNode *node, const aiScene *scene);
-  Mesh ProcessMesh(const aiMesh *mesh, const aiScene *scene);
+  std::shared_ptr<Mesh> ProcessMesh(const aiMesh *mesh, const aiScene *scene);
   std::vector<Texture> LoadMaterialTextures(const  aiMaterial *material,
       const aiTextureType type, const std::string& type_name);
 };
@@ -72,7 +74,7 @@ Model::ProcessNode(const aiNode *node, const aiScene *scene) {
   }
 }
 
-Mesh
+std::shared_ptr<Mesh>
 Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
   std::cout << "Process MESH" << std::endl;
   std::vector<Vertex> vertices;
@@ -132,8 +134,9 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
     textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
   }
 
+  auto msh = std::make_shared<Mesh>(vertices, indices, textures);
 
-  return Mesh(vertices, indices, textures);
+  return msh;
 }
 
 std::vector<Texture>
@@ -174,7 +177,7 @@ void
 Model::Draw(const Shader& shader) {
   // std::cout << "MODEL:DRAW:MESHES = " << meshes_.size() << std::endl;
   for (unsigned int i = 0; i < meshes_.size(); ++i) {
-    meshes_[i].Draw(shader);
+    meshes_[i]->Draw(shader);
   }
 }
 

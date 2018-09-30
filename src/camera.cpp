@@ -48,8 +48,8 @@ void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
   } else if (camera_movement == RIGHT) {
     position_ += right_ * delta;
   }
-  std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
-  std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
+  // std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
+  // std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
 }
 
 void Camera::ProcessMouseInput(float xoffset, float yoffset,
@@ -66,7 +66,7 @@ void Camera::ProcessMouseScroll(float yoffset) {
   } else if (zoom_ > 45.0f) {
     zoom_ = 45.0f;
   }
-  std::cout << "CAMERA: zoom = " << zoom_ << std::endl;
+  // std::cout << "CAMERA: zoom = " << zoom_ << std::endl;
 }
 
 void Camera::UpdateCameraVectors(bool constrain_pitch) {
@@ -88,18 +88,18 @@ void Camera::UpdateCameraVectors(bool constrain_pitch) {
   up_ = glm::normalize(glm::cross(right_, front_));
 
   // std::cout << "CAMERA: front_ = " << glm::to_string(front_) << std::endl;
-  std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
-  std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
+  // std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
+  // std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
 
 
 }
 
 void Camera::SetDirection(const glm::vec3& direction_to) {
   glm::vec3 direction = glm::normalize(direction_to - position_);
-  std::cout << "CAMERA D: direction = " << glm::to_string(direction) << std::endl;
+  // std::cout << "CAMERA D: direction = " << glm::to_string(direction) << std::endl;
   pitch_ = glm::degrees(asin(direction.y));
   yaw_ = glm::degrees(atan2(-direction.z, direction.x));
-  std::cout << "CAMERA D: p, y = " << pitch_ << ", " << yaw_ << std::endl;
+  // std::cout << "CAMERA D: p, y = " << pitch_ << ", " << yaw_ << std::endl;
   UpdateCameraVectors();
 }
 

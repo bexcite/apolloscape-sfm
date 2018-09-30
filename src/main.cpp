@@ -38,6 +38,7 @@
 #include <cmath>
 
 #include <iostream>
+#include <memory>
 
 #include "cv_gl/shader.h"
 #include "cv_gl/camera.h"
@@ -90,7 +91,7 @@ void test_mesh() {
 Camera camera(glm::vec3(2.0f, 0.0f, 3.0f));
 
 
-Mesh MakeRect() {
+std::shared_ptr<Mesh> MakeRect() {
   std::vector<Vertex> vertices_mesh = {
     {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},  // >^
     {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},  // >.
@@ -99,10 +100,10 @@ Mesh MakeRect() {
   };
   std::vector<unsigned int> indices_mesh = {0, 1, 3, 1, 2, 3};
   std::vector<Texture> textures_mesh;
-  return Mesh(vertices_mesh, indices_mesh, textures_mesh);
+  return std::make_shared<Mesh>(vertices_mesh, indices_mesh, textures_mesh);
 }
 
-Mesh MakeTriangle() {
+std::shared_ptr<Mesh> MakeTriangle() {
   std::vector<Vertex> vertices_mesh = {
     {{0.5f,  1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
     {{0.5f, -1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
@@ -110,7 +111,7 @@ Mesh MakeTriangle() {
   };
   std::vector<unsigned int> indices_mesh = {0, 1, 2};
   std::vector<Texture> textures_mesh;
-  return Mesh(vertices_mesh, indices_mesh, textures_mesh);
+  return std::make_shared<Mesh>(vertices_mesh, indices_mesh, textures_mesh);
 }
 
 
@@ -205,19 +206,21 @@ int main(int argc, char* argv[]) {
     1, 2, 3
   };
 
-  Mesh mesh_rect = MakeRect();
-  Mesh mesh_tri = MakeTriangle();
-  std::cout << "mesh_rect (init) = " << mesh_rect << std::endl;
-  std::cout << "mesh_tri (init) = " << mesh_tri << std::endl;
 
   glm::mat4 m_model(1.0f);
-  m_model = glm::scale(m_model, glm::vec3(3.0f, 3.0f, 3.0f));
+  m_model = glm::scale(m_model, glm::vec3(0.1f, 0.1f, 0.1f));
 
 
   Model m("../data/objects/nanosuit/nanosuit.obj");
-  
-  // m.meshes_.emplace_back(mesh_tri);
-  // m.meshes_.emplace_back(mesh_rect);
+
+
+  std::shared_ptr<Mesh> mesh_rect = MakeRect();
+  std::shared_ptr<Mesh> mesh_tri = MakeTriangle();
+  std::cout << "mesh_rect (init) = " << mesh_rect << std::endl;
+  std::cout << "mesh_tri (init) = " << mesh_tri << std::endl;
+
+  m.meshes_.emplace_back(mesh_tri);
+  m.meshes_.emplace_back(mesh_rect);
 
   std::cout << "mesh_rect (late) = " << mesh_rect << std::endl;
   std::cout << "mesh_tri (late) = " << mesh_tri << std::endl;
@@ -432,10 +435,10 @@ int main(int argc, char* argv[]) {
 
       // mesh.Draw(shader);
 
-      // m.Draw(shader);
+      m.Draw(shader);
 
-      mesh_rect.Draw(shader);
-      mesh_tri.Draw(shader);
+      // mesh_rect->Draw(shader);
+      // mesh_tri->Draw(shader);
 
       /*
       // bind VAO data with vertex buffer, attributes and elements

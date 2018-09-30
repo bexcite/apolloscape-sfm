@@ -98,5 +98,10 @@ std::ostream& Mesh::write(std::ostream& os) const {
   return os;
 }
 std::ostream& operator<<(std::ostream& os, const Mesh& mesh) {
+  os << " [CALL BY REF] ";
   return mesh.write(os);
+}
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Mesh>& mesh) {
+  os << " [CALL BY SHARED] ";
+  return mesh->write(os);
 }
