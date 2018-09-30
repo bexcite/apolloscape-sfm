@@ -25,7 +25,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glm)
 
+# set(ASSIMP_DIR ${PROJECT_SOURCE_DIR}/lib/assimp-4.1.0)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
+# target_include_directories(${PROJECT_NAME} PUBLIC ${ASSIMP_DIR}/include )
+# message("===== ASSIMP INCLUDE DIR" ${ASSIMP_INCLUDE_DIRS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

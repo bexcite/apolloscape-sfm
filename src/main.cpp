@@ -21,8 +21,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+// #define STB_IMAGE_IMPLEMENTATION
+// #include <stb_image.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -42,6 +42,7 @@
 #include "cv_gl/shader.h"
 #include "cv_gl/camera.h"
 #include "cv_gl/mesh.h"
+#include "cv_gl/model.h"
 
 
 // Define Some Constants
@@ -59,6 +60,8 @@ void processInput(GLFWwindow *window);
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
+
+
 
 
 // #define TEST_ENABLE
@@ -85,6 +88,33 @@ void test_mesh() {
 
 
 Camera camera(glm::vec3(2.0f, 0.0f, 3.0f));
+
+
+Mesh MakeRect() {
+  std::vector<Vertex> vertices_mesh = {
+    {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},  // >^
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},  // >.
+    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // <.
+    {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}}, // <^
+  };
+  std::vector<unsigned int> indices_mesh = {0, 1, 3, 1, 2, 3};
+  std::vector<Texture> textures_mesh;
+  return Mesh(vertices_mesh, indices_mesh, textures_mesh);
+}
+
+Mesh MakeTriangle() {
+  std::vector<Vertex> vertices_mesh = {
+    {{0.5f,  1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{0.5f, -1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+    {{-0.5f, -1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}
+  };
+  std::vector<unsigned int> indices_mesh = {0, 1, 2};
+  std::vector<Texture> textures_mesh;
+  return Mesh(vertices_mesh, indices_mesh, textures_mesh);
+}
+
+
+
 
 int main(int argc, char* argv[]) {
 
@@ -142,6 +172,23 @@ int main(int argc, char* argv[]) {
     "../shaders/one.vs",
     "../shaders/one.fs");
 
+
+  Vertex v = {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}};
+  std::cout << "Test V: " << v << std::endl;
+
+
+  // std::vector<Vertex> vertices_mesh = {
+  //   {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+  //   {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+  //   {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+  //   {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+  // };
+  // std::vector<unsigned int> indices_mesh = {0, 1, 3, 1, 2, 3};
+  // std::vector<Texture> textures_mesh;
+  // Mesh mesh(vertices_mesh, indices_mesh, textures_mesh);
+
+
+
   // setup vertex data
   float vertices[] = {
     // coords 3         // color 3         // tex coords 2
@@ -158,6 +205,45 @@ int main(int argc, char* argv[]) {
     1, 2, 3
   };
 
+  Mesh mesh_rect = MakeRect();
+  Mesh mesh_tri = MakeTriangle();
+  std::cout << "mesh_rect (init) = " << mesh_rect << std::endl;
+  std::cout << "mesh_tri (init) = " << mesh_tri << std::endl;
+
+  glm::mat4 m_model(1.0f);
+  m_model = glm::scale(m_model, glm::vec3(3.0f, 3.0f, 3.0f));
+
+
+  Model m("../data/objects/nanosuit/nanosuit.obj");
+  
+  // m.meshes_.emplace_back(mesh_tri);
+  // m.meshes_.emplace_back(mesh_rect);
+
+  std::cout << "mesh_rect (late) = " << mesh_rect << std::endl;
+  std::cout << "mesh_tri (late) = " << mesh_tri << std::endl;
+
+
+
+  // std::cout << "MODEL MESHES: " << m.meshes_.size() << std::endl;
+  //
+  // Mesh msh = m.meshes_[0];
+  // for (unsigned int i = 0; i < msh.vertices.size(); ++i) {
+  //   std::cout << "mv: "
+  //       << glm::to_string(m_model * glm::vec4(msh.vertices[i].position, 1.0f))
+  //       << std::endl;
+  //   if (i < msh.indices.size()) {
+  //     std::cout << "mi: " << msh.indices[i] << std::endl;
+  //   }
+  // }
+
+
+
+  // camera.SetPosition(glm::vec3(-2.785094f, 39.048775f, -4.100138f));
+  // camera.SetDirection(msh.vertices[0].position);
+
+  // camera.SetDirection(glm::vec3(2.0f, 0.0f, -1.0f));
+
+/*
   unsigned int VBO, VAO, EBO;
 
   glGenVertexArrays(1, &VAO);
@@ -190,6 +276,8 @@ int main(int argc, char* argv[]) {
 
   // Ubind buffer
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+*/
+
 
   // Load and bind texture
   unsigned int texture1, texture2;
@@ -262,19 +350,19 @@ int main(int argc, char* argv[]) {
 
 
 
-  unsigned int n_pos = 10;
-  glm::vec3 positions[] = {
-    glm::vec3( 0.0f,  0.0f,  0.0f),
-    glm::vec3( 2.0f,  5.0f, -15.0f),
-    glm::vec3(-1.5f, -2.2f, -2.5f),
-    glm::vec3(-3.8f, -2.0f, -12.3f),
-    glm::vec3( 2.4f, -0.4f, -3.5f),
-    glm::vec3(-1.7f,  3.0f, -7.5f),
-    glm::vec3( 1.3f, -2.0f, -2.5f),
-    glm::vec3( 1.5f,  2.0f, -2.5f),
-    glm::vec3( 1.5f,  0.2f, -1.5f),
-    glm::vec3(-1.3f,  1.0f, -1.5f)
-  };
+  // unsigned int n_pos = 10;
+  // glm::vec3 positions[] = {
+  //   glm::vec3( 0.0f,  0.0f,  0.0f),
+  //   glm::vec3( 2.0f,  5.0f, -15.0f),
+  //   glm::vec3(-1.5f, -2.2f, -2.5f),
+  //   glm::vec3(-3.8f, -2.0f, -12.3f),
+  //   glm::vec3( 2.4f, -0.4f, -3.5f),
+  //   glm::vec3(-1.7f,  3.0f, -7.5f),
+  //   glm::vec3( 1.3f, -2.0f, -2.5f),
+  //   glm::vec3( 1.5f,  2.0f, -2.5f),
+  //   glm::vec3( 1.5f,  0.2f, -1.5f),
+  //   glm::vec3(-1.3f,  1.0f, -1.5f)
+  // };
 
 
 
@@ -313,12 +401,16 @@ int main(int argc, char* argv[]) {
       //     glm::vec3(0.0, 0.0, 1.0));
 
       glm::mat4 model(1.0f);
-      float rotation_angle = timeValue * glm::radians(50.0f);
+      // float rotation_angle = timeValue * glm::radians(50.0f);
       // model = glm::rotate(model, rotation_angle,
       //     glm::vec3(0.5f, 1.0f, 0.0f));
       // shader.SetMatrix4fv("model", glm::value_ptr(model));
 
       // view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
+
+      glm::mat4 model_obj(1.0f);
+      model_obj = glm::scale(model_obj, glm::vec3(3.0f, 3.0f, 3.0f));
+
       glm::mat4 view = camera.GetViewMatrix();
 
       glm::mat4 projection = glm::perspective(glm::radians(camera.GetZoom()),
@@ -327,6 +419,7 @@ int main(int argc, char* argv[]) {
 
       shader.SetMatrix4fv("view", glm::value_ptr(view));
       shader.SetMatrix4fv("projection", glm::value_ptr(projection));
+      shader.SetMatrix4fv("model", glm::value_ptr(m_model));
 
       // bind textures
       glActiveTexture(GL_TEXTURE0);
@@ -337,6 +430,14 @@ int main(int argc, char* argv[]) {
       glBindTexture(GL_TEXTURE_2D, texture2);
       shader.SetInt("texture2", 1);
 
+      // mesh.Draw(shader);
+
+      // m.Draw(shader);
+
+      mesh_rect.Draw(shader);
+      mesh_tri.Draw(shader);
+
+      /*
       // bind VAO data with vertex buffer, attributes and elements
       glBindVertexArray(VAO);
 
@@ -347,11 +448,11 @@ int main(int argc, char* argv[]) {
         // model_obj = glm::rotate(model_obj, rot_angle,
         //       glm::vec3(1.0f, 0.3f, 0.5f));
         shader.SetMatrix4fv("model", glm::value_ptr(model_obj));
-
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         // glDrawElements(GL_LINES, 6, GL_UNSIGNED_INT, 0);
 
       }
+      */
 
       // glDrawArrays(GL_TRIANGLES, 0, 6);
       // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -362,9 +463,9 @@ int main(int argc, char* argv[]) {
   }
 
   // clear gl objects
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
-  glDeleteBuffers(1, &EBO);
+  // glDeleteVertexArrays(1, &VAO);
+  // glDeleteBuffers(1, &VBO);
+  // glDeleteBuffers(1, &EBO);
 
 
   glfwTerminate();

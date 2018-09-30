@@ -13,6 +13,7 @@ void main() {
   // FragColor = vertexColor * ourColor;
   vec4 col1 = texture(texture1, TexCoord);
   vec4 col2 = texture(texture2, TexCoord);
-  FragColor = mix(col1, col2, ourColor.x);
+  // FragColor = mix(col1, col2, ourColor.x) * 0.8 + 0.2;
   // FragColor = ourColor;
+  FragColor = vec4(1.0f);
 }

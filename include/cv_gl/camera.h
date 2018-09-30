@@ -31,6 +31,9 @@ class Camera {
   glm::mat4 GetViewMatrix() const;
   float GetZoom() const;
 
+  void SetDirection(const glm::vec3& direction_to);
+  void SetPosition(const glm::vec3& position);
+
 
  private:
    glm::vec3 position_;
