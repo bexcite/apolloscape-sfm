@@ -114,6 +114,32 @@ std::shared_ptr<Mesh> MakeTriangle() {
   return std::make_shared<Mesh>(vertices_mesh, indices_mesh, textures_mesh);
 }
 
+std::shared_ptr<Mesh> MakeFloor(const double step_size,
+    const unsigned int line_num) {
+  const float shift_x = - (step_size * line_num) / 2;
+  const float shift_z = shift_x;
+  const float far_edge = step_size * line_num;
+  std::vector<Vertex> vertices((line_num + 1) * 4);
+  std::vector<unsigned int> indices;
+  std::vector<Texture> textures;
+
+  // Fill vertices
+  for (unsigned int i = 0; i <= line_num; ++i) {
+    Vertex v1 = {glm::vec3(step_size * i + shift_x, 0.0f, 0.0f + shift_z)};
+    Vertex v2 = {glm::vec3(step_size * i + shift_x, 0.0f, far_edge + shift_z)};
+    vertices.emplace_back(v1);
+    vertices.emplace_back(v2);
+    v1 = {glm::vec3(0.0f + shift_x, 0.0f, step_size * i + shift_z)};
+    v2 = {glm::vec3(far_edge + shift_x, 0.0f, step_size * i + shift_z)};
+    vertices.emplace_back(v1);
+    vertices.emplace_back(v2);
+  }
+
+  auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
+  mesh->SetMeshType(MeshType::LINES);
+  return mesh;
+}
+
 
 
 
@@ -221,9 +247,17 @@ int main(int argc, char* argv[]) {
 
 
   std::shared_ptr<Mesh> mesh_rect = MakeRect();
+  mesh_rect->indices = {};
+  mesh_rect->SetMeshType(MeshType::LINES);
+
   std::shared_ptr<Mesh> mesh_tri = MakeTriangle();
   std::cout << "mesh_rect (init) = " << mesh_rect << std::endl;
   std::cout << "mesh_tri (init) = " << mesh_tri << std::endl;
+
+  auto mesh_floor = MakeFloor(1.0, 20);
+  std::cout << "mesh_floor (init) = " << mesh_floor << std::endl;
+
+
 
   // m.meshes_.emplace_back(mesh_tri);
   // m.meshes_.emplace_back(mesh_rect);
@@ -455,6 +489,7 @@ int main(int argc, char* argv[]) {
 
     mesh_rect->Draw(shader);
     mesh_tri->Draw(shader);
+    mesh_floor->Draw(shader);
 
     /* ====== LOADED MODEL =================== */
 
@@ -497,7 +532,7 @@ int main(int argc, char* argv[]) {
     model_rock.Draw(shader_model);
 
 
-    
+
 
 
     // mesh.Draw(shader);

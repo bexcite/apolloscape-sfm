@@ -5,7 +5,7 @@
 
 Mesh::Mesh(const std::vector<Vertex>& vertices,
      const std::vector<unsigned int>& indices,
-     const std::vector<Texture>& textures) {
+     const std::vector<Texture>& textures) : mesh_type_(MeshType::TRIANGLES) {
 
   this->vertices = vertices;
   this->indices = indices;
@@ -49,12 +49,19 @@ Mesh::Draw(const Shader& shader) {
     shader.SetInt(name + number, i);
   }
 
-
-
-
   // draw mesh
   glBindVertexArray(vao_);
-  glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+  if (mesh_type_ == MeshType::TRIANGLES) {
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+  } else if (mesh_type_ == MeshType::LINES) {
+    if (!indices.empty()) {
+      glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
+    } else {
+      glDrawArrays(GL_LINES, 0, vertices.size());
+    }
+  }
+
   glBindVertexArray(0);
 }
 

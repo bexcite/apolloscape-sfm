@@ -12,6 +12,8 @@
 
 #include "cv_gl/shader.h"
 
+enum class MeshType {LINES, TRIANGLES};
+
 struct Vertex {
   glm::vec3 position;
   glm::vec3 normal;
@@ -30,6 +32,8 @@ class Mesh {
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
 
+  void SetMeshType(const MeshType& mesh_type) { mesh_type_ = mesh_type; }
+
   Mesh(const std::vector<Vertex>& vertices,
        const std::vector<unsigned int>& indices,
        const std::vector<Texture>& textures);
@@ -45,6 +49,7 @@ class Mesh {
 
 private:
   unsigned int vao_, vbo_, ebo_;
+  MeshType mesh_type_;
   void SetupMesh();
 
 
