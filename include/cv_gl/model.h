@@ -121,7 +121,7 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
 
 
   // process material
-  if (mesh->mMaterialIndex > 0) {
+  // if (mesh->mMaterialIndex > 0) {
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
     std::vector<Texture> diffuse_maps = LoadMaterialTextures(material,
         aiTextureType_DIFFUSE, "texture_diffuse");
@@ -132,11 +132,9 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
         aiTextureType_SPECULAR, "texture_specular");
     std::cout << "specular_maps = " << specular_maps.size() << std::endl;
     textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
-  }
+  // }
 
-  auto msh = std::make_shared<Mesh>(vertices, indices, textures);
-
-  return msh;
+  return std::make_shared<Mesh>(vertices, indices, textures);
 }
 
 std::vector<Texture>

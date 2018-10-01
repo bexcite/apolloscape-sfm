@@ -54,6 +54,7 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const Vertex& vertex);
 std::ostream& operator<<(std::ostream& os, const Mesh& mesh);
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Mesh>& mesh);
 
 
 

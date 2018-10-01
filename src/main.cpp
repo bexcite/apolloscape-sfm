@@ -171,6 +171,10 @@ int main(int argc, char* argv[]) {
     "../shaders/one.vs",
     "../shaders/one.fs");
 
+  Shader shader_model(
+    "../shaders/one.vs",
+    "../shaders/one_model.fs");
+
   Vertex v = {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}};
   std::cout << "Test V: " << v << std::endl;
 
@@ -429,14 +433,14 @@ int main(int argc, char* argv[]) {
         (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
 
 
-    shader.SetMatrix4fv("view", glm::value_ptr(view_matrix));
-    shader.SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
-
     /* ====== MY RECT =================== */
     float greenValue = (sin(timeValue) / 2.0f + 0.5f);
 
     shader.Use();
     shader.SetVector4f("ourColor", greenValue, greenValue, greenValue, 1.0f);
+
+    shader.SetMatrix4fv("view", glm::value_ptr(view_matrix));
+    shader.SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
 
     shader.SetMatrix4fv("model", glm::value_ptr(model_matrix));
 
@@ -449,43 +453,51 @@ int main(int argc, char* argv[]) {
     glBindTexture(GL_TEXTURE_2D, texture2);
     shader.SetInt("texture2", 1);
 
-    // mesh_rect->Draw(shader);
-    // mesh_tri->Draw(shader);
+    mesh_rect->Draw(shader);
+    mesh_tri->Draw(shader);
 
     /* ====== LOADED MODEL =================== */
+
+    shader_model.Use();
+
+    shader_model.SetMatrix4fv("view", glm::value_ptr(view_matrix));
+    shader_model.SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
+
     glm::mat4 model_matrix_nanosuit(1.0f);
     model_matrix_nanosuit = glm::translate(model_matrix_nanosuit, glm::vec3(0.0f, 0.0f, -6.0f));
     model_matrix_nanosuit = glm::scale(model_matrix_nanosuit, glm::vec3(0.2f, 0.2f, 0.2f));
     // model_matrix_nanosuit = glm::scale(model_matrix_nanosuit, glm::vec3(1.0f, 1.0f, 1.0f));
     model_matrix_nanosuit = glm::rotate(model_matrix_nanosuit, glm::radians(90.0f),
         glm::vec3(0.0f, 1.0f, 0.0f));
-    shader.SetMatrix4fv("model", glm::value_ptr(model_matrix_nanosuit));
-    model_nanosuit.Draw(shader);
+    shader_model.SetMatrix4fv("model", glm::value_ptr(model_matrix_nanosuit));
+    model_nanosuit.Draw(shader_model);
 
     glm::mat4 model_matrix_cyborg(1.0f);
     model_matrix_cyborg = glm::translate(model_matrix_cyborg, glm::vec3(5.0f, 0.0f, -6.0f));
     model_matrix_cyborg = glm::scale(model_matrix_cyborg, glm::vec3(1.0f, 1.0f, 1.0f));
     // model_matrix_cyborg = glm::rotate(model_matrix_cyborg, glm::radians(90.0f),
     //     glm::vec3(0.0f, 1.0f, 0.0f));
-    shader.SetMatrix4fv("model", glm::value_ptr(model_matrix_cyborg));
-    model_cyborg.Draw(shader);
+    shader_model.SetMatrix4fv("model", glm::value_ptr(model_matrix_cyborg));
+    model_cyborg.Draw(shader_model);
 
     glm::mat4 model_matrix_planet(1.0f);
     model_matrix_planet = glm::translate(model_matrix_planet, glm::vec3(-5.0f, 0.0f, -6.0f));
     model_matrix_planet = glm::scale(model_matrix_planet, glm::vec3(1.0f, 1.0f, 1.0f));
     // model_matrix_planet = glm::rotate(model_matrix_planet, glm::radians(90.0f),
     //     glm::vec3(0.0f, 1.0f, 0.0f));
-    shader.SetMatrix4fv("model", glm::value_ptr(model_matrix_planet));
-    model_planet.Draw(shader);
+    shader_model.SetMatrix4fv("model", glm::value_ptr(model_matrix_planet));
+    model_planet.Draw(shader_model);
 
     glm::mat4 model_matrix_rock(1.0f);
     model_matrix_rock = glm::translate(model_matrix_rock, glm::vec3(10.0f, 0.0f, -6.0f));
     model_matrix_rock = glm::scale(model_matrix_rock, glm::vec3(1.0f, 1.0f, 1.0f));
     // model_matrix_rock = glm::rotate(model_matrix_rock, glm::radians(90.0f),
     //     glm::vec3(0.0f, 1.0f, 0.0f));
-    shader.SetMatrix4fv("model", glm::value_ptr(model_matrix_rock));
-    model_rock.Draw(shader);
+    shader_model.SetMatrix4fv("model", glm::value_ptr(model_matrix_rock));
+    model_rock.Draw(shader_model);
 
+
+    
 
 
     // mesh.Draw(shader);

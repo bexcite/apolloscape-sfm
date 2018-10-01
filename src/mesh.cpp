@@ -30,6 +30,28 @@ Mesh Mesh::operator=(const Mesh& mesh) {
 
 void
 Mesh::Draw(const Shader& shader) {
+
+  // setup textures
+  unsigned int diffuse_num = 1;
+  unsigned int specular_num = 1;
+  for (unsigned int i = 0; i < textures.size(); ++i) {
+    glActiveTexture(GL_TEXTURE0 + i);
+
+    std::string number;
+    std::string name = textures[i].type;
+    if (name == "texture_diffuse") {
+      number = std::to_string(diffuse_num++);
+    } else if (name == "texture_specular") {
+      number = std::to_string(specular_num++);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, textures[i].id);
+    shader.SetInt(name + number, i);
+  }
+
+
+
+
   // draw mesh
   glBindVertexArray(vao_);
   glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
