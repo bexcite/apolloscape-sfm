@@ -54,20 +54,20 @@ Model::LoadModel(const std::string& path) {
     return;
   }
   directory_ = path.substr(0, path.find_last_of('/'));
-  std::cout << "directory_ = " << directory_ << std::endl;
+  // std::cout << "directory_ = " << directory_ << std::endl;
   ProcessNode(scene->mRootNode, scene);
-  std::cout << "MODEL LOADED" << std::endl;
+  std::cout << "MODEL LOADED: " << path << std::endl;
 }
 
 void
 Model::ProcessNode(const aiNode *node, const aiScene *scene) {
-  std::cout << "Process NODE: m=" << node->mNumMeshes
-      << ", c=" << node->mNumChildren << std::endl;
+  // std::cout << "Process NODE: m=" << node->mNumMeshes
+      // << ", c=" << node->mNumChildren << std::endl;
   for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
     aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
     meshes_.emplace_back(ProcessMesh(mesh, scene));
   }
-  std::cout << "Meshes.size = " << meshes_.size() << std::endl;
+  // std::cout << "Meshes.size = " << meshes_.size() << std::endl;
 
   for (unsigned int i = 0; i < node->mNumChildren; ++i) {
     this->ProcessNode(node->mChildren[i], scene);
@@ -76,7 +76,7 @@ Model::ProcessNode(const aiNode *node, const aiScene *scene) {
 
 std::shared_ptr<Mesh>
 Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
-  std::cout << "Process MESH" << std::endl;
+  // std::cout << "Process MESH" << std::endl;
   std::vector<Vertex> vertices;
   std::vector<Texture> textures;
   std::vector<unsigned int> indices;
@@ -104,7 +104,7 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
     vertices.emplace_back(vertex);
   }
 
-  std::cout << "v: " << vertices.size() << std::endl;
+  // std::cout << "v: " << vertices.size() << std::endl;
 
   // process indices
 
@@ -117,7 +117,7 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
     }
   }
 
-  std::cout << "i: " << indices.size() << std::endl;
+  // std::cout << "i: " << indices.size() << std::endl;
 
 
   // process material
@@ -125,12 +125,12 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
     std::vector<Texture> diffuse_maps = LoadMaterialTextures(material,
         aiTextureType_DIFFUSE, "texture_diffuse");
-    std::cout << "difuse_maps = " << diffuse_maps.size() << std::endl;
+    // std::cout << "difuse_maps = " << diffuse_maps.size() << std::endl;
     textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
 
     std::vector<Texture> specular_maps = LoadMaterialTextures(material,
         aiTextureType_SPECULAR, "texture_specular");
-    std::cout << "specular_maps = " << specular_maps.size() << std::endl;
+    // std::cout << "specular_maps = " << specular_maps.size() << std::endl;
     textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
   // }
 
@@ -145,8 +145,8 @@ Model::LoadMaterialTextures(const aiMaterial *material,
   for(unsigned int i = 0; i < material->GetTextureCount(type); ++i) {
     aiString str;
     material->GetTexture(type, i, &str);
-    std::cout << "Got texture: " << std::string(str.C_Str())
-        << " (" << type_name << ")" << std::endl;
+    // std::cout << "Got texture: " << std::string(str.C_Str())
+    //     << " (" << type_name << ")" << std::endl;
 
     bool skip = false;
     for (unsigned int j = 0; j < textures_loaded_.size(); ++j) {
@@ -184,7 +184,7 @@ unsigned int TextureFromFile(const char* path, const std::string& directory,
 
   std::string filename = std::string(path);
   filename = directory + "/" + filename;
-  std::cout << "filename = " << filename << std::endl;
+  // std::cout << "filename = " << filename << std::endl;
 
   unsigned int texture_id;
   glGenTextures(1, &texture_id);

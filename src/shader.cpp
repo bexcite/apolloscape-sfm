@@ -98,6 +98,13 @@ Shader::SetVector4f(const std::string& uniform_name, const float v1,
 }
 
 void
+Shader::SetVector4fv(const std::string& uniform_name, float* vec) const {
+  int uniform_location = glGetUniformLocation(id_, uniform_name.c_str());
+  glUniform4fv(uniform_location, 1, vec);
+}
+
+
+void
 Shader::SetInt(const std::string& uniform_name, const int v) const {
   int uniform_location = glGetUniformLocation(id_, uniform_name.c_str());
   glUniform1i(uniform_location, v);

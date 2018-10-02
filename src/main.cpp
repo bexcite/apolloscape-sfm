@@ -88,7 +88,7 @@ void test_mesh() {
 }
 
 
-Camera camera(glm::vec3(2.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(2.0f, 1.0f, 3.0f));
 
 
 std::shared_ptr<Mesh> MakeRect() {
@@ -201,6 +201,10 @@ int main(int argc, char* argv[]) {
     "../shaders/one.vs",
     "../shaders/one_model.fs");
 
+  Shader shader_color(
+    "../shaders/one.vs",
+    "../shaders/one_color.fs");
+
   Vertex v = {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}};
   std::cout << "Test V: " << v << std::endl;
 
@@ -247,9 +251,6 @@ int main(int argc, char* argv[]) {
 
 
   std::shared_ptr<Mesh> mesh_rect = MakeRect();
-  mesh_rect->indices = {};
-  mesh_rect->SetMeshType(MeshType::LINES);
-
   std::shared_ptr<Mesh> mesh_tri = MakeTriangle();
   std::cout << "mesh_rect (init) = " << mesh_rect << std::endl;
   std::cout << "mesh_tri (init) = " << mesh_tri << std::endl;
@@ -475,7 +476,6 @@ int main(int argc, char* argv[]) {
 
     shader.SetMatrix4fv("view", glm::value_ptr(view_matrix));
     shader.SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
-
     shader.SetMatrix4fv("model", glm::value_ptr(model_matrix));
 
     // bind textures
@@ -489,7 +489,18 @@ int main(int argc, char* argv[]) {
 
     mesh_rect->Draw(shader);
     mesh_tri->Draw(shader);
-    mesh_floor->Draw(shader);
+
+    /* ============= FLOOR ====================== */
+    shader_color.Use();
+
+    shader_color.SetMatrix4fv("view", glm::value_ptr(view_matrix));
+    shader_color.SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
+    shader_color.SetMatrix4fv("model", glm::value_ptr(model_matrix));
+
+    glm::vec4 floor_color = glm::vec4(0.7f, 0.7f, 1.0f, 1.0f);
+
+    shader_color.SetVector4fv("color", glm::value_ptr(floor_color));
+    mesh_floor->Draw(shader_color);
 
     /* ====== LOADED MODEL =================== */
 
