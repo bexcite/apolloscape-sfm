@@ -21,9 +21,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-// #define STB_IMAGE_IMPLEMENTATION
-// #include <stb_image.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -63,15 +60,10 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
 
-
-
 // #define TEST_ENABLE
 
 void test_mesh() {
-  // Shader shader(
-  //   "../shaders/one.vs",
-  //   "../shaders/one.fs");
-  // shader.PrintHello();
+
   std::cout << "hello from mesh testing" << std::endl;
   Vertex v = {.position = {0.0f, 0.0f, 0.0f}};
   std::vector<Vertex> vertices = {
@@ -205,43 +197,6 @@ int main(int argc, char* argv[]) {
     "../shaders/one.vs",
     "../shaders/one_color.fs");
 
-  Vertex v = {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}};
-  std::cout << "Test V: " << v << std::endl;
-
-
-  // std::vector<Vertex> vertices_mesh = {
-  //   {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-  //   {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-  //   {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-  //   {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-  // };
-  // std::vector<unsigned int> indices_mesh = {0, 1, 3, 1, 2, 3};
-  // std::vector<Texture> textures_mesh;
-  // Mesh mesh(vertices_mesh, indices_mesh, textures_mesh);
-
-
-  /*
-  // setup vertex data
-  float vertices[] = {
-    // coords 3         // color 3         // tex coords 2
-     0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // top right 0
-     0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,  // bottom right 1
-    -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // bottom left 2
-    -0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.4f, 0.6f   // top left 3
-    // 0.0f, 0.75f, 0.0f, 0.0f, 1.0f, 0.0f,   // center top 4
-    // 0.0f, -0.75f, 0.0f, 0.0f, 0.0f, 1.0f   // center bottom 5
-  };
-
-  unsigned int indices[] = {
-    0, 1, 3,
-    1, 2, 3
-  };
-  */
-
-
-  // glm::mat4 m_model(1.0f);
-  // m_model = glm::scale(m_model, glm::vec3(0.1f, 0.1f, 0.1f));
-
 
   // Load model
   Model model_nanosuit("../data/objects/nanosuit/nanosuit.obj");
@@ -258,69 +213,6 @@ int main(int argc, char* argv[]) {
   auto mesh_floor = MakeFloor(1.0, 20);
   std::cout << "mesh_floor (init) = " << mesh_floor << std::endl;
 
-
-
-  // m.meshes_.emplace_back(mesh_tri);
-  // m.meshes_.emplace_back(mesh_rect);
-
-  // std::cout << "mesh_rect (late) = " << mesh_rect << std::endl;
-  // std::cout << "mesh_tri (late) = " << mesh_tri << std::endl;
-
-
-
-  // std::cout << "MODEL MESHES: " << m.meshes_.size() << std::endl;
-  //
-  // Mesh msh = m.meshes_[0];
-  // for (unsigned int i = 0; i < msh.vertices.size(); ++i) {
-  //   std::cout << "mv: "
-  //       << glm::to_string(m_model * glm::vec4(msh.vertices[i].position, 1.0f))
-  //       << std::endl;
-  //   if (i < msh.indices.size()) {
-  //     std::cout << "mi: " << msh.indices[i] << std::endl;
-  //   }
-  // }
-
-
-
-  // camera.SetPosition(glm::vec3(-2.785094f, 39.048775f, -4.100138f));
-  // camera.SetDirection(msh.vertices[0].position);
-
-  // camera.SetDirection(glm::vec3(2.0f, 0.0f, -1.0f));
-
-/*
-  unsigned int VBO, VAO, EBO;
-
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
-
-  glBindVertexArray(VAO);
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-      GL_STATIC_DRAW);
-
-  // position attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-      (void*)0);
-  glEnableVertexAttribArray(0);
-
-  //color attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-      (void*)(3 * sizeof(float)));
-  glEnableVertexAttribArray(1);
-
-  //tex coords
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-      (void*)(6 * sizeof(float)));
-  glEnableVertexAttribArray(2);
-
-  // Ubind buffer
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-*/
 
   /* ==================================== */
   /* ======= SETUP ROAD TEXTURES ======== */
@@ -382,38 +274,15 @@ int main(int argc, char* argv[]) {
   std::cout << "Textures: " << texture1 << ", " << texture2 << std::endl;
 
 
+
+
   /* ===== COMMON DRAWING PARAMS ============== */
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_DEPTH_TEST);
 
 
-
-
-  /* ===== SHADER =============*/
-  // shader.Use();
-
-  // set texture locations
-  // shader.SetInt("texture1", 0);
-  // shader.SetInt("texture2", 1);
-
-
-
-  // unsigned int n_pos = 10;
-  // glm::vec3 positions[] = {
-  //   glm::vec3( 0.0f,  0.0f,  0.0f),
-  //   glm::vec3( 2.0f,  5.0f, -15.0f),
-  //   glm::vec3(-1.5f, -2.2f, -2.5f),
-  //   glm::vec3(-3.8f, -2.0f, -12.3f),
-  //   glm::vec3( 2.4f, -0.4f, -3.5f),
-  //   glm::vec3(-1.7f,  3.0f, -7.5f),
-  //   glm::vec3( 1.3f, -2.0f, -2.5f),
-  //   glm::vec3( 1.5f,  2.0f, -2.5f),
-  //   glm::vec3( 1.5f,  0.2f, -1.5f),
-  //   glm::vec3(-1.3f,  1.0f, -1.5f)
-  // };
-
   /* =========================================== */
-  /* =========== Rendering Loop ================ */
+  /* =========== Main Render Loop ============== */
   /* =========================================== */
 
   float timeSince = 0;
@@ -438,26 +307,10 @@ int main(int argc, char* argv[]) {
     glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // std::cout << "delta_time = " << delta_time << std::endl;
-    // std::cout << "getTime = " << timeValue << std::endl;
-
 
     /* ======================= */
     /* ======= RENDER ======== */
     /* ======================= */
-
-
-    // glm::mat4 transform;
-    // transform = glm::rotate(trans, static_cast<float>(timeValue),
-    //     glm::vec3(0.0, 0.0, 1.0));
-
-    glm::mat4 model(1.0f);
-    // float rotation_angle = timeValue * glm::radians(50.0f);
-    // model = glm::rotate(model, rotation_angle,
-    //     glm::vec3(0.5f, 1.0f, 0.0f));
-    // shader.SetMatrix4fv("model", glm::value_ptr(model));
-
-    // view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
 
     glm::mat4 model_matrix(1.0f);
     model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));
@@ -490,6 +343,7 @@ int main(int argc, char* argv[]) {
     mesh_rect->Draw(shader);
     mesh_tri->Draw(shader);
 
+
     /* ============= FLOOR ====================== */
     shader_color.Use();
 
@@ -502,8 +356,8 @@ int main(int argc, char* argv[]) {
     shader_color.SetVector4fv("color", glm::value_ptr(floor_color));
     mesh_floor->Draw(shader_color);
 
-    /* ====== LOADED MODEL =================== */
 
+    /* ====== LOADED MODEL =================== */
     shader_model.Use();
 
     shader_model.SetMatrix4fv("view", glm::value_ptr(view_matrix));
@@ -543,45 +397,10 @@ int main(int argc, char* argv[]) {
     model_rock.Draw(shader_model);
 
 
-
-
-
-    // mesh.Draw(shader);
-
-
-
-    // mesh_rect->Draw(shader);
-    // mesh_tri->Draw(shader);
-
-    /*
-    // bind VAO data with vertex buffer, attributes and elements
-    glBindVertexArray(VAO);
-
-    for (unsigned int i = 0; i < n_pos; ++i) {
-      glm::mat4 model_obj(1.0f);
-      model_obj = glm::translate(model, positions[i]);
-      // float rot_angle = 20.0f * i + rotation_angle;
-      // model_obj = glm::rotate(model_obj, rot_angle,
-      //       glm::vec3(1.0f, 0.3f, 0.5f));
-      shader.SetMatrix4fv("model", glm::value_ptr(model_obj));
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-      // glDrawElements(GL_LINES, 6, GL_UNSIGNED_INT, 0);
-
-    }
-    */
-
-    // glDrawArrays(GL_TRIANGLES, 0, 6);
-    // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
     // Flip Buffers and Draw
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
-
-  // clear gl objects
-  // glDeleteVertexArrays(1, &VAO);
-  // glDeleteBuffers(1, &VBO);
-  // glDeleteBuffers(1, &EBO);
 
 
   glfwTerminate();
