@@ -29,7 +29,7 @@ Mesh Mesh::operator=(const Mesh& mesh) {
 }
 
 void
-Mesh::Draw(const Shader& shader) {
+Mesh::Draw(const std::shared_ptr<Shader>& shader) {
 
   // setup textures
   unsigned int diffuse_num = 1;
@@ -46,7 +46,7 @@ Mesh::Draw(const Shader& shader) {
     }
 
     glBindTexture(GL_TEXTURE_2D, textures[i].id);
-    shader.SetInt(name + number, i);
+    shader->SetInt(name + number, i);
   }
 
   // draw mesh

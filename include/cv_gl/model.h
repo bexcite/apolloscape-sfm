@@ -27,7 +27,7 @@ public:
   Model(const std::string& path) {
     LoadModel(path);
   }
-  void Draw(const Shader& shader);
+  void Draw(const std::shared_ptr<Shader>& shader);
   std::vector<std::shared_ptr<Mesh> > meshes_;
 private:
   std::string directory_;
@@ -172,7 +172,7 @@ Model::LoadMaterialTextures(const aiMaterial *material,
 }
 
 void
-Model::Draw(const Shader& shader) {
+Model::Draw(const std::shared_ptr<Shader>& shader) {
   // std::cout << "MODEL:DRAW:MESHES = " << meshes_.size() << std::endl;
   for (unsigned int i = 0; i < meshes_.size(); ++i) {
     meshes_[i]->Draw(shader);
