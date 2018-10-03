@@ -29,6 +29,7 @@ class Camera {
   void ProcessMouseScroll(float yoffset);
 
   glm::mat4 GetViewMatrix() const;
+  glm::mat4 GetProjMatrix() const;
   float GetZoom() const;
 
   void SetDirection(const glm::vec3& direction_to);

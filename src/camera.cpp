@@ -33,6 +33,57 @@ glm::mat4 Camera::GetViewMatrix() const {
   return glm::lookAt(position_, position_ + front_, up_);
 }
 
+glm::mat4 Camera::GetProjMatrix() const {
+  // My matrix
+  float fx = 1450.317230113;
+  float fy=1451.184836113;
+  float cx=1244.386581025;
+  float cy=1013.145997723;
+  float width = 2452;
+  float height = 2056;
+
+  float near = 0.1;
+  float far = 100;
+
+  glm::mat4 persp1;
+  persp1[0] = glm::vec4(fx / width, 0.0f, 0.0f, 0.0f);
+  persp1[1] = glm::vec4(0.0f, fy / height, 0.0f, 0.0f);
+  persp1[2] = glm::vec4(-cx / width, -cy / height, near + far, -1.0f);
+  persp1[3] = glm::vec4(0.0f, 0.0f, near * far, 0.0f);
+
+  // std::cout << "persp1 = " << persp1 << std::endl;
+
+
+
+  // glm::vec4 p_eye = {1.1f, 1.1f, -2.0f, 1.0f};
+  //
+  // glm::vec4 p_proj = persp1 * p_eye;
+  //
+  // std::cout << "p_proj_w = " << p_proj << std::endl;
+  //
+  // p_proj = p_proj / p_proj[3];
+  // std::cout << "p_proj = " << p_proj << std::endl;
+
+  glm::mat4 ortho1;
+  ortho1[0] = glm::vec4(2.0f, 0.0f, 0.0f, 0.0f);
+  ortho1[1] = glm::vec4(0.0f, 2.0f, 0.0f, 0.0f);
+  ortho1[2] = glm::vec4(0.0f, 0.0f, - 2.0f / (far - near), 0.0f);
+  ortho1[3] = glm::vec4(-1.0f, -1.0f, - (far + near) / (far - near), 1.0f);
+
+  // std::cout << "ortho = " << ortho1 << std::endl;
+
+  glm::mat4 persp_full = ortho1 * persp1;
+  // std::cout << "persp_full = " << persp_full << std::endl;
+  //
+  // glm::vec4 p_ndc;
+  // p_ndc = ortho1 * p_proj;
+  // p_ndc = p_ndc / p_ndc[3];
+  // std::cout << "p_ndc = " << p_ndc << std::endl;
+
+  return persp_full;
+
+}
+
 float Camera::GetZoom() const {
   return zoom_;
 }

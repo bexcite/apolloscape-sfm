@@ -17,6 +17,9 @@
 // A trip through the Graphics Pipeline 2011: Index [IN-DEPTH]
 // https://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/
 
+// Stereo calibration using C++ and OpenCV
+// https://sourishghosh.com/2016/stereo-calibration-cpp-opencv/
+
 // System Headers
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -35,6 +38,7 @@
 #include <cmath>
 
 #include <iostream>
+#include <iomanip>
 #include <memory>
 
 #include "cv_gl/shader.h"
@@ -44,8 +48,13 @@
 
 
 // Define Some Constants
-const int kWindowWidth = 1280;
-const int kWindowHeight = 800;
+// const int kWindowWidth = 1280;
+// const int kWindowHeight = 800;
+
+
+const int kWindowWidth = 1226;
+const int kWindowHeight = 1028;
+
 
 float last_x = kWindowWidth / 2;
 float last_y = kWindowHeight / 2;
@@ -59,28 +68,98 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
-
-// #define TEST_ENABLE
-
-void test_mesh() {
-
-  std::cout << "hello from mesh testing" << std::endl;
-  Vertex v = {.position = {0.0f, 0.0f, 0.0f}};
-  std::vector<Vertex> vertices = {
-    {{0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-    {{-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-  };
-  std::vector<unsigned int> indices = {0, 1, 3, 1, 2, 3};
-  std::vector<Texture> textures;
-  Mesh mesh(vertices, indices, textures);
-  std::cout << "print = " << glm::to_string(vertices[0].position) << std::endl;
-  std::cout << "print 2 = " << *(((float *)&vertices[0]) + 15) << std::endl;
-}
+std::ostream& operator<<(std::ostream& os, const glm::mat4 mat);
+std::ostream& operator<<(std::ostream& os, const glm::vec4 vec);
 
 
 Camera camera(glm::vec3(2.0f, 1.0f, 3.0f));
+
+
+// #define TEST_ENABLE
+
+void test_camera() {
+
+  glm::mat4 persp;
+  persp[0] = glm::vec4(0.5f, 0.0f, 0.0f, 0.0f);
+  persp[1] = glm::vec4(0.0f, 0.5f, 0.0f, 0.0f);
+  persp[2] = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+  persp[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+  glm::vec3 point = {1.0f, 0.0f, 10.0f};
+  glm::vec4 p = glm::vec4(point, 1.0f);
+
+  std::cout << "hello from camera testing" << std::endl;
+
+  std::cout << "persp = " << glm::to_string(persp) << std::endl;
+  std::cout << "p = " << glm::to_string(p) << std::endl;
+
+  glm::vec4 result = persp * p;
+
+  std::cout << "result = " << glm::to_string(result) << std::endl;
+
+  glm::mat4 view_mat = camera.GetViewMatrix();
+  std::cout << "view_matrix = " << glm::to_string(view_mat) << std::endl;
+
+  glm::mat4 proj_mat = glm::perspective(glm::radians(camera.GetZoom()),
+      (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
+
+  std::cout << "projection_matrix = " << proj_mat << std::endl;
+
+  // My matrix
+  float fx = 1450.317230113;
+  float fy=1451.184836113;
+  float cx=1244.386581025;
+  float cy=1013.145997723;
+  float width = 2452;
+  float height = 2056;
+
+  float near = 0.1;
+  float far = 100;
+
+  glm::mat4 persp1;
+  persp1[0] = glm::vec4(fx / width, 0.0f, 0.0f, 0.0f);
+  persp1[1] = glm::vec4(0.0f, fy / height, 0.0f, 0.0f);
+  persp1[2] = glm::vec4(-cx / width, -cy / height, near + far, -1.0f);
+  persp1[3] = glm::vec4(0.0f, 0.0f, near * far, 0.0f);
+
+  std::cout << "persp1 = " << persp1 << std::endl;
+
+
+
+  glm::vec4 p_eye = {1.1f, 1.1f, -2.0f, 1.0f};
+
+  glm::vec4 p_proj = persp1 * p_eye;
+
+  std::cout << "p_proj_w = " << p_proj << std::endl;
+
+  p_proj = p_proj / p_proj[3];
+  std::cout << "p_proj = " << p_proj << std::endl;
+
+  glm::mat4 ortho1;
+  ortho1[0] = glm::vec4(2.0f, 0.0f, 0.0f, 0.0f);
+  ortho1[1] = glm::vec4(0.0f, 2.0f, 0.0f, 0.0f);
+  ortho1[2] = glm::vec4(0.0f, 0.0f, - 2.0f / (far - near), 0.0f);
+  ortho1[3] = glm::vec4(-1.0f, -1.0f, - (far + near) / (far - near), 1.0f);
+
+  std::cout << "ortho = " << ortho1 << std::endl;
+
+  glm::mat4 persp_full = ortho1 * persp1;
+  std::cout << "persp_full = " << persp_full << std::endl;
+
+  glm::vec4 p_ndc;
+  p_ndc = ortho1 * p_proj;
+  p_ndc = p_ndc / p_ndc[3];
+  std::cout << "p_ndc = " << p_ndc << std::endl;
+
+  std::cout << "proj_matrix = " << camera.GetProjMatrix() << std::endl;
+
+
+
+
+}
+
+
+
 
 
 std::shared_ptr<Mesh> MakeRect() {
@@ -138,7 +217,7 @@ std::shared_ptr<Mesh> MakeFloor(const double step_size,
 int main(int argc, char* argv[]) {
 
 #ifdef TEST_ENABLE
-  test_mesh();
+  test_camera();
   // Rendering Loop
   /*
   while (glfwWindowShouldClose(window) == false) {
@@ -317,8 +396,10 @@ int main(int argc, char* argv[]) {
 
     glm::mat4 view_matrix = camera.GetViewMatrix();
 
-    glm::mat4 projection_matrix = glm::perspective(glm::radians(camera.GetZoom()),
-        (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
+    glm::mat4 projection_matrix = camera.GetProjMatrix();
+
+    // glm::mat4 projection_matrix = glm::perspective(glm::radians(camera.GetZoom()),
+    //     (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
 
 
     /* ====== MY RECT =================== */
@@ -446,4 +527,28 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
+}
+
+std::ostream& operator<<(std::ostream& os, const glm::mat4 mat) {
+  os << std::endl;
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      os << std::setprecision(3) << std::setw(6) << mat[j][i];
+      if (j < 3) {
+        os << ", ";
+      }
+    }
+    os << std::endl;
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const glm::vec4 vec) {
+  for (int j = 0; j < 4; ++j) {
+    os << std::setprecision(3) << std::setw(6) << vec[j];
+    if (j < 3) {
+      os << ", ";
+    }
+  }
+  return os;
 }
