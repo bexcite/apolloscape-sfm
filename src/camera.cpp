@@ -21,7 +21,7 @@ Camera::Camera(const glm::vec3& position,
       world_up_(world_up),
       yaw_(yaw),
       pitch_(pitch),
-      front_(glm::vec3(0.0f, 0.0f, -1.0f)),
+      front_(glm::vec3(1.0f, 0.0f, 0.0f)),
       movement_speed_(kSpeed),
       mouse_sensitivity_(kSensitivity),
       zoom_(kZoom)
@@ -98,6 +98,10 @@ void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
     position_ -= right_ * delta;
   } else if (camera_movement == RIGHT) {
     position_ += right_ * delta;
+  } else if (camera_movement == MOVE_ORIGIN) {
+    position_ = glm::vec3(-3.0f, 0.0f, 1.5f);
+    SetDirection(glm::vec3(0.0f));
+    UpdateCameraVectors();
   }
   // std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
   // std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
@@ -130,17 +134,26 @@ void Camera::UpdateCameraVectors(bool constrain_pitch) {
   }
 
   glm::vec3 front;
+
+  // front.x = cos(glm::radians(pitch_)) * cos(glm::radians(yaw_));
+  // front.y = sin(glm::radians(pitch_));
+  // front.z = - cos(glm::radians(pitch_)) * sin(glm::radians(yaw_));
+  // glm::vec3 front_orig;
+
   front.x = cos(glm::radians(pitch_)) * cos(glm::radians(yaw_));
-  front.y = sin(glm::radians(pitch_));
-  front.z = - cos(glm::radians(pitch_)) * sin(glm::radians(yaw_));
+  front.y = cos(glm::radians(pitch_)) * sin(glm::radians(yaw_));
+  front.z = sin(glm::radians(pitch_));
+
+
+
   front_ = glm::normalize(front);
 
   right_ = glm::normalize(glm::cross(front_, world_up_));
   up_ = glm::normalize(glm::cross(right_, front_));
 
-  // std::cout << "CAMERA: front_ = " << glm::to_string(front_) << std::endl;
-  // std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
-  // std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
+  std::cout << "CAMERA: front_ = " << glm::to_string(front_) << std::endl;
+  std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
+  std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
 
 
 }
@@ -148,8 +161,11 @@ void Camera::UpdateCameraVectors(bool constrain_pitch) {
 void Camera::SetDirection(const glm::vec3& direction_to) {
   glm::vec3 direction = glm::normalize(direction_to - position_);
   // std::cout << "CAMERA D: direction = " << glm::to_string(direction) << std::endl;
-  pitch_ = glm::degrees(asin(direction.y));
-  yaw_ = glm::degrees(atan2(-direction.z, direction.x));
+  // pitch_ = glm::degrees(asin(direction.y));
+  // yaw_ = glm::degrees(atan2(-direction.z, direction.x));
+
+  pitch_ = glm::degrees(asin(direction.z));
+  yaw_ = glm::degrees(atan2(direction.y, direction.x));
   // std::cout << "CAMERA D: p, y = " << pitch_ << ", " << yaw_ << std::endl;
   UpdateCameraVectors();
 }

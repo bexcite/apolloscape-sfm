@@ -8,12 +8,14 @@ enum CameraMovement {
   FORWARD,
   BACKWARD,
   LEFT,
-  RIGHT
+  RIGHT,
+
+  MOVE_ORIGIN
 };
 
 // camera constant
-const float kYaw = 90.0f;
-const float kPitch = -5.0f;
+const float kYaw = 0.0f;
+const float kPitch = 5.0f;  // -5.0f
 const float kSpeed = 2.5f;
 const float kSensitivity = 0.1f;
 const float kZoom = 45.0f;
@@ -21,7 +23,7 @@ const float kZoom = 45.0f;
 class Camera {
  public:
   Camera(const glm::vec3& position = glm::vec3(0.0f, 0.0f, 0.0f),
-      const glm::vec3& world_up = glm::vec3(0.0f, 1.0f, 0.0f),
+      const glm::vec3& world_up = glm::vec3(0.0f, 0.0f, 1.0f),
       float yaw = kYaw, float pitch = kPitch);
 
   void ProcessKeyboard(CameraMovement camera_movement, float delta_time);

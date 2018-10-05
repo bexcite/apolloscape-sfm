@@ -52,8 +52,8 @@
 // const int kWindowHeight = 800;
 
 
-const int kWindowWidth = 1226;
-const int kWindowHeight = 1028;
+const int kWindowWidth = 1226/2;
+const int kWindowHeight = 1028/2;
 
 
 float last_x = kWindowWidth / 2;
@@ -72,7 +72,7 @@ std::ostream& operator<<(std::ostream& os, const glm::mat4 mat);
 std::ostream& operator<<(std::ostream& os, const glm::vec4 vec);
 
 
-Camera camera(glm::vec3(2.0f, 1.0f, 3.0f));
+Camera camera(glm::vec3(-3.0f, 0.0f, 1.5f));
 
 
 // #define TEST_ENABLE
@@ -176,9 +176,9 @@ std::shared_ptr<Mesh> MakeRect() {
 
 std::shared_ptr<Mesh> MakeTriangle() {
   std::vector<Vertex> vertices_mesh = {
-    {{0.5f,  1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{0.5f, -1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-    {{-0.5f, -1.5f, -3.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}
+    {{0.5f,  1.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{0.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+    {{-0.5f, -1.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}
   };
   std::vector<unsigned int> indices_mesh = {0, 1, 2};
   std::vector<Texture> textures_mesh;
@@ -289,8 +289,14 @@ int main(int argc, char* argv[]) {
   std::cout << "mesh_rect (init) = " << mesh_rect << std::endl;
   std::cout << "mesh_tri (init) = " << mesh_tri << std::endl;
 
-  auto mesh_floor = MakeFloor(1.0, 20);
+  auto mesh_floor = MakeFloor(1.0, 32);
   std::cout << "mesh_floor (init) = " << mesh_floor << std::endl;
+
+  /* ===================================== */
+  /* =============== SETUP CAMERA ======== */
+  /* ===================================== */
+  camera.SetPosition(glm::vec3(-8.0f, -8.0f, 6.0f));
+  camera.SetDirection(glm::vec3(0.0f, 0.0f, 0.0f));
 
 
   /* ==================================== */
@@ -375,9 +381,9 @@ int main(int argc, char* argv[]) {
     // FPS calc and output
     float fps = 1.0f / (timeValue - timeSince);
     timeSince = timeValue;
-    if (frame % 100 == 0) {
-      std::cout << "FPS = " << fps << std::endl;
-    }
+    // if (frame % 100 == 0) {
+    //   std::cout << "FPS = " << fps << std::endl;
+    // }
     ++frame;
 
     processInput(window);
@@ -391,8 +397,14 @@ int main(int argc, char* argv[]) {
     /* ======= RENDER ======== */
     /* ======================= */
 
+    // rotate to world coords
     glm::mat4 model_matrix(1.0f);
-    model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));
+    model_matrix[0] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+    model_matrix[1] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
+    model_matrix[2] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+    model_matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    model_matrix = glm::transpose(model_matrix);
+    // model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));
 
     glm::mat4 view_matrix = camera.GetViewMatrix();
 
@@ -422,6 +434,12 @@ int main(int argc, char* argv[]) {
     shader->SetInt("texture2", 1);
 
     mesh_rect->Draw(shader);
+
+    glm::mat4 model_matrix_tri(1.0f);
+    model_matrix_tri = glm::translate(model_matrix_tri, glm::vec3(2.0f, 0.0f, 0.0f));
+    model_matrix_tri = model_matrix_tri * model_matrix;
+    // model_matrix_nanosuit = glm::translate(model_matrix_nanosuit, glm::vec3(0.0f, 0.0f, -6.0f));
+    shader->SetMatrix4fv("model", glm::value_ptr(model_matrix_tri));
     mesh_tri->Draw(shader);
 
 
@@ -445,35 +463,39 @@ int main(int argc, char* argv[]) {
     shader_model->SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
 
     glm::mat4 model_matrix_nanosuit(1.0f);
-    model_matrix_nanosuit = glm::translate(model_matrix_nanosuit, glm::vec3(0.0f, 0.0f, -6.0f));
+    model_matrix_nanosuit = glm::translate(model_matrix_nanosuit, glm::vec3(0.0f, -3.0f, 0.0f));
+    // model_matrix_nanosuit = glm::scale(model_matrix_nanosuit, glm::vec3(0.2f, 0.2f, 0.2f));
     model_matrix_nanosuit = glm::scale(model_matrix_nanosuit, glm::vec3(0.2f, 0.2f, 0.2f));
-    // model_matrix_nanosuit = glm::scale(model_matrix_nanosuit, glm::vec3(1.0f, 1.0f, 1.0f));
     model_matrix_nanosuit = glm::rotate(model_matrix_nanosuit, glm::radians(90.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::vec3(0.0f, 0.0f, 1.0f));
+    model_matrix_nanosuit = model_matrix_nanosuit * model_matrix;
     shader_model->SetMatrix4fv("model", glm::value_ptr(model_matrix_nanosuit));
     model_nanosuit.Draw(shader_model);
 
     glm::mat4 model_matrix_cyborg(1.0f);
-    model_matrix_cyborg = glm::translate(model_matrix_cyborg, glm::vec3(5.0f, 0.0f, -6.0f));
+    model_matrix_cyborg = glm::translate(model_matrix_cyborg, glm::vec3(0.0f, 3.0f, 0.0f));
     model_matrix_cyborg = glm::scale(model_matrix_cyborg, glm::vec3(1.0f, 1.0f, 1.0f));
     // model_matrix_cyborg = glm::rotate(model_matrix_cyborg, glm::radians(90.0f),
     //     glm::vec3(0.0f, 1.0f, 0.0f));
+    model_matrix_cyborg = model_matrix_cyborg * model_matrix;
     shader_model->SetMatrix4fv("model", glm::value_ptr(model_matrix_cyborg));
     model_cyborg.Draw(shader_model);
 
     glm::mat4 model_matrix_planet(1.0f);
-    model_matrix_planet = glm::translate(model_matrix_planet, glm::vec3(-5.0f, 0.0f, -6.0f));
+    model_matrix_planet = glm::translate(model_matrix_planet, glm::vec3(10.0f, 3.0f, 0.0f));
     model_matrix_planet = glm::scale(model_matrix_planet, glm::vec3(1.0f, 1.0f, 1.0f));
     // model_matrix_planet = glm::rotate(model_matrix_planet, glm::radians(90.0f),
     //     glm::vec3(0.0f, 1.0f, 0.0f));
+    model_matrix_planet = model_matrix_planet * model_matrix;
     shader_model->SetMatrix4fv("model", glm::value_ptr(model_matrix_planet));
     model_planet.Draw(shader_model);
 
     glm::mat4 model_matrix_rock(1.0f);
-    model_matrix_rock = glm::translate(model_matrix_rock, glm::vec3(10.0f, 0.0f, -6.0f));
+    model_matrix_rock = glm::translate(model_matrix_rock, glm::vec3(8.0f, -4.0f, 0.0f));
     model_matrix_rock = glm::scale(model_matrix_rock, glm::vec3(1.0f, 1.0f, 1.0f));
     // model_matrix_rock = glm::rotate(model_matrix_rock, glm::radians(90.0f),
     //     glm::vec3(0.0f, 1.0f, 0.0f));
+    model_matrix_rock = model_matrix_rock * model_matrix;
     shader_model->SetMatrix4fv("model", glm::value_ptr(model_matrix_rock));
     model_rock.Draw(shader_model);
 
@@ -502,6 +524,8 @@ void processInput(GLFWwindow *window) {
     camera.ProcessKeyboard(LEFT, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     camera.ProcessKeyboard(RIGHT, delta_time);
+  } else if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+    camera.ProcessKeyboard(MOVE_ORIGIN, delta_time);
   }
 }
 
