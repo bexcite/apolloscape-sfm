@@ -10,7 +10,9 @@ enum CameraMovement {
   LEFT,
   RIGHT,
 
-  MOVE_ORIGIN
+  MOVE_ORIGIN,
+  MOVE_TOP,
+  MOVE_SIDEWAYS
 };
 
 // camera constant
@@ -37,8 +39,28 @@ class Camera {
   void SetDirection(const glm::vec3& direction_to);
   void SetPosition(const glm::vec3& position);
 
+  void SetIntrinsics(const float fx, const float fy, const float cx,
+      const float cy);
+
 
  private:
+
+   // Intrinsics
+   float fx_ = 1450.317230113;
+   float fy_ =1451.184836113;
+   float cx_ = 1244.386581025;
+   float cy_ = 1013.145997723;
+
+   float image_width_ = 2452;
+   float image_height_ = 2056;
+
+   // float width = 1.0f;
+   // float height = 1.0f;
+
+   float near_ = 0.1;
+   float far_ = 100;
+
+   // Extrinsics
    glm::vec3 position_;
    glm::vec3 front_;
    glm::vec3 up_;
@@ -50,6 +72,8 @@ class Camera {
 
    float movement_speed_;
    float mouse_sensitivity_;
+
+   // TODO (Pavlo): Should be removed probably
    float zoom_;
 
    void UpdateCameraVectors(bool constrain_pitch = true);

@@ -35,21 +35,18 @@ glm::mat4 Camera::GetViewMatrix() const {
 
 glm::mat4 Camera::GetProjMatrix() const {
   // My matrix
-  float fx = 1450.317230113;
-  float fy=1451.184836113;
-  float cx=1244.386581025;
-  float cy=1013.145997723;
-  float width = 2452;
-  float height = 2056;
 
-  float near = 0.1;
-  float far = 100;
+  float image_width = 2 * cx_;
+  float image_height = 2 * cy_;
 
-  glm::mat4 persp1;
-  persp1[0] = glm::vec4(fx / width, 0.0f, 0.0f, 0.0f);
-  persp1[1] = glm::vec4(0.0f, fy / height, 0.0f, 0.0f);
-  persp1[2] = glm::vec4(-cx / width, -cy / height, near + far, -1.0f);
-  persp1[3] = glm::vec4(0.0f, 0.0f, near * far, 0.0f);
+  // float image_width = image_width_;
+  // float image_height = image_height_;
+
+  glm::mat4 persp;
+  persp[0] = glm::vec4(fx_ / image_width, 0.0f, 0.0f, 0.0f);
+  persp[1] = glm::vec4(0.0f, fy_ / image_height, 0.0f, 0.0f);
+  persp[2] = glm::vec4(-cx_ / image_width, -cy_ / image_height, near_ + far_, -1.0f);
+  persp[3] = glm::vec4(0.0f, 0.0f, near_ * far_, 0.0f);
 
   // std::cout << "persp1 = " << persp1 << std::endl;
 
@@ -64,15 +61,15 @@ glm::mat4 Camera::GetProjMatrix() const {
   // p_proj = p_proj / p_proj[3];
   // std::cout << "p_proj = " << p_proj << std::endl;
 
-  glm::mat4 ortho1;
-  ortho1[0] = glm::vec4(2.0f, 0.0f, 0.0f, 0.0f);
-  ortho1[1] = glm::vec4(0.0f, 2.0f, 0.0f, 0.0f);
-  ortho1[2] = glm::vec4(0.0f, 0.0f, - 2.0f / (far - near), 0.0f);
-  ortho1[3] = glm::vec4(-1.0f, -1.0f, - (far + near) / (far - near), 1.0f);
+  glm::mat4 ortho;
+  ortho[0] = glm::vec4(2.0f, 0.0f, 0.0f, 0.0f);
+  ortho[1] = glm::vec4(0.0f, 2.0f, 0.0f, 0.0f);
+  ortho[2] = glm::vec4(0.0f, 0.0f, - 2.0f / (far_ - near_), 0.0f);
+  ortho[3] = glm::vec4(-1.0f, -1.0f, - (far_ + near_) / (far_ - near_), 1.0f);
 
   // std::cout << "ortho = " << ortho1 << std::endl;
 
-  glm::mat4 persp_full = ortho1 * persp1;
+  glm::mat4 proj_full = ortho * persp;
   // std::cout << "persp_full = " << persp_full << std::endl;
   //
   // glm::vec4 p_ndc;
@@ -80,7 +77,7 @@ glm::mat4 Camera::GetProjMatrix() const {
   // p_ndc = p_ndc / p_ndc[3];
   // std::cout << "p_ndc = " << p_ndc << std::endl;
 
-  return persp_full;
+  return proj_full;
 
 }
 
@@ -100,6 +97,14 @@ void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
     position_ += right_ * delta;
   } else if (camera_movement == MOVE_ORIGIN) {
     position_ = glm::vec3(-3.0f, 0.0f, 1.5f);
+    SetDirection(glm::vec3(0.0f));
+    UpdateCameraVectors();
+  } else if (camera_movement == MOVE_TOP) {
+    position_ = glm::vec3(0.0f, 0.0f, 15.0f);
+    SetDirection(glm::vec3(0.0f));
+    UpdateCameraVectors();
+  } else if (camera_movement == MOVE_SIDEWAYS) {
+    position_ = glm::vec3(-5.0f, -5.0f, 5.0f);
     SetDirection(glm::vec3(0.0f));
     UpdateCameraVectors();
   }
@@ -126,10 +131,10 @@ void Camera::ProcessMouseScroll(float yoffset) {
 
 void Camera::UpdateCameraVectors(bool constrain_pitch) {
   if (constrain_pitch) {
-    if (pitch_ > 89.0f) {
-      pitch_ = 89.0f;
-    } else if (pitch_ < - 89.0f) {
-      pitch_ = -89.0f;
+    if (pitch_ > 89.9f) {
+      pitch_ = 89.9f;
+    } else if (pitch_ < - 89.9f) {
+      pitch_ = -89.9f;
     }
   }
 
@@ -172,4 +177,13 @@ void Camera::SetDirection(const glm::vec3& direction_to) {
 
 void Camera::SetPosition(const glm::vec3& position) {
   position_ = position;
+}
+
+void Camera::SetIntrinsics(const float fx, const float fy, const float cx,
+    const float cy) {
+  fx_ = fx;
+  fy_ = fy;
+  cx_ = cx;
+  cy_ = cy;
+
 }

@@ -297,6 +297,7 @@ int main(int argc, char* argv[]) {
   /* ===================================== */
   camera.SetPosition(glm::vec3(-8.0f, -8.0f, 6.0f));
   camera.SetDirection(glm::vec3(0.0f, 0.0f, 0.0f));
+  // camera.SetIntrinsics(0.5f, 0.5f, 0.5f, 0.5f);
 
 
   /* ==================================== */
@@ -526,7 +527,12 @@ void processInput(GLFWwindow *window) {
     camera.ProcessKeyboard(RIGHT, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
     camera.ProcessKeyboard(MOVE_ORIGIN, delta_time);
+  } else if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+    camera.ProcessKeyboard(MOVE_TOP, delta_time);
+  } else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+    camera.ProcessKeyboard(MOVE_SIDEWAYS, delta_time);
   }
+
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
