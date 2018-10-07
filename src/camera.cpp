@@ -156,9 +156,9 @@ void Camera::UpdateCameraVectors(bool constrain_pitch) {
   right_ = glm::normalize(glm::cross(front_, world_up_));
   up_ = glm::normalize(glm::cross(right_, front_));
 
-  std::cout << "CAMERA: front_ = " << glm::to_string(front_) << std::endl;
-  std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
-  std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
+  // std::cout << "CAMERA: front_ = " << glm::to_string(front_) << std::endl;
+  // std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
+  // std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
 
 
 }

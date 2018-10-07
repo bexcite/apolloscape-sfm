@@ -41,6 +41,8 @@
 #include <iomanip>
 #include <memory>
 
+#include "cv_gl/utils.hpp"
+
 #include "cv_gl/shader.h"
 #include "cv_gl/camera.h"
 #include "cv_gl/mesh.h"
@@ -68,8 +70,8 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 
-std::ostream& operator<<(std::ostream& os, const glm::mat4 mat);
-std::ostream& operator<<(std::ostream& os, const glm::vec4 vec);
+// std::ostream& operator<<(std::ostream& os, const glm::mat4 mat);
+// std::ostream& operator<<(std::ostream& os, const glm::vec4 vec);
 
 
 Camera camera(glm::vec3(-3.0f, 0.0f, 1.5f));
@@ -559,6 +561,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
   camera.ProcessMouseScroll(yoffset);
 }
 
+/*
 std::ostream& operator<<(std::ostream& os, const glm::mat4 mat) {
   os << std::endl;
   for (int i = 0; i < 4; ++i) {
@@ -582,3 +585,4 @@ std::ostream& operator<<(std::ostream& os, const glm::vec4 vec) {
   }
   return os;
 }
+*/

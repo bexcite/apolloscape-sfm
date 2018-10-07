@@ -53,7 +53,11 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
   glBindVertexArray(vao_);
 
   if (mesh_type_ == MeshType::TRIANGLES) {
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    if (!indices.empty()) {
+      glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    } else {
+      glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+    }
   } else if (mesh_type_ == MeshType::LINES) {
     if (!indices.empty()) {
       glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
