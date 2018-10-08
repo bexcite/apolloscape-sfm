@@ -24,9 +24,9 @@ class Shader {
   void SetFloat(const std::string &, const float) const;
   void SetVector4f(const std::string &, const float,
     const float, const float, const float) const;
-  void SetVector4fv(const std::string &, float*) const;
+  void SetVector4fv(const std::string &, const float*) const;
   void SetInt(const std::string &, const int) const;
-  void SetMatrix4fv(const std::string&, float*) const;
+  void SetMatrix4fv(const std::string&, const float*) const;
 
  private:
   unsigned int id_;

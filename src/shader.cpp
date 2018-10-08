@@ -98,7 +98,7 @@ Shader::SetVector4f(const std::string& uniform_name, const float v1,
 }
 
 void
-Shader::SetVector4fv(const std::string& uniform_name, float* vec) const {
+Shader::SetVector4fv(const std::string& uniform_name, const float* vec) const {
   int uniform_location = glGetUniformLocation(id_, uniform_name.c_str());
   glUniform4fv(uniform_location, 1, vec);
 }
@@ -111,7 +111,7 @@ Shader::SetInt(const std::string& uniform_name, const int v) const {
 }
 
 void
-Shader::SetMatrix4fv(const std::string& uniform_name, float* matrix) const {
+Shader::SetMatrix4fv(const std::string& uniform_name, const float* matrix) const {
   int uniform_location = glGetUniformLocation(id_, uniform_name.c_str());
   glUniformMatrix4fv(uniform_location, 1, GL_FALSE, matrix);
 }

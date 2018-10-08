@@ -21,18 +21,12 @@
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
 
-float last_x = kWindowWidth / 2;
-float last_y = kWindowHeight / 2;
+// float last_x = kWindowWidth / 2;
+// float last_y = kWindowHeight / 2;
 
-bool first_mouse;
+// bool first_mouse;
 
-float delta_time, last_time = 0;
-
-// void processInput(GLFWwindow *window);
-// void framebuffer_size_callback(GLFWwindow *window, int width, int height);
-// void mouse_callback(GLFWwindow *window, double xpos, double ypos);
-// void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
-
+// float delta_time, last_time = 0;
 
 std::shared_ptr<Mesh> MakeFloor(const double step_size,
     const unsigned int line_num) {
@@ -88,7 +82,6 @@ int main(int argc, char* argv[]) {
   std::cout << "v = " << v << std::endl;
 
   GLWindow gl_window("OpenGL: Edit Space", kWindowWidth, kWindowHeight);
-
   gl_window.SetCamera(camera);
 
   auto shader_color = std::make_shared<Shader>(
@@ -106,54 +99,25 @@ int main(int argc, char* argv[]) {
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
 
   // Create DObject
-  DObject floor_obj(mesh_floor);
+  ColorObject floor_obj(mesh_floor, glm::vec4(0.7f, 0.7f, 1.0f, 1.0f));
   floor_obj.SetShader(shader_color);
-  floor_obj.SetTranslation(glm::vec3(0.0f, 0.0f, 10.0f));
+  floor_obj.SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+  // floor_obj.SetScale(glm::vec3(0.2f));
+
+  ColorObject camera_obj(mesh_camera, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
+  camera_obj.SetShader(shader_color);
+  // camera_obj.SetTranslation(glm::vec3(0.0f, 0.0f, 5.0f));
+  // floor_obj.SetScale(glm::vec3(0.2f));
 
   std::cout << "Floor = " << floor_obj << std::endl;
+  std::cout << "Camer = " << camera_obj << std::endl;
 
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
 
-    // rotate to world coords
-    glm::mat4 model_matrix;
-    model_matrix[0] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-    model_matrix[1] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
-    model_matrix[2] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-    model_matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    model_matrix = glm::transpose(model_matrix);
-    // model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));
-
-    glm::mat4 view_matrix = camera->GetViewMatrix();
-
-    glm::mat4 projection_matrix = camera->GetProjMatrix();
-
-    /* ============= FLOOR ====================== */
-    shader_color->Use();
-
-    shader_color->SetMatrix4fv("view", glm::value_ptr(view_matrix));
-    shader_color->SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
-    shader_color->SetMatrix4fv("model", glm::value_ptr(model_matrix));
-
-    glm::vec4 floor_color = glm::vec4(0.7f, 0.7f, 1.0f, 1.0f);
-
-    shader_color->SetVector4fv("color", glm::value_ptr(floor_color));
-    mesh_floor->Draw(shader_color);
-
-    /* ============= CAMERA ====================== */
-    shader_color->Use();
-
-    shader_color->SetMatrix4fv("view", glm::value_ptr(view_matrix));
-    shader_color->SetMatrix4fv("projection", glm::value_ptr(projection_matrix));
-    shader_color->SetMatrix4fv("model", glm::value_ptr(model_matrix));
-
-    glm::vec4 camera_color = glm::vec4(1.0f, 0.7f, 0.7f, 1.0f);
-
-    shader_color->SetVector4fv("color", glm::value_ptr(camera_color));
-    mesh_camera->Draw(shader_color);
-
     /* ====================== Rend ===================== */
     renderer->Draw(floor_obj);
+    renderer->Draw(camera_obj);
 
 
     gl_window.RunLoop();

@@ -405,7 +405,7 @@ int main(int argc, char* argv[]) {
     model_matrix[0] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
     model_matrix[1] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
     model_matrix[2] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-    model_matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    model_matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); 
     model_matrix = glm::transpose(model_matrix);
     // model_matrix = glm::scale(model_matrix, glm::vec3(1.0f, 1.0f, 1.0f));
 
