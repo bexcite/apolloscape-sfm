@@ -1,6 +1,7 @@
 // Copyright Pavlo 2018
 
 #include <iostream>
+#include <memory>
 #include <iomanip>
 
 #include <glad/glad.h>
@@ -12,6 +13,9 @@
 #include "cv_gl/utils.hpp"
 
 #include "cv_gl/gl_window.h"
+
+#include "cv_gl/renderer.h"
+#include "cv_gl/dobject.h"
 
 
 const int kWindowWidth = 1226/2;
@@ -97,6 +101,17 @@ int main(int argc, char* argv[]) {
   auto mesh_camera = MakeCameraCone();
   std::cout << "mesh_camera (init) = " << mesh_camera << std::endl;
 
+
+  // Renderer
+  std::unique_ptr<Renderer> renderer(new Renderer(camera));
+
+  // Create DObject
+  DObject floor_obj(mesh_floor);
+  floor_obj.SetShader(shader_color);
+  floor_obj.SetTranslation(glm::vec3(0.0f, 0.0f, 10.0f));
+
+  std::cout << "Floor = " << floor_obj << std::endl;
+
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
 
@@ -136,6 +151,9 @@ int main(int argc, char* argv[]) {
 
     shader_color->SetVector4fv("color", glm::value_ptr(camera_color));
     mesh_camera->Draw(shader_color);
+
+    /* ====================== Rend ===================== */
+    renderer->Draw(floor_obj);
 
 
     gl_window.RunLoop();

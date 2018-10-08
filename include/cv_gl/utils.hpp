@@ -35,4 +35,13 @@ std::ostream& operator<<(std::ostream& os, const glm::vec4 vec) {
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const glm::vec3 vec) {
+  os << std::setprecision(3) << std::setw(6) << vec[0];
+  for (int j = 1; j < 3; ++j) {
+    os << ", " << std::setprecision(3) << std::setw(6) << vec[j];
+  }
+  return os;
+}
+
+
 #endif  // CV_GL_UTILS_HPP_
