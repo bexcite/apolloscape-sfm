@@ -16,59 +16,11 @@
 
 #include "cv_gl/renderer.h"
 #include "cv_gl/dobject.h"
+#include "cv_gl/object_factory.hpp"
 
 
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
-
-// float last_x = kWindowWidth / 2;
-// float last_y = kWindowHeight / 2;
-
-// bool first_mouse;
-
-// float delta_time, last_time = 0;
-
-std::shared_ptr<Mesh> MakeFloor(const double step_size,
-    const unsigned int line_num) {
-  const float shift_x = - (step_size * line_num) / 2;
-  const float shift_z = shift_x;
-  const float far_edge = step_size * line_num;
-  std::vector<Vertex> vertices((line_num + 1) * 4);
-  std::vector<unsigned int> indices;
-  std::vector<Texture> textures;
-
-  // Fill vertices
-  for (unsigned int i = 0; i <= line_num; ++i) {
-    Vertex v1 = {glm::vec3(step_size * i + shift_x, 0.0f, 0.0f + shift_z)};
-    Vertex v2 = {glm::vec3(step_size * i + shift_x, 0.0f, far_edge + shift_z)};
-    vertices.emplace_back(v1);
-    vertices.emplace_back(v2);
-    v1 = {glm::vec3(0.0f + shift_x, 0.0f, step_size * i + shift_z)};
-    v2 = {glm::vec3(far_edge + shift_x, 0.0f, step_size * i + shift_z)};
-    vertices.emplace_back(v1);
-    vertices.emplace_back(v2);
-  }
-
-  auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
-  mesh->SetMeshType(MeshType::LINES);
-  return mesh;
-}
-
-std::shared_ptr<Mesh> MakeCameraCone() {
-  // std::vector<Vertex> vertices;
-  std::vector<unsigned int> indices;
-  std::vector<Texture> textures;
-
-  std::vector<Vertex> vertices = {
-    {glm::vec3(-0.5f, 0.0f, 0.0f)},
-    {glm::vec3(0.5f, 0.0f, 0.0f)},
-    {glm::vec3(0.0f, 0.5f, 0.0f)}
-  };
-
-  auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
-  mesh->SetMeshType(MeshType::TRIANGLES);
-  return mesh;
-}
 
 
 int main(int argc, char* argv[]) {
@@ -84,33 +36,45 @@ int main(int argc, char* argv[]) {
   GLWindow gl_window("OpenGL: Edit Space", kWindowWidth, kWindowHeight);
   gl_window.SetCamera(camera);
 
-  auto shader_color = std::make_shared<Shader>(
-    "../shaders/one.vs",
-    "../shaders/one_color.fs");
-
-  auto mesh_floor = MakeFloor(1.0, 32);
-  std::cout << "mesh_floor (init) = " << mesh_floor << std::endl;
-
-  auto mesh_camera = MakeCameraCone();
-  std::cout << "mesh_camera (init) = " << mesh_camera << std::endl;
-
-
   // Renderer
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
 
-  // Create DObject
-  ColorObject floor_obj(mesh_floor, glm::vec4(0.7f, 0.7f, 1.0f, 1.0f));
-  floor_obj.SetShader(shader_color);
-  floor_obj.SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
-  // floor_obj.SetScale(glm::vec3(0.2f));
+  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 32));
 
-  ColorObject camera_obj(mesh_camera, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
-  camera_obj.SetShader(shader_color);
-  // camera_obj.SetTranslation(glm::vec3(0.0f, 0.0f, 5.0f));
-  // floor_obj.SetScale(glm::vec3(0.2f));
+  std::shared_ptr<ColorObject> camera_obj(
+      ObjectFactory::CreateCameraFrustum());
+  camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
+
+  std::shared_ptr<ModelObject> nanosuit_obj(
+      ObjectFactory::CreateModelObject(
+          "../data/objects/nanosuit/nanosuit.obj"));
+  nanosuit_obj->SetScale(glm::vec3(0.2f));
+  nanosuit_obj->SetTranslation(glm::vec3(5.0f, 2.0f, 0.0f));
+
+  std::shared_ptr<ModelObject> cyborg_obj(
+      ObjectFactory::CreateModelObject(
+          "../data/objects/cyborg/cyborg.obj"));
+  cyborg_obj->SetScale(glm::vec3(0.8f));
+  cyborg_obj->SetTranslation(glm::vec3(6.0f, 1.0f, 0.0f));
+
+  std::shared_ptr<ModelObject> planet_obj(
+      ObjectFactory::CreateModelObject(
+          "../data/objects/planet/planet.obj"));
+  // planet_obj->SetScale(glm::vec3(0.8f));
+  planet_obj->SetTranslation(glm::vec3(10.0f, -5.0f, 6.0f));
+
+  std::shared_ptr<ModelObject> rock_obj(
+      ObjectFactory::CreateModelObject(
+          "../data/objects/rock/rock.obj"));
+  rock_obj->SetScale(glm::vec3(0.3f));
+  rock_obj->SetTranslation(glm::vec3(5.0f, -3.0f, 0.0f));
 
   std::cout << "Floor = " << floor_obj << std::endl;
-  std::cout << "Camer = " << camera_obj << std::endl;
+  std::cout << "Camera = " << camera_obj << std::endl;
+  std::cout << "Nanosuit = " << nanosuit_obj << std::endl;
+  std::cout << "Cyborg = " << cyborg_obj << std::endl;
+  std::cout << "Planet = " << planet_obj << std::endl;
+  std::cout << "Rock = " << rock_obj << std::endl;
 
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
@@ -118,6 +82,11 @@ int main(int argc, char* argv[]) {
     /* ====================== Rend ===================== */
     renderer->Draw(floor_obj);
     renderer->Draw(camera_obj);
+    renderer->Draw(nanosuit_obj);
+    renderer->Draw(cyborg_obj);
+    renderer->Draw(planet_obj);
+    renderer->Draw(rock_obj);
+
 
 
     gl_window.RunLoop();

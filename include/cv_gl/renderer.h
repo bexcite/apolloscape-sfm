@@ -15,6 +15,14 @@ class Renderer {
     object.Draw(camera_->GetViewMatrix(), camera_->GetProjMatrix());
   };
 
+  void Draw(const DObject* object_ptr) {
+    Draw((*object_ptr));
+  };
+
+  void Draw(const std::shared_ptr<DObject>& object_ptr) {
+    Draw((*object_ptr));
+  };
+
  private:
   std::shared_ptr<Camera> camera_;
 };

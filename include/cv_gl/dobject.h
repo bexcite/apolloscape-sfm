@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include "cv_gl/camera.h"
 #include "cv_gl/utils.hpp"
+#include "cv_gl/model.h"
 
 #include <iostream>
 
@@ -13,7 +14,7 @@ class DObject {
 
  public:
 
-  DObject(const std::shared_ptr<Mesh> mesh) : mesh_(mesh), shader_(nullptr),
+  DObject(const std::shared_ptr<Mesh> mesh = nullptr) : mesh_(mesh), shader_(nullptr),
       translation_(glm::vec3(0.0f)),
       scale_(glm::vec3(1.0f)),
       rotation_(glm::mat4(1.0f)) {
@@ -95,7 +96,7 @@ class DObject {
   }
 
 
- private:
+ protected:
   std::shared_ptr<Shader> shader_;
   std::shared_ptr<Mesh> mesh_;
   glm::vec3 translation_;
@@ -128,9 +129,43 @@ class ColorObject: public DObject {
 
 
 
+class ModelObject: public DObject {
+
+public:
+  ModelObject(Model* model) : model_{model} {}
+
+  virtual void Draw(const glm::mat4& view_matrix, const glm::mat4& proj_matrix,
+      const std::shared_ptr<Shader> default_shader = nullptr) const {
+
+    DObject::Draw(view_matrix, proj_matrix, default_shader);
+
+    std::shared_ptr<Shader> shdr = nullptr;
+    if (shader_) {
+      shdr = shader_;
+    } else if (default_shader) {
+      shdr = default_shader;
+    }
+    model_->Draw(shdr);
+
+  }
+
+private:
+  std::shared_ptr<Model> model_;
+
+};
+
+
+
 std::ostream& operator<<(std::ostream& os, const DObject& object) {
   object.print(os);
   return os;
 }
+
+std::ostream& operator<<(std::ostream& os, const DObject* object) {
+  object->print(os);
+  return os;
+}
+
+
 
 #endif  // CV_GL_DOBJECT_H_
