@@ -256,7 +256,7 @@ int main(int argc, char* argv[]) {
   // Create Context and Load OpenGL Functions
   glfwMakeContextCurrent(window);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
 
@@ -382,12 +382,12 @@ int main(int argc, char* argv[]) {
     last_time = timeValue;
 
     // FPS calc and output
-    float fps = 1.0f / (timeValue - timeSince);
-    timeSince = timeValue;
+    // float fps = 1.0f / (timeValue - timeSince);
+    // timeSince = timeValue;
     // if (frame % 100 == 0) {
     //   std::cout << "FPS = " << fps << std::endl;
     // }
-    ++frame;
+    // ++frame;
 
     processInput(window);
 
@@ -411,7 +411,11 @@ int main(int argc, char* argv[]) {
 
     glm::mat4 view_matrix = camera.GetViewMatrix();
 
+    
+
     glm::mat4 projection_matrix = camera.GetProjMatrix();
+
+    
 
     // glm::mat4 projection_matrix = glm::perspective(glm::radians(camera.GetZoom()),
     //     (float) kWindowWidth / kWindowHeight, 0.1f, 100.0f);
@@ -447,6 +451,7 @@ int main(int argc, char* argv[]) {
 
 
     /* ============= FLOOR ====================== */
+    
     shader_color->Use();
 
     shader_color->SetMatrix4fv("view", glm::value_ptr(view_matrix));
@@ -457,9 +462,13 @@ int main(int argc, char* argv[]) {
 
     shader_color->SetVector4fv("color", glm::value_ptr(floor_color));
     mesh_floor->Draw(shader_color);
+    
+    
+
 
 
     /* ====== LOADED MODEL =================== */
+    
     shader_model->Use();
 
     shader_model->SetMatrix4fv("view", glm::value_ptr(view_matrix));
@@ -502,9 +511,24 @@ int main(int argc, char* argv[]) {
     shader_model->SetMatrix4fv("model", glm::value_ptr(model_matrix_rock));
     model_rock.Draw(shader_model);
 
+    
+
 
     // Flip Buffers and Draw
     glfwSwapBuffers(window);
+
+#ifdef __APPLE__
+    // std::cout << "Apple" << std::endl;
+    static int macMoved = 0;
+
+    if (macMoved < 2) {
+        int x, y;
+        glfwGetWindowPos(window, &x, &y);
+        glfwSetWindowPos(window, ++x, y);
+        macMoved++;
+    }
+#endif    
+
     glfwPollEvents();
   }
 

@@ -76,13 +76,13 @@ bool GLWindow::IsRunning() {
   last_time_ = time_value;
 
   // FPS calc and output
-  delta_time_sum_ += delta_time;
-  if (frames_ % 100 == 0) {
-    float fps = 100.0f / delta_time_sum_;
-    std::cout << "FPS = " << fps << std::endl;
-    delta_time_sum_ = 0;
-  }
-  ++frames_;
+  // delta_time_sum_ += delta_time;
+  // if (frames_ % 100 == 0) {
+  //   float fps = 100.0f / delta_time_sum_;
+  //   std::cout << "FPS = " << fps << std::endl;
+  //   delta_time_sum_ = 0;
+  // }
+  // ++frames_;
 
   // Clear everything
   glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
@@ -98,6 +98,19 @@ bool GLWindow::IsRunning() {
 void GLWindow::RunLoop() {
   glfwSwapBuffers(window_);
   glfwPollEvents();
+
+#ifdef __APPLE__
+  // std::cout << "Apple" << std::endl;
+  static int macMoved = 0;
+
+  if (macMoved < 2) {
+      int x, y;
+      glfwGetWindowPos(this->window_, &x, &y);
+      glfwSetWindowPos(this->window_, ++x, y);
+      macMoved++;
+  }
+#endif    
+
 }
 
 

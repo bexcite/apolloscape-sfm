@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.11)
 
 project(${project_name})
 
-# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
 
 # set(CMAKE_CXX_STANDARD 11)
 # add_compile_options(-Wall)
@@ -42,10 +42,12 @@ set(GLFW_BUILD_EXAMPLES OFF)
 set(GLFW_BUILD_TESTS OFF)
 set(GLFW_BUILD_DOCS OFF)
 set(GLFW_INSTALL OFF)
+message("GLFW_BUILD_TESTS =======: " ${GLFW_BUILD_TESTS})
 add_subdirectory(${GLFW_DIR})
 
 # add libs
 add_subdirectory(${PROJECT_SOURCE_DIR}/lib)
+
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
 add_subdirectory(${PROJECT_SOURCE_DIR}/src)
