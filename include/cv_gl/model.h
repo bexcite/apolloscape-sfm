@@ -49,7 +49,7 @@ Model::LoadModel(const std::string& path) {
       aiProcess_Triangulate | aiProcess_FlipUVs);
 
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-    std::cout << "ERROR:ASSEMP:" << importer.GetErrorString() << std::endl;
+    std::cout << "ERROR:ASSIMP:" << importer.GetErrorString() << std::endl;
     return;
   }
   directory_ = path.substr(0, path.find_last_of('/'));

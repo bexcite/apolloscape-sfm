@@ -58,7 +58,7 @@ class Camera {
    // float height = 1.0f;
 
    float near_ = 0.1;
-   float far_ = 100;
+   float far_ = 5000;
 
    // Extrinsics
    glm::vec3 position_;

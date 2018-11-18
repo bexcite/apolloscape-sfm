@@ -40,16 +40,58 @@ public:
 
 
   static std::shared_ptr<Mesh> CreateCameraFrustum() {
-    // std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
     std::vector<Texture> textures;
-
     std::vector<Vertex> vertices = {
-      {glm::vec3(-0.5f, 0.0f, 0.0f)},
-      {glm::vec3(0.5f, 0.0f, 0.0f)},
-      {glm::vec3(0.0f, 0.5f, 0.0f)}
+      {glm::vec3(-1.0f, 0.0f, 1.0f)},  // 0
+      {glm::vec3(1.0f, 0.0f, 1.0f)},   // 1
+      {glm::vec3(1.0f, 0.0f, -1.0f)},  // 2
+      {glm::vec3(-1.0f, 0.0f, -1.0f)}, // 3
+      {glm::vec3(0.0f, 2.0f, 0.0f)},   // 4
     };
+    std::vector<unsigned int> indices = {
+      0, 1,
+      1, 2,
+      2, 3,
+      3, 0,
+      0, 4,
+      1, 4,
+      2, 4,
+      3, 4
+    };
+    auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
+    mesh->SetMeshType(MeshType::LINES);
+    return mesh;
+  }
 
+  static std::shared_ptr<Mesh> CreateCube() {
+    std::vector<Texture> textures;
+    std::vector<Vertex> vertices = {
+      // bottom
+      {glm::vec3(-0.5f, -0.5f, 0.5f)},  // 0
+      {glm::vec3(0.5f, -0.5f, 0.5f)},   // 1
+      {glm::vec3(0.5f, -0.5f, -0.5f)},  // 2
+      {glm::vec3(-0.5f, -0.5f, -0.5f)}, // 3
+      // top
+      {glm::vec3(-0.5f, 0.5f, 0.5f)},   // 4
+      {glm::vec3(0.5f, 0.5f, 0.5f)},    // 5
+      {glm::vec3(0.5f, 0.5f, -0.5f)},   // 6
+      {glm::vec3(-0.5f, 0.5f, -0.5f)},  // 7
+      
+    };
+    std::vector<unsigned int> indices = {
+      0, 1, 2, 
+      0, 2, 3,
+      4, 5, 6,
+      4, 6, 7,
+      0, 3, 4,
+      4, 3, 7,
+      0, 1, 5,
+      0, 5, 4,
+      3, 2, 6,
+      3, 6, 7,
+      1, 2, 6,
+      1, 6, 5
+    };
     auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
     mesh->SetMeshType(MeshType::TRIANGLES);
     return mesh;
@@ -115,6 +157,24 @@ public:
     return model_obj;
   
   }
+
+/* ================ Cube ================================*/
+  static ColorObject* CreateCube(float size = 1.0) {
+
+    auto mesh = MeshFactory::CreateCube();
+
+    auto shader_color = std::make_shared<Shader>(
+      "../shaders/one.vs",
+      "../shaders/one_color.fs");
+
+    ColorObject* cube_obj =
+        new ColorObject(mesh, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
+    cube_obj->SetShader(shader_color);
+
+    return cube_obj;
+  
+  }
+
 
 
 

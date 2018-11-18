@@ -39,11 +39,21 @@ int main(int argc, char* argv[]) {
   // Renderer
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
 
-  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 32));
+  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 50));
 
   std::shared_ptr<ColorObject> camera_obj(
       ObjectFactory::CreateCameraFrustum());
   camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
+
+  std::shared_ptr<ColorObject> zero_cube_obj(
+      ObjectFactory::CreateCube());
+//   camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+
+  std::shared_ptr<ModelObject> debug_cube_obj(
+      ObjectFactory::CreateModelObject(
+          "../data/objects/debug_cube/debug_cube.obj"));
+//   debug_cube_obj->SetScale(glm::vec3(0.2f));
+  debug_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 3.0f));
 
   std::shared_ptr<ModelObject> nanosuit_obj(
       ObjectFactory::CreateModelObject(
@@ -71,6 +81,8 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Floor = " << floor_obj << std::endl;
   std::cout << "Camera = " << camera_obj << std::endl;
+  std::cout << "Zero Cube = " << zero_cube_obj << std::endl;
+  std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
   std::cout << "Nanosuit = " << nanosuit_obj << std::endl;
   std::cout << "Cyborg = " << cyborg_obj << std::endl;
   std::cout << "Planet = " << planet_obj << std::endl;
@@ -82,6 +94,8 @@ int main(int argc, char* argv[]) {
     /* ====================== Rend ===================== */
     renderer->Draw(floor_obj);
     renderer->Draw(camera_obj);
+    renderer->Draw(zero_cube_obj);
+    renderer->Draw(debug_cube_obj);
     renderer->Draw(nanosuit_obj);
     renderer->Draw(cyborg_obj);
     renderer->Draw(planet_obj);
