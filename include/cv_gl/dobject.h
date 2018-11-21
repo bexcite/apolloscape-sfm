@@ -14,10 +14,11 @@ class DObject {
 
  public:
 
-  DObject(const std::shared_ptr<Mesh> mesh = nullptr) : mesh_(mesh), shader_(nullptr),
+  DObject(const std::shared_ptr<Mesh> mesh = nullptr, const std::string name = "DObject") : mesh_(mesh), shader_(nullptr),
       translation_(glm::vec3(0.0f)),
       scale_(glm::vec3(1.0f)),
-      rotation_(glm::mat4(1.0f)) {
+      rotation_(glm::mat4(1.0f)),
+      name_(name) {
     std::cout << "DObject:: (con)" << std::endl;
   };
 
@@ -74,9 +75,17 @@ class DObject {
     return all_model;
   }
 
-  void print(std::ostream& os = std::cout) const {
-    os << "DObject: trans = " << translation_
-       << ", scale = " << scale_ << ", rotation = " << rotation_ << std::endl;
+
+  virtual void print(std::ostream& os = std::cout) const {
+    os << this->name_ << ": " << std::endl << 
+    "  trans = " << translation_ << std::endl <<
+    "  scale = " << scale_ << std::endl <<
+    "  rotation = " << rotation_ << //  std::endl <<
+    "  shader = " << shader_;
+    if (mesh_) {
+      os << std::endl << "  mesh = " << mesh_;
+    }
+    
   }
 
   void SetShader(const std::shared_ptr<Shader> shader) {
@@ -95,6 +104,8 @@ class DObject {
     rotation_ = rotation;
   }
 
+  std::string GetName() { return name_; }
+
 
  protected:
   std::shared_ptr<Shader> shader_;
@@ -102,6 +113,7 @@ class DObject {
   glm::vec3 translation_;
   glm::vec3 scale_;
   glm::mat4 rotation_;
+  std::string name_;
 
 };
 
@@ -112,7 +124,7 @@ class ColorObject: public DObject {
 
   ColorObject(const std::shared_ptr<Mesh> mesh,
               const glm::vec4& color = glm::vec4(1.0f))
-      : DObject(mesh), color_(color) {}
+      : DObject(mesh, "ColorObject"), color_(color) {}
 
   virtual void PrepareShader(const std::shared_ptr<Shader> shader) const {
     // std::cout << "ColorObject::PrepareShader" << std::endl;
@@ -132,7 +144,7 @@ class ColorObject: public DObject {
 class ModelObject: public DObject {
 
 public:
-  ModelObject(Model* model) : model_{model} {}
+  ModelObject(Model* model) : model_(model) {}
 
   virtual void Draw(const glm::mat4& view_matrix, const glm::mat4& proj_matrix,
       const std::shared_ptr<Shader> default_shader = nullptr) const {
@@ -147,6 +159,13 @@ public:
     }
     model_->Draw(shdr);
 
+  }
+
+  virtual void print(std::ostream& os) const {
+    DObject::print(os);
+    if (model_) {
+      os << "  model = " << model_;
+    }
   }
 
 private:

@@ -43,7 +43,7 @@ class Mesh {
   ~Mesh();
 
   void Draw(const std::shared_ptr<Shader>& shader);
-  std::ostream& write(std::ostream& os = std::cout) const;
+  std::ostream& print(std::ostream& os = std::cout) const;
 
 
 

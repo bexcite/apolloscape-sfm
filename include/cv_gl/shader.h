@@ -28,8 +28,16 @@ class Shader {
   void SetInt(const std::string &, const int) const;
   void SetMatrix4fv(const std::string&, const float*) const;
 
+  void print(std::ostream& os = std::cout) const;
+
  private:
   unsigned int id_;
+  std::string vertex_shader_path_;
+  std::string fragment_shader_path_;
 };
+
+std::ostream& operator<<(std::ostream &os, const Shader& shader);
+
+std::ostream& operator<<(std::ostream &os, const std::shared_ptr<Shader>& shader);
 
 #endif  //  CV_GL_SHADER_H_

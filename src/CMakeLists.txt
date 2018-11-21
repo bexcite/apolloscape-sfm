@@ -27,6 +27,16 @@ set_target_properties(${EDIT_SPACE_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
+set(DEBUG_CUBE_NAME debug_cube)
+add_executable(${DEBUG_CUBE_NAME} debug_cube.cpp)
+set_property(TARGET ${DEBUG_CUBE_NAME} PROPERTY CXX_STANDARD 11)
+message("debug_cube_name = " ${DEBUG_CUBE_NAME})
+target_link_libraries(${DEBUG_CUBE_NAME} PUBLIC cv_gl_lib)
+set_target_properties(${DEBUG_CUBE_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+
+
 # Add GLAD
 # target_include_directories(${PROJECT_NAME} PRIVATE ${GLAD_DIR}/include)
 # target_link_libraries(${PROJECT_NAME} glad ${CMAKE_DL_LIBS})

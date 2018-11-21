@@ -17,13 +17,13 @@ Mesh::Mesh(const std::vector<Vertex>& vertices,
 
 Mesh::Mesh(const Mesh& mesh) {
   std::cout << "mesh (COPY CON) = ";
-  mesh.write();
+  mesh.print();
   std::cout << std::endl;
 }
 
 Mesh Mesh::operator=(const Mesh& mesh) {
   std::cout << "mesh (COPY ASS) = ";
-  this->write();
+  this->print();
   std::cout << std::endl;
   return Mesh(mesh);
 }
@@ -111,9 +111,9 @@ Mesh::SetupMesh() {
 }
 
 Mesh::~Mesh() {
-  std::cout << "mesh (DESTRUCTOR) = ";
-  this->write();
-  std::cout << std::endl;
+  // std::cout << "mesh (DESTRUCTOR) = ";
+  // this->write();
+  // std::cout << std::endl;
   glDeleteVertexArrays(1, &vao_);
   glDeleteBuffers(1, &vbo_);
   glDeleteBuffers(1, &ebo_);
@@ -126,15 +126,19 @@ std::ostream& operator<<(std::ostream& os, const Vertex& vertex) {
   return os;
 }
 
-std::ostream& Mesh::write(std::ostream& os) const {
-  os << "vao_: " << vao_ << ", vbo_: " << vbo_ << ", ebo: " << ebo_;
+std::ostream& Mesh::print(std::ostream& os) const {
+  os << "Mesh: ";
+  os << "vao_:" << vao_ << ", vbo_:" << vbo_ << ", ebo:" << ebo_;
+  os << " vertices.size = " << this->vertices.size() << ", ";
+  os << "indices.size = " << this->indices.size() << ", ";
+  os << "textures.size = " << this->textures.size();
   return os;
 }
 std::ostream& operator<<(std::ostream& os, const Mesh& mesh) {
   // os << " [CALL BY REF] ";
-  return mesh.write(os);
+  return mesh.print(os);
 }
 std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Mesh>& mesh) {
   // os << " [CALL BY SHARED] ";
-  return mesh->write(os);
+  return mesh->print(os);
 }

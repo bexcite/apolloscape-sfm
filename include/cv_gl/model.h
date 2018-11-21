@@ -28,6 +28,8 @@ public:
   }
   void Draw(const std::shared_ptr<Shader>& shader);
   std::vector<std::shared_ptr<Mesh> > meshes_;
+
+  void print(std::ostream& os = std::cout) const;
 private:
   std::string directory_;
   std::vector<Texture> textures_loaded_;
@@ -178,6 +180,13 @@ Model::Draw(const std::shared_ptr<Shader>& shader) {
   }
 }
 
+void
+Model::print(std::ostream& os) const {
+  os << "Model: ";
+  os << "meshes.size = " << meshes_.size() << ", ";
+  os << "textures_loaded.size = " << textures_loaded_.size();
+}
+
 unsigned int TextureFromFile(const char* path, const std::string& directory,
     bool gamma) {
 
@@ -223,6 +232,16 @@ unsigned int TextureFromFile(const char* path, const std::string& directory,
 
   return texture_id;
 
+}
+
+std::ostream& operator<<(std::ostream& os, const Model& model) {
+  model.print(os);
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Model>& model_ptr) {
+  model_ptr->print(os);
+  return os;
 }
 
 

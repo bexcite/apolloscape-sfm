@@ -18,6 +18,11 @@ Shader::Shader(const std::string& vertex_shader_path,
   std::cout << "Vertex s path: " << vertex_shader_path << std::endl;
   std::cout << "Fragment s path: " << fragment_shader_path << std::endl;
 
+  // store for the debug purposes
+  this->vertex_shader_path_ = vertex_shader_path;
+  this->fragment_shader_path_ = fragment_shader_path;
+
+
   // Read vertex shader
   std::string v_shader_code;
   std::ifstream vsf(vertex_shader_path);
@@ -85,6 +90,12 @@ Shader::Shader(const std::string& vertex_shader_path,
 }
 
 void
+Shader::print(std::ostream& os) const {
+  os << "Shader: vertex_path = " << this->vertex_shader_path_ <<
+  ", fragment_path = " << this->fragment_shader_path_;
+}
+
+void
 Shader::SetFloat(const std::string& uniform_name, const float value) const {
   int uniform_location = glGetUniformLocation(id_, uniform_name.c_str());
   glUniform1f(uniform_location, value);
@@ -116,6 +127,17 @@ Shader::SetMatrix4fv(const std::string& uniform_name, const float* matrix) const
   glUniformMatrix4fv(uniform_location, 1, GL_FALSE, matrix);
 }
 
+std::ostream&
+operator<<(std::ostream& os, const Shader& shader) {
+  shader.print(os);
+  return os;
+}
+
+std::ostream&
+operator<<(std::ostream &os, const std::shared_ptr<Shader>& shader) {
+  shader->print(os);
+  return os;
+}
 
 // void Shader::Use() {
 //   glUseProgram(id_);
