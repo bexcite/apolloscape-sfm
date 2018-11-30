@@ -27,9 +27,11 @@ public:
     LoadModel(path);
   }
   void Draw(const std::shared_ptr<Shader>& shader);
-  std::vector<std::shared_ptr<Mesh> > meshes_;
+  void print(std::ostream &os = std::cout) const;
 
-  void print(std::ostream& os = std::cout) const;
+
+  std::vector<std::shared_ptr<Mesh> > meshes_;  
+
 private:
   std::string directory_;
   std::vector<Texture> textures_loaded_;
@@ -41,7 +43,9 @@ private:
       const aiTextureType type, const std::string& type_name);
 };
 
-
+glm::vec4 to_glm_color4(const aiColor4D& c) {
+  return glm::vec4(c.r, c.g, c.b, c.a);
+}
 
 void
 Model::LoadModel(const std::string& path) {
@@ -49,6 +53,8 @@ Model::LoadModel(const std::string& path) {
 
   const aiScene* scene = importer.ReadFile(path,
       aiProcess_Triangulate | aiProcess_FlipUVs);
+
+  std::cout << "mNumMaterials = " << scene->mNumMaterials << std::endl;
 
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
     std::cout << "ERROR:ASSIMP:" << importer.GetErrorString() << std::endl;
@@ -91,6 +97,8 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
     vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y,
         mesh->mNormals[i].z};
 
+    // std::cout << "numUVChannels = " << mesh->GetNumUVChannels() << std::endl;
+
     if (mesh->mTextureCoords[0]) {
       vertex.tex_coords = {
         mesh->mTextureCoords[0][i].x,
@@ -123,6 +131,9 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
 
   // process material
   // if (mesh->mMaterialIndex > 0) {
+
+    std::cout << "mMaterialIndex = " << mesh->mMaterialIndex << std::endl;
+
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
     std::vector<Texture> diffuse_maps = LoadMaterialTextures(material,
         aiTextureType_DIFFUSE, "texture_diffuse");
@@ -132,16 +143,54 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
     std::vector<Texture> specular_maps = LoadMaterialTextures(material,
         aiTextureType_SPECULAR, "texture_specular");
     // std::cout << "specular_maps = " << specular_maps.size() << std::endl;
+
+
+
     textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
   // }
 
-  return std::make_shared<Mesh>(vertices, indices, textures);
+  // std::cout << "texturesCount = " << textures.size() << std::endl;
+  // std::cin.ignore();
+
+    // Material mat;
+    // std::cout << "<<<< mat = " << mat << std::endl;
+    // std::cin.ignore();
+
+    Material mat;
+    mat.textures = textures;
+
+    aiColor4D ambient;
+    if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &ambient))
+    {
+      glm::vec4 ac = to_glm_color4(ambient);
+      mat.ambient_color = ac;
+      // std::cout << " ========================== ambient = " << glm::to_string(ac) << std::endl;
+      // std::cin.ignore();
+    }
+
+    aiColor4D diffuse;
+    if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diffuse)) {
+      // color4_to_float4(&diffuse, c);
+      glm::vec4 dc = to_glm_color4(diffuse);
+      // std::cout << " ========================== diffuse = " << glm::to_string(dc) << std::endl;
+      mat.diffuse_color = dc;
+    }
+
+    auto m = std::make_shared<Mesh>(vertices, indices, mat);
+    
+    std::cout << "<<<<< m = " << m << std::endl;
+
+    return m;
 }
+
+// TODO: Look At http://www.lighthouse3d.com/cg-topics/code-samples/importing-3d-models-with-assimp/
 
 std::vector<Texture>
 Model::LoadMaterialTextures(const aiMaterial *material,
     const aiTextureType type, const std::string& type_name) {
   std::vector<Texture> textures;
+
+  std::cout << "textureCount = " << material->GetTextureCount(type) << " for aiTextureType = " << type << std::endl;
 
   for(unsigned int i = 0; i < material->GetTextureCount(type); ++i) {
     aiString str;
@@ -185,6 +234,19 @@ Model::print(std::ostream& os) const {
   os << "Model: ";
   os << "meshes.size = " << meshes_.size() << ", ";
   os << "textures_loaded.size = " << textures_loaded_.size();
+
+  os << std::endl;
+  os << "  meshes: " << std::endl;
+  for (const std::shared_ptr<Mesh>& m : meshes_) {
+    os << "  > " << m << std::endl;
+  }
+
+  // os << std::endl;
+  os << "  textures_loaded: " << std::endl;
+  for (const Texture &tl : textures_loaded_)
+  {
+    os << "  > " << tl << std::endl;
+  }
 }
 
 unsigned int TextureFromFile(const char* path, const std::string& directory,

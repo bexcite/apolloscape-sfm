@@ -2,17 +2,24 @@
 
 #include "cv_gl/mesh.h"
 
+#include <glm/gtc/type_ptr.hpp>
 
 Mesh::Mesh(const std::vector<Vertex>& vertices,
      const std::vector<unsigned int>& indices,
      const std::vector<Texture>& textures) : mesh_type_(MeshType::TRIANGLES) {
-
   this->vertices = vertices;
   this->indices = indices;
-  this->textures = textures;
-
+  this->material.textures = textures;
   SetupMesh();
+}
 
+Mesh::Mesh(const std::vector<Vertex> &vertices,
+           const std::vector<unsigned int> &indices,
+           const Material &material) : mesh_type_(MeshType::TRIANGLES) {
+  this->vertices = vertices;
+  this->indices = indices;
+  this->material = material;
+  SetupMesh();
 }
 
 Mesh::Mesh(const Mesh& mesh) {
@@ -34,19 +41,27 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
   // setup textures
   unsigned int diffuse_num = 1;
   unsigned int specular_num = 1;
-  for (unsigned int i = 0; i < textures.size(); ++i) {
+  for (unsigned int i = 0; i < material.textures.size(); ++i) {
     glActiveTexture(GL_TEXTURE0 + i);
 
     std::string number;
-    std::string name = textures[i].type;
+    std::string name = material.textures[i].type;
     if (name == "texture_diffuse") {
       number = std::to_string(diffuse_num++);
     } else if (name == "texture_specular") {
       number = std::to_string(specular_num++);
     }
 
-    glBindTexture(GL_TEXTURE_2D, textures[i].id);
+    glBindTexture(GL_TEXTURE_2D, material.textures[i].id);
     shader->SetInt(name + number, i);
+  }
+
+  //TODO: setup diffuse color
+  shader->SetVector4fv("material.ambient", glm::value_ptr(material.ambient_color));
+  shader->SetVector4fv("material.diffuse", glm::value_ptr(material.diffuse_color));
+
+  if (!material.textures.empty()) {
+    shader->SetInt("material.texture", material.textures.size());
   }
 
   // draw mesh
@@ -126,12 +141,24 @@ std::ostream& operator<<(std::ostream& os, const Vertex& vertex) {
   return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const Material &material) {
+  os << "Material: diffuse_color = " << glm::to_string(material.diffuse_color) << ", ";
+  os << "textures.size = " << material.textures.size();
+  return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const Texture &texture) {
+  os << "Texture: " << texture.id << ", " << texture.type << ", " << texture.path;
+  return os;
+}
+
 std::ostream& Mesh::print(std::ostream& os) const {
   os << "Mesh: ";
   os << "vao_:" << vao_ << ", vbo_:" << vbo_ << ", ebo:" << ebo_;
   os << " vertices.size = " << this->vertices.size() << ", ";
   os << "indices.size = " << this->indices.size() << ", ";
-  os << "textures.size = " << this->textures.size();
+  // os << "textures.size = " << this->textures.size() << ", ";
+  os << "material = " << this->material;
   return os;
 }
 std::ostream& operator<<(std::ostream& os, const Mesh& mesh) {

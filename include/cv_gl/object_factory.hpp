@@ -146,9 +146,13 @@ public:
 
     Model* model = new Model(path);
 
+    // auto shader_model = std::make_shared<Shader>(
+    //   "../shaders/one.vs",
+    //   "../shaders/one_model.fs");
+
     auto shader_model = std::make_shared<Shader>(
-      "../shaders/one.vs",
-      "../shaders/one_model.fs");
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
 
     ModelObject* model_obj =
         new ModelObject(model);

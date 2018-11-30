@@ -45,18 +45,22 @@ int main(int argc, char *argv[])
         ObjectFactory::CreateCube());
     //   camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
 
+    // std::cout << "Loading debug cube ..." << std::endl;
+    // std::cin.ignore();
     std::shared_ptr<ModelObject> debug_cube_obj(
         ObjectFactory::CreateModelObject(
             "../data/objects/debug_cube/debug_cube.obj"));
     //   debug_cube_obj->SetScale(glm::vec3(0.2f));
     debug_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 3.0f));
 
+    // std::cout << "Loading nanosuit ..." << std::endl;
+    // std::cin.ignore();
+    std::shared_ptr<ModelObject> nanosuit_obj(
+        ObjectFactory::CreateModelObject(
+            "../data/objects/nanosuit/nanosuit.obj"));
+    nanosuit_obj->SetScale(glm::vec3(0.2f));
+    nanosuit_obj->SetTranslation(glm::vec3(5.0f, 2.0f, 0.0f));
     /*
-  std::shared_ptr<ModelObject> nanosuit_obj(
-      ObjectFactory::CreateModelObject(
-          "../data/objects/nanosuit/nanosuit.obj"));
-  nanosuit_obj->SetScale(glm::vec3(0.2f));
-  nanosuit_obj->SetTranslation(glm::vec3(5.0f, 2.0f, 0.0f));
 
   std::shared_ptr<ModelObject> cyborg_obj(
       ObjectFactory::CreateModelObject(
@@ -77,10 +81,11 @@ int main(int argc, char *argv[])
   rock_obj->SetTranslation(glm::vec3(5.0f, -3.0f, 0.0f));
   */
 
-    std::cout << "Floor = " << floor_obj << std::endl;
-    std::cout << "Camera = " << camera_obj << std::endl;
-    std::cout << "Zero Cube = " << zero_cube_obj << std::endl;
-    std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
+    // std::cout << "Floor = " << floor_obj << std::endl;
+    // std::cout << "Camera = " << camera_obj << std::endl;
+    // std::cout << "Zero Cube = " << zero_cube_obj << std::endl;
+    // std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
+    // std::cout << "Nanosuit = " << nanosuit_obj << std::endl;
 
     /*
   std::cout << "Nanosuit = " << nanosuit_obj << std::endl;
@@ -89,25 +94,26 @@ int main(int argc, char *argv[])
   std::cout << "Rock = " << rock_obj << std::endl;
   */
 
-    // while (gl_window.IsRunning())
-    // {
+    while (gl_window.IsRunning())
+    {
         // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
 
         /* ====================== Render ===================== */
-        // renderer->Draw(floor_obj);
-        // renderer->Draw(camera_obj);
-        // renderer->Draw(zero_cube_obj);
-        // renderer->Draw(debug_cube_obj);
+        renderer->Draw(floor_obj);
+        renderer->Draw(camera_obj);
+        renderer->Draw(zero_cube_obj);
+        renderer->Draw(debug_cube_obj);
 
-        /*
+    
     renderer->Draw(nanosuit_obj);
+    /*
     renderer->Draw(cyborg_obj);
     renderer->Draw(planet_obj);
     renderer->Draw(rock_obj);
     */
 
-    //     gl_window.RunLoop();
-    // }
+    gl_window.RunLoop();
+    }
 
     return EXIT_SUCCESS;
 }

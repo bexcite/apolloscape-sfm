@@ -26,17 +26,30 @@ struct Texture {
   std::string path;
 };
 
+struct Material {
+  Material(const glm::vec4 amb_color = {0.15, 0.15, 0.15, 1.0},
+           const glm::vec4 diff_color = {0.5, 0.5, 0.5, 1.0})
+      : ambient_color(amb_color), diffuse_color(diff_color) {};
+  glm::vec4 ambient_color;
+  glm::vec4 diffuse_color;
+  std::vector<Texture> textures;
+};
+
 class Mesh {
  public:
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
-  std::vector<Texture> textures;
+  Material material;
+  // std::vector<Texture> textures;
 
   void SetMeshType(const MeshType& mesh_type) { mesh_type_ = mesh_type; }
 
   Mesh(const std::vector<Vertex>& vertices,
        const std::vector<unsigned int>& indices,
        const std::vector<Texture>& textures);
+  Mesh(const std::vector<Vertex>& vertex,
+       const std::vector<unsigned int>& indices,
+       const Material& material);
   Mesh(const Mesh& mesh);
   Mesh operator=(const Mesh& mesh);
 
@@ -56,11 +69,10 @@ private:
 
 };
 
-
-std::ostream& operator<<(std::ostream& os, const Vertex& vertex);
-std::ostream& operator<<(std::ostream& os, const Mesh& mesh);
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Mesh>& mesh);
-
-
+std::ostream &operator<<(std::ostream &os, const Vertex &vertex);
+std::ostream &operator<<(std::ostream &os, const Texture &texture);
+std::ostream &operator<<(std::ostream &os, const Material &material);
+std::ostream &operator<<(std::ostream &os, const Mesh &mesh);
+std::ostream &operator<<(std::ostream &os, const std::shared_ptr<Mesh> &mesh);
 
 #endif  // CV_GL_MESH_H_
