@@ -141,6 +141,14 @@ std::ostream& operator<<(std::ostream& os, const Vertex& vertex) {
   return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const std::vector<Vertex> &vertices) {
+  os << std::endl;
+  for (auto v : vertices) {
+    os << "  -> " << v << std::endl;
+  }
+  return os;
+}
+
 std::ostream &operator<<(std::ostream &os, const Material &material) {
   os << "Material: diffuse_color = " << glm::to_string(material.diffuse_color) << ", ";
   os << "textures.size = " << material.textures.size();

@@ -25,7 +25,7 @@ void main() {
   // gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);
   gl_Position = projection * view * model * pos;
 
-  vec3 lightDir1 = normalize(vec3(-1.0, -1.0, 1.0));
+  vec3 lightDir1 = normalize(vec3(-1.0, -0.3, 0.6));
 
   vec3 lightDir2 = vec3(-lightDir1.x, -lightDir1.y, -lightDir1.z);
 

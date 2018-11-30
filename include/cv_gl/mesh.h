@@ -43,6 +43,7 @@ class Mesh {
   // std::vector<Texture> textures;
 
   void SetMeshType(const MeshType& mesh_type) { mesh_type_ = mesh_type; }
+  MeshType GetMeshType() const { return mesh_type_; }
 
   Mesh(const std::vector<Vertex>& vertices,
        const std::vector<unsigned int>& indices,
@@ -70,6 +71,7 @@ private:
 };
 
 std::ostream &operator<<(std::ostream &os, const Vertex &vertex);
+std::ostream &operator<<(std::ostream &os, const std::vector<Vertex>& vertices);
 std::ostream &operator<<(std::ostream &os, const Texture &texture);
 std::ostream &operator<<(std::ostream &os, const Material &material);
 std::ostream &operator<<(std::ostream &os, const Mesh &mesh);

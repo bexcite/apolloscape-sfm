@@ -54,7 +54,7 @@ Model::LoadModel(const std::string& path) {
   const aiScene* scene = importer.ReadFile(path,
       aiProcess_Triangulate | aiProcess_FlipUVs);
 
-  std::cout << "mNumMaterials = " << scene->mNumMaterials << std::endl;
+  // std::cout << "mNumMaterials = " << scene->mNumMaterials << std::endl;
 
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
     std::cout << "ERROR:ASSIMP:" << importer.GetErrorString() << std::endl;
@@ -132,7 +132,7 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
   // process material
   // if (mesh->mMaterialIndex > 0) {
 
-    std::cout << "mMaterialIndex = " << mesh->mMaterialIndex << std::endl;
+    // std::cout << "mMaterialIndex = " << mesh->mMaterialIndex << std::endl;
 
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
     std::vector<Texture> diffuse_maps = LoadMaterialTextures(material,
@@ -178,7 +178,7 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
 
     auto m = std::make_shared<Mesh>(vertices, indices, mat);
     
-    std::cout << "<<<<< m = " << m << std::endl;
+    // std::cout << "<<<<< m = " << m << std::endl;
 
     return m;
 }
@@ -190,7 +190,7 @@ Model::LoadMaterialTextures(const aiMaterial *material,
     const aiTextureType type, const std::string& type_name) {
   std::vector<Texture> textures;
 
-  std::cout << "textureCount = " << material->GetTextureCount(type) << " for aiTextureType = " << type << std::endl;
+  // std::cout << "textureCount = " << material->GetTextureCount(type) << " for aiTextureType = " << type << std::endl;
 
   for(unsigned int i = 0; i < material->GetTextureCount(type); ++i) {
     aiString str;
@@ -203,8 +203,7 @@ Model::LoadMaterialTextures(const aiMaterial *material,
       if (std::strcmp(textures_loaded_[j].path.data(), str.C_Str()) == 0) {
         textures.emplace_back(textures_loaded_[j]);
         skip = true;
-        std::cout << "Skip texture loading: " << textures_loaded_[j].path
-            << std::endl;
+        // std::cout << "Skip texture loading: " << textures_loaded_[j].path << std::endl;
         break;
       }
     }

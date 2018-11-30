@@ -12,6 +12,8 @@ out vec4 FragColor;
 in vec2 TexCoord;
 in vec3 FragPos;
 in vec3 Normal;
+
+// TODO: Change this to an array
 in vec3 LightDir1;
 in vec3 LightDir2;
 
@@ -33,6 +35,7 @@ void main() {
 
   if (material.texture == 0) {  
     FragColor = material.ambient + material.diffuse * (diff1 + diff2);
+    // FragColor = material.diffuse * (diff1 + diff2);
   } else {
     vec4 texture_color = texture(texture_diffuse1, TexCoord);
     // vec4 texture_color = vec4(1.0, 0.0, 0.0, 1.0);

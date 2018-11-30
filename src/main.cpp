@@ -270,9 +270,13 @@ int main(int argc, char* argv[]) {
     "../shaders/one.vs",
     "../shaders/one.fs");
 
+  // auto shader_model = std::make_shared<Shader>(
+  //   "../shaders/one.vs",
+  //   "../shaders/one_model.fs");
+
   auto shader_model = std::make_shared<Shader>(
-    "../shaders/one.vs",
-    "../shaders/one_model.fs");
+      "../shaders/two.vs",
+      "../shaders/two_model.fs");
 
   auto shader_color = std::make_shared<Shader>(
     "../shaders/one.vs",

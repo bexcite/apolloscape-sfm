@@ -7,6 +7,27 @@
 #include "cv_gl/mesh.h"
 #include "cv_gl/shader.h"
 
+std::vector<Vertex> CalcNormalsFromVertInd(const std::vector<Vertex> &vertices, const std::vector<uint> &indices) {
+  
+  int size = indices.size();
+
+  std::vector<Vertex> nv(3 * (size / 3));
+
+  for (int i = 0; i < size - 2; i += 3) {
+    glm::vec3 vec1 = vertices[indices[i + 1]].position - vertices[indices[i]].position;
+    glm::vec3 vec2 = vertices[indices[i + 2]].position - vertices[indices[i]].position;
+    glm::vec3 normal = glm::normalize(glm::cross(vec1, vec2));
+    nv[i] = vertices[indices[i]];
+    nv[i].normal = normal;
+    nv[i + 1] = vertices[indices[i + 1]];
+    nv[i + 1].normal = normal;
+    nv[i + 2] = vertices[indices[i + 2]];
+    nv[i + 2].normal = normal;
+  }
+
+
+  return nv;
+}
 
 class MeshFactory {
 
@@ -63,6 +84,8 @@ public:
     return mesh;
   }
 
+  
+
   static std::shared_ptr<Mesh> CreateCube() {
     std::vector<Texture> textures;
     std::vector<Vertex> vertices = {
@@ -78,20 +101,41 @@ public:
       {glm::vec3(-0.5f, 0.5f, -0.5f)},  // 7
       
     };
+
+    // std::vector<unsigned int> indices = {
+    //   0, 1, 2, 
+    //   0, 2, 3,
+    //   4, 5, 6,
+    //   4, 6, 7,
+    //   0, 3, 4,
+    //   4, 3, 7,
+    //   0, 1, 5,
+    //   0, 5, 4,
+    //   3, 2, 6,
+    //   3, 6, 7,
+    //   1, 2, 6,
+    //   1, 6, 5
+    // };
+
     std::vector<unsigned int> indices = {
-      0, 1, 2, 
-      0, 2, 3,
-      4, 5, 6,
-      4, 6, 7,
-      0, 3, 4,
-      4, 3, 7,
-      0, 1, 5,
-      0, 5, 4,
-      3, 2, 6,
-      3, 6, 7,
-      1, 2, 6,
-      1, 6, 5
-    };
+        0, 2, 1,
+        0, 3, 2,
+        4, 5, 6,
+        4, 6, 7,
+        0, 4, 3,
+        4, 7, 3,
+        0, 1, 5,
+        0, 5, 4,
+        3, 6, 2,
+        3, 7, 6,
+        1, 2, 6,
+        1, 6, 5};
+
+    vertices = CalcNormalsFromVertInd(vertices, indices);
+    indices.clear();
+
+    // std::cout << "-----> vertices = " << vertices << std::endl;
+
     auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
     mesh->SetMeshType(MeshType::TRIANGLES);
     return mesh;
@@ -111,9 +155,13 @@ public:
 
     auto mesh = MeshFactory::CreateGrid(step_size, line_num);
 
+    // auto shader_color = std::make_shared<Shader>(
+    //   "../shaders/one.vs",
+    //   "../shaders/one_color.fs");
+
     auto shader_color = std::make_shared<Shader>(
-      "../shaders/one.vs",
-      "../shaders/one_color.fs");
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
 
     ColorObject* floor_obj =
         new ColorObject(mesh, glm::vec4(0.7f, 0.7f, 1.0f, 1.0f));
@@ -129,9 +177,13 @@ public:
 
     auto mesh = MeshFactory::CreateCameraFrustum();
 
+    // auto shader_color = std::make_shared<Shader>(
+    //   "../shaders/one.vs",
+    //   "../shaders/one_color.fs");
+
     auto shader_color = std::make_shared<Shader>(
-      "../shaders/one.vs",
-      "../shaders/one_color.fs");
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
 
     ColorObject* camera_obj =
         new ColorObject(mesh, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
@@ -167,9 +219,13 @@ public:
 
     auto mesh = MeshFactory::CreateCube();
 
+    // auto shader_color = std::make_shared<Shader>(
+    //   "../shaders/one.vs",
+    //   "../shaders/one_color.fs");
+
     auto shader_color = std::make_shared<Shader>(
-      "../shaders/one.vs",
-      "../shaders/one_color.fs");
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
 
     ColorObject* cube_obj =
         new ColorObject(mesh, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));

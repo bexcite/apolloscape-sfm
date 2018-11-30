@@ -104,6 +104,10 @@ class DObject {
     rotation_ = rotation;
   }
 
+  void SetMaterial(const Material& material) {
+    mesh_->material = material;
+  }
+
   std::string GetName() { return name_; }
 
 
@@ -124,15 +128,26 @@ class ColorObject: public DObject {
 
   ColorObject(const std::shared_ptr<Mesh> mesh,
               const glm::vec4& color = glm::vec4(1.0f))
-      : DObject(mesh, "ColorObject"), color_(color) {}
+      : DObject(mesh, "ColorObject"), color_(color) {
+    if (mesh_->GetMeshType() == MeshType::LINES) {
+      mesh_->material.ambient_color = color;
+    } else {
+      mesh_->material.diffuse_color = color;
+    }
+    
+  }
 
   virtual void PrepareShader(const std::shared_ptr<Shader> shader) const {
     // std::cout << "ColorObject::PrepareShader" << std::endl;
-    shader->SetVector4fv("color", glm::value_ptr(color_));
+    // shader->SetVector4fv("color", glm::value_ptr(color_));
+
+    // Set material
+    // shader->SetVector4fv("material.diffuse", glm::value_ptr(mesh_.diffuse_color));
   };
 
   void SetColor(const glm::vec4& color) {
     color_ = color;
+    mesh_->material.diffuse_color = color;
   }
 
  private:
