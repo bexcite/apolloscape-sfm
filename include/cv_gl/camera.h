@@ -20,7 +20,7 @@ enum CameraMovement
 // camera constant
 const float kYaw = 0.0f;
 const float kPitch = 5.0f;  // -5.0f
-const float kSpeed = 1000.5f; // 2.5f
+const float kSpeed = 2.5f; // 2.5f
 const float kSensitivity = 0.1f;
 const float kZoom = 45.0f;
 
@@ -40,16 +40,22 @@ class Camera {
 
   void SetDirection(const glm::vec3& direction_to);
   void SetPosition(const glm::vec3& position);
+  void SetOrigin(const glm::vec3& origin);
+  void SetRotation(const float x_angle, const float y_angle, const float z_angle);
+  void SetScale(const float scale);
 
   void SetIntrinsics(const float fx, const float fy, const float cx,
       const float cy);
+
+  float GetImageWidth() { return image_width_; }
+  float GetImageHeight() { return image_height_; }
 
 
  private:
 
    // Intrinsics
    float fx_ = 1450.317230113;
-   float fy_ =1451.184836113;
+   float fy_ = 1451.184836113;
    float cx_ = 1244.386581025;
    float cy_ = 1013.145997723;
 
@@ -61,6 +67,8 @@ class Camera {
 
    float near_ = 0.1;
    float far_ = 5000;
+
+   float scale_ = 1.0f;
 
    // Extrinsics
    glm::vec3 position_;
@@ -74,6 +82,9 @@ class Camera {
 
    float movement_speed_;
    float mouse_sensitivity_;
+
+  // Initial camera position
+   glm::vec3 origin_;
 
    // TODO (Pavlo): Should be removed probably
    float zoom_;

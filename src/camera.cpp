@@ -18,6 +18,7 @@ Camera::Camera(const glm::vec3& position,
     float yaw,
     float pitch)
     : position_(position),
+      origin_(position),
       world_up_(world_up),
       yaw_(yaw),
       pitch_(pitch),
@@ -96,20 +97,21 @@ void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
   } else if (camera_movement == RIGHT) {
     position_ += right_ * delta;
   } else if (camera_movement == MOVE_ORIGIN) {
-    position_ = glm::vec3(-3.0f, 0.0f, 1.5f);
-    SetDirection(glm::vec3(0.0f));
+    // position_ = glm::vec3(-3.0f * scale_, 0.0f * scale_, 1.5f * scale_);
+    position_ = origin_;
+    SetDirection(glm::vec3(0.0f * scale_));
     UpdateCameraVectors();
   } else if (camera_movement == MOVE_TOP) {
-    position_ = glm::vec3(0.0f, 0.0f, 15.0f);
-    SetDirection(glm::vec3(0.0f));
+    position_ = glm::vec3(0.0f, 0.0f, 15.0f) * scale_;
+    SetDirection(glm::vec3(0.0f) * scale_);
     UpdateCameraVectors();
   } else if (camera_movement == MOVE_SIDEWAYS_RIGHT) {
-    position_ = glm::vec3(-5.0f, -5.0f, 5.0f);
-    SetDirection(glm::vec3(0.0f));
+    position_ = glm::vec3(-5.0f, -5.0f, 5.0f) * scale_;
+    SetDirection(glm::vec3(0.0f) * scale_);
     UpdateCameraVectors();
   } else if (camera_movement == MOVE_SIDEWAYS_LEFT) {
-    position_ = glm::vec3(-5.0f, 5.0f, 5.0f);
-    SetDirection(glm::vec3(0.0f));
+    position_ = glm::vec3(-5.0f, 5.0f, 5.0f) * scale_;
+    SetDirection(glm::vec3(0.0f) * scale_);
     UpdateCameraVectors();
   }
   // std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
@@ -181,6 +183,22 @@ void Camera::SetDirection(const glm::vec3& direction_to) {
 
 void Camera::SetPosition(const glm::vec3& position) {
   position_ = position;
+}
+
+void Camera::SetOrigin(const glm::vec3& origin) {
+  origin_ = origin;
+  SetPosition(origin);
+}
+
+
+void Camera::SetRotation(const float x_angle, const float y_angle, const float z_angle) {
+  pitch_ = glm::degrees(y_angle);
+  yaw_ = glm::degrees(z_angle - M_PI_2);
+  UpdateCameraVectors();
+}
+
+void Camera::SetScale(const float scale) {
+  scale_ = scale;
 }
 
 void Camera::SetIntrinsics(const float fx, const float fy, const float cx,
