@@ -44,16 +44,27 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<ColorObject> camera_obj(
       ObjectFactory::CreateCameraFrustum());
   camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
+  camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
 
-  std::shared_ptr<ColorObject> zero_cube_obj(
-      ObjectFactory::CreateCube());
-//   camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+  std::shared_ptr<ColorObject> zero_cube_obj(ObjectFactory::CreateCube());
+
+  std::shared_ptr<ColorObject> x_cube_obj(ObjectFactory::CreateCube());
+  x_cube_obj->SetColor({0.8, 0.1, 0.1, 1.0});
+  x_cube_obj->SetTranslation(glm::vec3(10.0f, 0.0f, 0.0f));
+
+  std::shared_ptr<ColorObject> y_cube_obj(ObjectFactory::CreateCube());
+  y_cube_obj->SetColor({0.1, 0.8, 0.1, 1.0});
+  y_cube_obj->SetTranslation(glm::vec3(0.0f, 10.0f, 0.0f));
+
+  std::shared_ptr<ColorObject> z_cube_obj(ObjectFactory::CreateCube());
+  z_cube_obj->SetColor({0.1, 0.1, 0.8, 1.0});
+  z_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 10.0f));
 
   std::shared_ptr<ModelObject> debug_cube_obj(
       ObjectFactory::CreateModelObject(
           "../data/objects/debug_cube/debug_cube.obj"));
 //   debug_cube_obj->SetScale(glm::vec3(0.2f));
-  debug_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 3.0f));
+  debug_cube_obj->SetTranslation(glm::vec3(3.0f, 3.0f, 3.0f));
 
 /*
   std::shared_ptr<ModelObject> nanosuit_obj(
@@ -81,9 +92,12 @@ int main(int argc, char* argv[]) {
   rock_obj->SetTranslation(glm::vec3(5.0f, -3.0f, 0.0f));
   */
 
-  std::cout << "Floor = " << floor_obj << std::endl;
-  std::cout << "Camera = " << camera_obj << std::endl;
-  std::cout << "Zero Cube = " << zero_cube_obj << std::endl;
+//   std::cout << "Floor = " << floor_obj << std::endl;
+//   std::cout << "Camera = " << camera_obj << std::endl;
+//   std::cout << "Zero Cube = " << zero_cube_obj << std::endl;
+  std::cout << "X Cube = " << x_cube_obj << std::endl;
+  std::cout << "Y Cube = " << y_cube_obj << std::endl;
+  std::cout << "Z Cube = " << z_cube_obj << std::endl;
 //   std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
 
   /*
@@ -101,6 +115,10 @@ int main(int argc, char* argv[]) {
     renderer->Draw(camera_obj);
     renderer->Draw(zero_cube_obj);
     renderer->Draw(debug_cube_obj);
+
+    renderer->Draw(x_cube_obj);
+    renderer->Draw(y_cube_obj);
+    renderer->Draw(z_cube_obj);
 
     /*
     renderer->Draw(nanosuit_obj);

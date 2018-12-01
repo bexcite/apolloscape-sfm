@@ -228,7 +228,7 @@ public:
         "../shaders/two_model.fs");
 
     ColorObject* cube_obj =
-        new ColorObject(mesh, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
+        new ColorObject(mesh, glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
     cube_obj->SetShader(shader_color);
 
     return cube_obj;

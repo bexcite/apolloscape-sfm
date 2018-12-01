@@ -5,7 +5,9 @@ message("my INCLUDE DIRS = " ${PROJECT_INCLUDE_DIRS})
 add_library(cv_gl_lib shader.cpp camera.cpp mesh.cpp gl_window.cpp)
 set_property(TARGET cv_gl_lib PROPERTY CXX_STANDARD 11)
 target_include_directories(cv_gl_lib PUBLIC ${PROJECT_INCLUDE_DIRS} )
-target_link_libraries(cv_gl_lib PUBLIC glad glfw stb_image glm assimp)
+# message("boost INCLUDE_DIRS = " ${Boost_INCLUDE_DIRS})
+# message("boost LIBRARIES = " ${Boost_LIBRARIES})
+target_link_libraries(cv_gl_lib PUBLIC glad glfw stb_image glm assimp Boost::filesystem)
 set_target_properties(cv_gl_lib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -33,6 +35,14 @@ set_property(TARGET ${DEBUG_CUBE_NAME} PROPERTY CXX_STANDARD 11)
 message("debug_cube_name = " ${DEBUG_CUBE_NAME})
 target_link_libraries(${DEBUG_CUBE_NAME} PUBLIC cv_gl_lib)
 set_target_properties(${DEBUG_CUBE_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+set(SHOW_CAMERAS_NAME show_cameras)
+add_executable(${SHOW_CAMERAS_NAME} show_cameras.cpp)
+set_property(TARGET ${SHOW_CAMERAS_NAME} PROPERTY CXX_STANDARD 11)
+message("show_cameras_name = " ${SHOW_CAMERAS_NAME})
+target_link_libraries(${SHOW_CAMERAS_NAME} PUBLIC cv_gl_lib)
+set_target_properties(${SHOW_CAMERAS_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 

@@ -104,6 +104,14 @@ class DObject {
     rotation_ = rotation;
   }
 
+  void SetRotation(const float x_angle, const float y_angle, const float z_angle ) {
+    glm::mat4 rotation(1.0f);    
+    rotation = glm::rotate(rotation, z_angle, glm::vec3(0.0f, 0.0f, 1.0f));
+    rotation = glm::rotate(rotation, y_angle, glm::vec3(0.0f, 1.0f, 0.0f));
+    rotation = glm::rotate(rotation, x_angle, glm::vec3(1.0f, 0.0f, 0.0f));
+    rotation_ = rotation;
+  }
+
   void SetMaterial(const Material& material) {
     mesh_->material = material;
   }

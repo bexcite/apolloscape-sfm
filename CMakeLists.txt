@@ -18,7 +18,7 @@ set(CMAKE_BUILD_TYPE Debug)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-# find_package(Boost 1.59 REQUIRED COMPONENTS filesystem)
+find_package(Boost 1.59 REQUIRED COMPONENTS filesystem)
 # find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 # find_package(OpenCV REQUIRED)
 
