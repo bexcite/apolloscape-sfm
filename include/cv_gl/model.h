@@ -51,8 +51,8 @@ void
 Model::LoadModel(const std::string& path) {
   Assimp::Importer importer;
 
-  const aiScene* scene = importer.ReadFile(path,
-      aiProcess_Triangulate | aiProcess_FlipUVs);
+  const aiScene *scene = importer.ReadFile(path,
+      aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals /*aiProcess_GenSmoothNormals*/);
 
   // std::cout << "mNumMaterials = " << scene->mNumMaterials << std::endl;
 
@@ -94,8 +94,12 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
     vertex.position = {mesh->mVertices[i].x, mesh->mVertices[i].y,
         mesh->mVertices[i].z};
 
-    vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y,
-        mesh->mNormals[i].z};
+    if (mesh->HasNormals()) {
+      // std::cout << "HAS NORMALS!!!!!!!!!!!!!!!!!!" << std::endl;
+      vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y,
+                       mesh->mNormals[i].z};
+    }
+    
 
     // std::cout << "numUVChannels = " << mesh->GetNumUVChannels() << std::endl;
 
@@ -153,11 +157,14 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
   // std::cin.ignore();
 
     // Material mat;
-    // std::cout << "<<<< mat = " << mat << std::endl;
     // std::cin.ignore();
 
     Material mat;
     mat.textures = textures;
+    // std::cout << "<<<< mat = " << mat << std::endl;
+    // for (auto t : mat.textures) {
+    //   std::cout << " --- " << t << std::endl;
+    // }
 
     aiColor4D ambient;
     if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &ambient))
@@ -253,7 +260,7 @@ unsigned int TextureFromFile(const char* path, const std::string& directory,
 
   std::string filename = std::string(path);
   filename = directory + "/" + filename;
-  // std::cout << "filename = " << filename << std::endl;
+  // std::cout << "filename = " << filename << std::–endl;
 
   unsigned int texture_id;
   glGenTextures(1, &texture_id);

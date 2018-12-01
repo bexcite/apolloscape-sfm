@@ -130,7 +130,9 @@ void GLWindow::ProcessInput() {
   } else if (glfwGetKey(window_, GLFW_KEY_1) == GLFW_PRESS) {
     camera_->ProcessKeyboard(MOVE_TOP, delta_time);
   } else if (glfwGetKey(window_, GLFW_KEY_2) == GLFW_PRESS) {
-    camera_->ProcessKeyboard(MOVE_SIDEWAYS, delta_time);
+    camera_->ProcessKeyboard(MOVE_SIDEWAYS_RIGHT, delta_time);
+  } else if (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS) {
+    camera_->ProcessKeyboard(MOVE_SIDEWAYS_LEFT, delta_time);
   }
 }
 

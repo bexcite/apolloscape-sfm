@@ -103,8 +103,12 @@ void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
     position_ = glm::vec3(0.0f, 0.0f, 15.0f);
     SetDirection(glm::vec3(0.0f));
     UpdateCameraVectors();
-  } else if (camera_movement == MOVE_SIDEWAYS) {
+  } else if (camera_movement == MOVE_SIDEWAYS_RIGHT) {
     position_ = glm::vec3(-5.0f, -5.0f, 5.0f);
+    SetDirection(glm::vec3(0.0f));
+    UpdateCameraVectors();
+  } else if (camera_movement == MOVE_SIDEWAYS_LEFT) {
+    position_ = glm::vec3(-5.0f, 5.0f, 5.0f);
     SetDirection(glm::vec3(0.0f));
     UpdateCameraVectors();
   }

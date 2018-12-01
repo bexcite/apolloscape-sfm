@@ -4,7 +4,8 @@
 
 #include <glm/glm.hpp>
 
-enum CameraMovement {
+enum CameraMovement
+{
   FORWARD,
   BACKWARD,
   LEFT,
@@ -12,7 +13,8 @@ enum CameraMovement {
 
   MOVE_ORIGIN,
   MOVE_TOP,
-  MOVE_SIDEWAYS
+  MOVE_SIDEWAYS_RIGHT,
+  MOVE_SIDEWAYS_LEFT
 };
 
 // camera constant

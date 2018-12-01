@@ -560,9 +560,10 @@ void processInput(GLFWwindow *window) {
   } else if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
     camera.ProcessKeyboard(MOVE_TOP, delta_time);
   } else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-    camera.ProcessKeyboard(MOVE_SIDEWAYS, delta_time);
+    camera.ProcessKeyboard(MOVE_SIDEWAYS_RIGHT, delta_time);
+  } else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+    camera.ProcessKeyboard(MOVE_SIDEWAYS_LEFT, delta_time);
   }
-
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {

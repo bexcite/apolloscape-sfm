@@ -19,7 +19,7 @@ class DObject {
       scale_(glm::vec3(1.0f)),
       rotation_(glm::mat4(1.0f)),
       name_(name) {
-    std::cout << "DObject:: (con)" << std::endl;
+    // std::cout << "DObject:: (con)" << std::endl;
   };
 
   virtual void Draw(const glm::mat4& view_matrix, const glm::mat4& proj_matrix,

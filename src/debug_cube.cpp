@@ -53,13 +53,43 @@ int main(int argc, char *argv[])
     //   debug_cube_obj->SetScale(glm::vec3(0.2f));
     debug_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 3.0f));
 
-    // std::cout << "Loading nanosuit ..." << std::endl;
+    std::cout << "Loading nanosuit ..." << std::endl;
     // std::cin.ignore();
     std::shared_ptr<ModelObject> nanosuit_obj(
         ObjectFactory::CreateModelObject(
             "../data/objects/nanosuit/nanosuit.obj"));
     nanosuit_obj->SetScale(glm::vec3(0.2f));
     nanosuit_obj->SetTranslation(glm::vec3(5.0f, 2.0f, 0.0f));
+
+    std::cout << "Loading light_bulb ..." << std::endl;
+    // std::cin.ignore();
+    std::shared_ptr<ModelObject> light_bulb_obj(
+        ObjectFactory::CreateModelObject(
+            "../data/objects/light_bulb/light_bulb.obj"));
+    light_bulb_obj->SetScale(glm::vec3(0.1f));
+    light_bulb_obj->SetTranslation(glm::vec3(4.0f, -3.0f, 2.0f));
+
+    std::cout << "Loading moon ..." << std::endl;
+    std::shared_ptr<ModelObject> moon_obj(
+        ObjectFactory::CreateModelObject(
+            "../data/objects/moon/moon.obj"));
+    moon_obj->SetScale(glm::vec3(0.05f));
+    moon_obj->SetTranslation(glm::vec3(7.0f, 3.0f, 3.0f));
+
+    std::cout << "Loading islands ..." << std::endl;
+    std::shared_ptr<ModelObject> islands_obj(
+        ObjectFactory::CreateModelObject(
+            "../data/objects/islands/islands.obj"));
+    islands_obj->SetScale(glm::vec3(1.0f));
+    islands_obj->SetTranslation(glm::vec3(7.0f, -3.0f, 1.0f));
+
+    std::cout << "Loading kitchen ..." << std::endl;
+    std::shared_ptr<ModelObject> kitchen_obj(
+        ObjectFactory::CreateModelObject(
+            "../data/objects/kitchen/kitchen.obj"));
+    kitchen_obj->SetScale(glm::vec3(1.0f));
+    kitchen_obj->SetTranslation(glm::vec3(2.0f, 3.0f, 1.0f));
+
     /*
 
   std::shared_ptr<ModelObject> cyborg_obj(
@@ -87,6 +117,8 @@ int main(int argc, char *argv[])
     // std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
     // std::cout << "Nanosuit = " << nanosuit_obj << std::endl;
 
+    // std::cout << "Moon = " << moon_obj << std::endl;
+
     /*
   std::cout << "Nanosuit = " << nanosuit_obj << std::endl;
   std::cout << "Cyborg = " << cyborg_obj << std::endl;
@@ -105,14 +137,20 @@ int main(int argc, char *argv[])
         renderer->Draw(debug_cube_obj);
 
     
-    renderer->Draw(nanosuit_obj);
-    /*
+        renderer->Draw(nanosuit_obj);
+        renderer->Draw(light_bulb_obj);
+        renderer->Draw(moon_obj);
+
+        renderer->Draw(islands_obj);
+        renderer->Draw(kitchen_obj);
+
+        /*
     renderer->Draw(cyborg_obj);
     renderer->Draw(planet_obj);
     renderer->Draw(rock_obj);
     */
 
-    gl_window.RunLoop();
+        gl_window.RunLoop();
     }
 
     return EXIT_SUCCESS;
