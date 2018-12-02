@@ -43,7 +43,9 @@ int main(int argc, char *argv[])
 
     std::shared_ptr<ColorObject> zero_cube_obj(
         ObjectFactory::CreateCube());
-    //   camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+    zero_cube_obj->SetTranslation(glm::vec3(3.0f, -5.0f, 0.0f));
+
+    std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
 
     // std::cout << "Loading debug cube ..." << std::endl;
     // std::cin.ignore();
@@ -135,6 +137,8 @@ int main(int argc, char *argv[])
         renderer->Draw(camera_obj);
         renderer->Draw(zero_cube_obj);
         renderer->Draw(debug_cube_obj);
+
+        renderer->Draw(axes_obj);
 
     
         renderer->Draw(nanosuit_obj);
