@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
   camera->SetOrigin(glm::vec3(camera1_poses[110].coords[3], camera1_poses[110].coords[4], camera1_poses[110].coords[5]));
   camera->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
 
-  
+  // std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));  
 
   // Create camera_objects
   std::vector<std::shared_ptr<ColorObject> > camera_objects1;
@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
     co->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
+    // co->AddChild(axes_obj);
     camera_objects1.emplace_back(co);
   }
 
@@ -100,28 +101,30 @@ int main(int argc, char* argv[]) {
     camera_objects2.emplace_back(co);
   }
 
-  std::shared_ptr<ColorObject> zero_cube_obj(ObjectFactory::CreateCube());
-  zero_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
+  std::shared_ptr<DObject> origin_axes_obj(ObjectFactory::CreateAxes(100.0f));
 
-  std::shared_ptr<ColorObject> x_cube_obj(ObjectFactory::CreateCube());
-  x_cube_obj->SetColor({0.8, 0.1, 0.1, 1.0});
-  x_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
-  x_cube_obj->SetTranslation(glm::vec3(500.0f, 0.0f, 0.0f));
+  // std::shared_ptr<ColorObject> zero_cube_obj(ObjectFactory::CreateCube());
+  // zero_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
 
-  std::shared_ptr<ColorObject> y_cube_obj(ObjectFactory::CreateCube());
-  y_cube_obj->SetColor({0.1, 0.8, 0.1, 1.0});
-  y_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
-  y_cube_obj->SetTranslation(glm::vec3(0.0f, 500.0f, 0.0f));
+  // std::shared_ptr<ColorObject> x_cube_obj(ObjectFactory::CreateCube());
+  // x_cube_obj->SetColor({0.8, 0.1, 0.1, 1.0});
+  // x_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
+  // x_cube_obj->SetTranslation(glm::vec3(500.0f, 0.0f, 0.0f));
 
-  std::shared_ptr<ColorObject> z_cube_obj(ObjectFactory::CreateCube());
-  z_cube_obj->SetColor({0.1, 0.1, 0.8, 1.0});
-  z_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
-  z_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 500.0f));
+  // std::shared_ptr<ColorObject> y_cube_obj(ObjectFactory::CreateCube());
+  // y_cube_obj->SetColor({0.1, 0.8, 0.1, 1.0});
+  // y_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
+  // y_cube_obj->SetTranslation(glm::vec3(0.0f, 500.0f, 0.0f));
+
+  // std::shared_ptr<ColorObject> z_cube_obj(ObjectFactory::CreateCube());
+  // z_cube_obj->SetColor({0.1, 0.1, 0.8, 1.0});
+  // z_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
+  // z_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 500.0f));
 
   std::shared_ptr<ModelObject> debug_cube_obj(
       ObjectFactory::CreateModelObject(
           "../data/objects/debug_cube/debug_cube.obj"));
-  debug_cube_obj->SetScale(glm::vec3(100.0f, 100.0f, 100.0f));
+  debug_cube_obj->SetScale(glm::vec3(100.0f));
   debug_cube_obj->SetTranslation(glm::vec3(300.0f, 300.0f, 300.0f));
 
 
@@ -140,12 +143,14 @@ int main(int argc, char* argv[]) {
     /* ====================== Render ===================== */
     renderer->Draw(floor_obj);
     // renderer->Draw(camera_obj);
-    renderer->Draw(zero_cube_obj);
+    // renderer->Draw(zero_cube_obj);
     renderer->Draw(debug_cube_obj);
 
-    renderer->Draw(x_cube_obj);
-    renderer->Draw(y_cube_obj);
-    renderer->Draw(z_cube_obj);
+    // renderer->Draw(x_cube_obj);
+    // renderer->Draw(y_cube_obj);
+    // renderer->Draw(z_cube_obj);
+
+    renderer->Draw(origin_axes_obj);
 
     for (const auto& co : camera_objects1) {
       renderer->Draw(co);
@@ -154,7 +159,6 @@ int main(int argc, char* argv[]) {
     for (const auto& co : camera_objects2) {
       renderer->Draw(co);
     }
-
   
     gl_window.RunLoop();
   }

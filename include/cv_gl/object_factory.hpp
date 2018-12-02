@@ -164,7 +164,7 @@ public:
         "../shaders/two_model.fs");
 
     ColorObject* floor_obj =
-        new ColorObject(mesh, glm::vec4(0.7f, 0.7f, 1.0f, 1.0f));
+        new ColorObject(mesh, glm::vec4(0.5f, 0.5f, 0.8f, 1.0f));
     floor_obj->SetShader(shader_color);
 
     return floor_obj;
@@ -177,6 +177,8 @@ public:
 
     auto mesh = MeshFactory::CreateCameraFrustum();
 
+
+
     // auto shader_color = std::make_shared<Shader>(
     //   "../shaders/one.vs",
     //   "../shaders/one_color.fs");
@@ -188,6 +190,12 @@ public:
     ColorObject* camera_obj =
         new ColorObject(mesh, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
     camera_obj->SetShader(shader_color);
+
+    // Add additional correction to look forward
+    glm::mat4 correction(1.0f);
+    // correction = glm::rotate(correction, static_cast<float>(-M_PI_2), glm::vec3(0.0f, 1.0f, 0.0f));
+    correction = glm::translate(correction, glm::vec3(0.0f, 0.0f, -2.0f));
+    camera_obj->AddToCorrectionMatrix(correction);
 
     return camera_obj;
 
@@ -232,6 +240,37 @@ public:
     cube_obj->SetShader(shader_color);
 
     return cube_obj;
+  
+  }
+
+/* ================ Axes ================================*/
+  static DObject* CreateAxes(float size = 1.0) {
+
+    DObject* axes = new DObject();
+
+    std::shared_ptr<ColorObject> zero_cube_obj(ObjectFactory::CreateCube());
+    zero_cube_obj->SetScale(glm::vec3(0.5f * size));
+    axes->AddChild(zero_cube_obj);
+
+    std::shared_ptr<ColorObject> x_cube_obj(ObjectFactory::CreateCube());
+    x_cube_obj->SetColor({0.8, 0.1, 0.1, 1.0});
+    x_cube_obj->SetScale(glm::vec3(1.0f * size));
+    x_cube_obj->SetTranslation(glm::vec3(10.0f * size, 0.0f, 0.0f));
+    axes->AddChild(x_cube_obj);
+
+    std::shared_ptr<ColorObject> y_cube_obj(ObjectFactory::CreateCube());
+    y_cube_obj->SetColor({0.1, 0.8, 0.1, 1.0});
+    y_cube_obj->SetScale(glm::vec3(1.0f * size));
+    y_cube_obj->SetTranslation(glm::vec3(0.0f, 10.0f * size, 0.0f));
+    axes->AddChild(y_cube_obj);
+
+    std::shared_ptr<ColorObject> z_cube_obj(ObjectFactory::CreateCube());
+    z_cube_obj->SetColor({0.1, 0.1, 0.8, 1.0});
+    z_cube_obj->SetScale(glm::vec3(1.0f * size));
+    z_cube_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 10.0f * size));
+    axes->AddChild(z_cube_obj);
+
+    return axes;
   
   }
 
