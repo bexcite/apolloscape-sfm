@@ -79,12 +79,12 @@ class DObject {
   };
 
   void AddChild(const std::shared_ptr<DObject> child) {
-    std::cout << "scale_ = " << glm::to_string(scale_) << std::endl;
-    if (children.empty()) {
-      std::cout << "children = " << children.size() << std::endl;
-    } else {
-      std::cout << "children is NULL " << std::endl;
-    }
+    // std::cout << "scale_ = " << glm::to_string(scale_) << std::endl;
+    // if (children.empty()) {
+    //   std::cout << "children = " << children.size() << std::endl;
+    // } else {
+    //   std::cout << "children is NULL " << std::endl;
+    // }
     
     children.emplace_back(child);
   }
@@ -96,6 +96,7 @@ class DObject {
   };
 
   void AddToCorrectionMatrix(const glm::mat4 addon_matrix) {
+    InitCorrectionMatrix();
     correction_ = addon_matrix * correction_;
   };
 
@@ -217,6 +218,37 @@ class ColorObject: public DObject {
 
  private:
   glm::vec4 color_;
+};
+
+
+class ImageObject: public DObject {
+public:
+  ImageObject(const std::shared_ptr<Mesh> mesh) 
+      : DObject(mesh, "ImageObject") { 
+  }
+
+  void SetImage(const std::string& image_path) {
+    // load image and set it into material
+    std::cout << "Set image : " << image_path << std::endl;
+
+    Texture texture = Mesh::TextureFromFile(image_path, "", false);
+    texture.type = "texture_diffuse";
+    texture.path = image_path;
+
+    std::cout << "  width = " << texture.width << std::endl;
+    std::cout << "  height = " << texture.height << std::endl;
+
+    if (!mesh_->material.textures.empty()) {
+      mesh_->material.textures[0] = texture;
+    } else {
+      mesh_->material.textures.emplace_back(texture);
+    }
+
+    this->AddToCorrectionMatrix(glm::scale(glm::mat4(1.0f),
+        glm::vec3(static_cast<float>(texture.width) / texture.height, 1.0f, 1.0f)));
+
+  }
+
 };
 
 

@@ -31,6 +31,8 @@ const char kRecordId[] = "Record001";
 const char kCamera1PoseFile[] = "Camera_1.txt";
 const char kCamera2PoseFile[] = "Camera_2.txt";
 
+const float kGlobalScale = 1.0f;
+
 
 int main(int argc, char* argv[]) {
 
@@ -40,6 +42,9 @@ int main(int argc, char* argv[]) {
       / fs::path("pose") / fs::path(kRecordId) / fs::path(kCamera2PoseFile);
   std::cout << "Camera 1 path: " << camera1_path << std::endl;
   std::cout << "Camera 2 path: " << camera2_path << std::endl;
+
+  fs::path camera1_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+      / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_1");
 
   std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path);
   std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path);
@@ -53,7 +58,7 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<Camera> camera =
       std::make_shared<Camera>(glm::vec3(-3.0f, 0.0f, 1.5f));
-  camera->SetScale(100.0f);
+  camera->SetScale(kGlobalScale);
 
   std::cout << "Hello show camera" << std::endl;
 
@@ -63,7 +68,7 @@ int main(int argc, char* argv[]) {
   // Renderer
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
 
-  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(100.0, 60));
+  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(kGlobalScale, 60));
 
   /*
   std::shared_ptr<ColorObject> camera_obj(
@@ -73,10 +78,15 @@ int main(int argc, char* argv[]) {
   camera_obj->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
   */
 
-  camera->SetOrigin(glm::vec3(camera1_poses[110].coords[3], camera1_poses[110].coords[4], camera1_poses[110].coords[5]));
-  camera->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
+  // camera->SetOrigin(glm::vec3(camera1_poses[110].coords[3], camera1_poses[110].coords[4], camera1_poses[110].coords[5]));
+  // camera->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
 
-  // std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));  
+  camera->SetOrigin(glm::vec3(camera1_poses[0].coords[3], camera1_poses[0].coords[4], camera1_poses[0].coords[5]));
+  camera->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
+
+  
+
+  std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));  
 
   // Create camera_objects
   // std::vector<std::shared_ptr<ColorObject> > camera_objects1;
@@ -87,7 +97,9 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<DObject> cameras2(new DObject());
 
-  for (const ImageData& im_data : camera1_poses) {
+  for (int i = 0; i < camera1_poses.size(); ++i) {
+    if (i == 1) break;
+    const ImageData& im_data = camera1_poses[i];
     std::shared_ptr<ColorObject> co(
       ObjectFactory::CreateCameraFrustum());
     co->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
@@ -97,7 +109,9 @@ int main(int argc, char* argv[]) {
     cameras1->AddChild(co);
   }
 
-  for (const ImageData& im_data : camera2_poses) {
+  for (int i = 0; i < camera2_poses.size(); ++i) {
+    if (i == 1) break;
+    const ImageData& im_data = camera2_poses[i];
     std::shared_ptr<ColorObject> co(
       ObjectFactory::CreateCameraFrustum());
     co->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
@@ -106,14 +120,36 @@ int main(int argc, char* argv[]) {
     cameras2->AddChild(co);
   }
 
-  std::shared_ptr<DObject> origin_axes_obj(ObjectFactory::CreateAxes(100.0f));
+  std::shared_ptr<DObject> origin_axes_obj(ObjectFactory::CreateAxes(kGlobalScale));
 
 
   std::shared_ptr<ModelObject> debug_cube_obj(
       ObjectFactory::CreateModelObject(
           "../data/objects/debug_cube/debug_cube.obj"));
-  debug_cube_obj->SetScale(glm::vec3(100.0f));
-  debug_cube_obj->SetTranslation(glm::vec3(300.0f, 300.0f, 300.0f));
+  debug_cube_obj->SetScale(glm::vec3(kGlobalScale));
+  debug_cube_obj->SetTranslation(glm::vec3(3.0f * kGlobalScale, 3.0f * kGlobalScale, 3.0f * kGlobalScale));
+
+
+  std::shared_ptr<DObject> full_camera_obj(new DObject());
+
+  std::shared_ptr<ColorObject> camera_obj(
+      ObjectFactory::CreateCameraFrustum());
+  camera_obj->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
+  camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+  full_camera_obj->AddChild(camera_obj);
+
+  std::shared_ptr<ImageObject> image_obj(ObjectFactory::CreateImage());
+  image_obj->SetScale(glm::vec3(1.0f));
+  image_obj->SetTranslation(glm::vec3(0.0f, 0.0f, -1.0f));
+
+  fs::path image_path = camera1_image_path / fs::path(camera1_poses[0].filename);
+  image_obj->SetImage(image_path.string());
+  full_camera_obj->AddChild(image_obj);
+
+  // full_camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
+
+  full_camera_obj->SetTranslation(glm::vec3(camera1_poses[0].coords[3], camera1_poses[0].coords[4], camera1_poses[0].coords[5]));
+  full_camera_obj->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
 
 
   // std::cout << "Floor = " << floor_obj << std::endl;
@@ -133,6 +169,10 @@ int main(int argc, char* argv[]) {
 
     renderer->Draw(cameras1);
     renderer->Draw(cameras2);
+
+    // renderer->Draw(image_obj);
+
+    renderer->Draw(full_camera_obj);
   
     gl_window.RunLoop();
   }

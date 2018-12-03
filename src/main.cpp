@@ -48,6 +48,10 @@
 #include "cv_gl/mesh.h"
 #include "cv_gl/model.h"
 
+// #define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+
 
 // Define Some Constants
 // const int kWindowWidth = 1280;

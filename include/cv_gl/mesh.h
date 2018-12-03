@@ -24,6 +24,9 @@ struct Texture {
   unsigned int id;
   std::string type;
   std::string path;
+  unsigned int width;
+  unsigned int height;
+
 };
 
 struct Material {
@@ -57,8 +60,10 @@ class Mesh {
   ~Mesh();
 
   void Draw(const std::shared_ptr<Shader>& shader);
-  std::ostream& print(std::ostream& os = std::cout) const;
 
+  static Texture TextureFromFile(const std::string& path, const std::string& directory = "", const bool flip = false);
+
+  std::ostream& print(std::ostream& os = std::cout) const;
 
 
 private:

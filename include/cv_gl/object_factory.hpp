@@ -63,11 +63,15 @@ public:
   static std::shared_ptr<Mesh> CreateCameraFrustum() {
     std::vector<Texture> textures;
     std::vector<Vertex> vertices = {
-      {glm::vec3(-1.0f, 0.0f, 1.0f)},  // 0
-      {glm::vec3(1.0f, 0.0f, 1.0f)},   // 1
-      {glm::vec3(1.0f, 0.0f, -1.0f)},  // 2
-      {glm::vec3(-1.0f, 0.0f, -1.0f)}, // 3
-      {glm::vec3(0.0f, 2.0f, 0.0f)},   // 4
+      // {glm::vec3(-1.0f, 0.0f, 1.0f)},  // 0
+      // {glm::vec3(1.0f, 0.0f, 1.0f)},   // 1
+      // {glm::vec3(1.0f, 0.0f, -1.0f)},  // 2
+      // {glm::vec3(-1.0f, 0.0f, -1.0f)}, // 3
+      {glm::vec3(-0.5f, 0.0f, 0.5f)},  // 0
+      {glm::vec3(0.5f, 0.0f, 0.5f)},   // 1
+      {glm::vec3(0.5f, 0.0f, -0.5f)},  // 2
+      {glm::vec3(-0.5f, 0.0f, -0.5f)}, // 3
+      {glm::vec3(0.0f, 1.0f, 0.0f)},   // 4
     };
     std::vector<unsigned int> indices = {
       0, 1,
@@ -81,6 +85,34 @@ public:
     };
     auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
     mesh->SetMeshType(MeshType::LINES);
+    return mesh;
+  }
+
+
+  static std::shared_ptr<Mesh> CreateImagePlane() {
+    std::vector<Texture> textures;
+    std::vector<Vertex> vertices = {
+      // {glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 0.0f)},  // 0
+      // {glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 0.0f)},   // 1
+      // {glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f)},  // 2
+      // {glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 1.0f)} // 3
+
+      {glm::vec3(-0.5f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 1.0f)},  // 0
+      {glm::vec3(0.5f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 0.0f)},   // 1
+      {glm::vec3(0.5f, 0.0f, -0.5f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 0.0f)},  // 2
+      {glm::vec3(-0.5f, 0.0f, -0.5f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f)} // 3
+
+      // {glm::vec3(-0.5f, 0.0f, 0.5f)},  // 0
+      // {glm::vec3(0.5f, 0.0f, 0.5f)},   // 1
+      // {glm::vec3(0.5f, 0.0f, -0.5f)},  // 2
+      // {glm::vec3(-0.5f, 0.0f, -0.5f)}, // 3
+    };
+    std::vector<unsigned int> indices = {
+      0, 1, 2,
+      0, 2, 3
+    };
+    auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
+    mesh->SetMeshType(MeshType::TRIANGLES);
     return mesh;
   }
 
@@ -177,8 +209,6 @@ public:
 
     auto mesh = MeshFactory::CreateCameraFrustum();
 
-
-
     // auto shader_color = std::make_shared<Shader>(
     //   "../shaders/one.vs",
     //   "../shaders/one_color.fs");
@@ -194,7 +224,7 @@ public:
     // Add additional correction to look forward
     glm::mat4 correction(1.0f);
     // correction = glm::rotate(correction, static_cast<float>(-M_PI_2), glm::vec3(0.0f, 1.0f, 0.0f));
-    correction = glm::translate(correction, glm::vec3(0.0f, 0.0f, -2.0f));
+    correction = glm::translate(correction, glm::vec3(0.0f, 0.0f, -1.0f));
     camera_obj->AddToCorrectionMatrix(correction);
 
     return camera_obj;
@@ -241,6 +271,30 @@ public:
 
     return cube_obj;
   
+  }
+
+/* ================ Image ================================*/
+  static ImageObject* CreateImage(const std::string image_path = "") {
+
+    auto mesh = MeshFactory::CreateImagePlane();
+
+    // auto shader_color = std::make_shared<Shader>(
+    //   "../shaders/one.vs",
+    //   "../shaders/one_color.fs");
+
+    auto shader_color = std::make_shared<Shader>(
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
+
+    ImageObject* image_obj = new ImageObject(mesh);
+
+    image_obj->SetShader(shader_color);
+    
+    if (!image_path.empty()) {
+      image_obj->SetImage(image_path);
+    }
+
+    return image_obj;
   }
 
 /* ================ Axes ================================*/

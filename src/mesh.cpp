@@ -4,6 +4,10 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+
 Mesh::Mesh(const std::vector<Vertex>& vertices,
      const std::vector<unsigned int>& indices,
      const std::vector<Texture>& textures) : mesh_type_(MeshType::TRIANGLES) {
@@ -132,6 +136,61 @@ Mesh::~Mesh() {
   glDeleteVertexArrays(1, &vao_);
   glDeleteBuffers(1, &vbo_);
   glDeleteBuffers(1, &ebo_);
+}
+
+Texture Mesh::TextureFromFile(const std::string& path, const std::string& directory, const bool flip) {
+
+  Texture texture;
+
+  std::string filename = std::string(path);
+  if (!directory.empty()) {
+    filename = directory + "/" + filename;
+  }
+  // std::cout << "filename = " << filename << std::–endl;
+
+  // unsigned int texture_id;
+  glGenTextures(1, &texture.id);
+
+  stbi_set_flip_vertically_on_load(flip);
+
+  int width, height, nrComponents;
+  unsigned char* data = stbi_load(filename.c_str(), &width, &height,
+      &nrComponents, 0);
+
+  texture.width = width;
+  texture.height = height;
+
+  if (data) {
+    GLenum format;
+    if (nrComponents == 1) {
+      format = GL_RED;
+    } else if (nrComponents == 3) {
+      format = GL_RGB;
+    } else if (nrComponents == 4) {
+      format = GL_RGBA;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, texture.id);
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
+        GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+        GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+        GL_LINEAR);
+
+    stbi_image_free(data);
+
+  } else {
+    std::cout << "Texture failed to load at path: " << path << std::endl;
+    stbi_image_free(data);
+  }
+
+  return texture;
+
 }
 
 std::ostream& operator<<(std::ostream& os, const Vertex& vertex) {
