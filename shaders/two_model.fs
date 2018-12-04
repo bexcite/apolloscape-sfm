@@ -2,11 +2,18 @@
 
 
 struct Material {
+
+    // Contribution levels
     vec4 diffuse;
     vec4 ambient;
+
+    // Flags of texture presents
     int texture_diffuse;
     int texture_ambient;
     int texture_specular;
+
+    sampler2D texture_ambient1;
+    sampler2D texture_diffuse1;
 };
 
 out vec4 FragColor;
@@ -19,81 +26,35 @@ in vec3 Normal;
 in vec3 LightDir1;
 in vec3 LightDir2;
 
-uniform sampler2D texture_ambient1;
-uniform sampler2D texture_diffuse1;
-
-
 uniform Material material;
 
-// uniform vec4 diffuse_color;
-
 void main() {
-  // FragColor = vertexColor * ourColor;
-  // vec4 col1 = texture(texture1, TexCoord);
-  // vec4 col2 = texture(texture2, TexCoord);
-  // FragColor = mix(col1, col2, ourColor.x) * 0.8 + 0.2;
 
   float diff1 = max(dot(Normal, LightDir1), 0.0);
   float diff2 = max(dot(Normal, LightDir2), 0.0);
 
+  vec4 result = vec4(0.0);
 
-  // if (material.texture_diffuse == 0 && material.texture_ambient == 0) {  
-    // FragColor = material.ambient + material.diffuse * (diff1 + diff2);
-    // FragColor = material.diffuse * (diff1 + diff2);
-  // } else {
-    // FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+  vec4 ambient = material.ambient;
 
-    // vec4 ambient = material.ambient;
+  vec4 diffuse = vec4(0.0);
 
-    // if (material.texture_ambient > 0) {
-    //   vec4 texture_color = texture(texture_ambient1, TexCoord);
-    //   FragColo += texture_color;
-    //   ambient = vec4(0.0);
-    // }
+  // ======= Diffuse part ===============
+  if (material.texture_diffuse > 0) {
+    vec4 texture_color = texture(material.texture_diffuse1, TexCoord);
+    diffuse = texture_color * (diff1 + diff2);
+    ambient = texture_color * ambient;
+  } else {
+    diffuse = material.diffuse * (diff1 + diff2);
+  }
+  
+  // ======= Ambient part ===============
+  if (material.texture_ambient > 0) {
+    vec4 texture_color = texture(material.texture_ambient1, TexCoord);
+    ambient = texture_color;
+  } 
 
-    vec4 result = vec4(0.0);
-
-    vec4 ambient = material.ambient;
-
-    vec4 diffuse = vec4(0.0);
-
-    // ======= Diffuse part ===============
-    if (material.texture_diffuse > 0) {
-      vec4 texture_color = texture(texture_diffuse1, TexCoord);
-      // vec4 texture_color = vec4(1.0, 0.0, 0.0, 1.0);
-      // FragColor = texture_color * (material.ambient + diff1 + diff2);
-      // result += texture_color.rgb * (diff1 + diff2);
-      diffuse = texture_color * (diff1 + diff2);
-      ambient = texture_color * ambient;
-    } else {
-      diffuse = material.diffuse * (diff1 + diff2);
-    }
+  FragColor = ambient + diffuse;
     
-    // ======= Ambient part ===============
-    if (material.texture_ambient > 0) {
-      vec4 texture_color = texture(texture_ambient1, TexCoord);
-      // result += texture_color.rgb;
-      ambient = texture_color;
-    } 
 
-    result = ambient + diffuse;
-
-    // FragColor = vec4(result, 1.0);
-    FragColor = result;
-    
-  // }
-  
-
-//   vec3 LightDir2 = vec3(-LightDir.x, -LightDir.y, LightDir.z);
-
-  
-
-//   vec4 amb = vec4(0.1, 0.1, 0.1, 1.0);
-
-//   FragColor = texture(texture_diffuse1, TexCoord);
-  
-  
-
-  // FragColor = ourColor;
-  // FragColor = vec4(1.0f);
 }

@@ -81,16 +81,16 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
     // std::cout << "material." + type_name << " = " << number << std::endl;
 
     glBindTexture(GL_TEXTURE_2D, material.textures[i].id);
-    shader->SetInt(type_name + number_str, i);
+    shader->SetInt("material." + type_name + number_str, i);
   }
 
 
   shader->SetVector4fv("material.ambient", glm::value_ptr(material.ambient_color));
   shader->SetVector4fv("material.diffuse", glm::value_ptr(material.diffuse_color));
 
-  if (!material.textures.empty()) {
-    shader->SetInt("material.texture", material.textures.size());
-  }
+  // if (!material.textures.empty()) {
+  //   shader->SetInt("material.texture", material.textures.size());
+  // }
 
   // draw mesh
   glBindVertexArray(vao_);
