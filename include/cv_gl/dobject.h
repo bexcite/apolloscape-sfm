@@ -232,7 +232,7 @@ public:
     std::cout << "Set image : " << image_path << std::endl;
 
     Texture texture = Mesh::TextureFromFile(image_path, "", false);
-    texture.type = "texture_diffuse";
+    texture.type = TextureType::AMBIENT;
     texture.path = image_path;
 
     std::cout << "  width = " << texture.width << std::endl;

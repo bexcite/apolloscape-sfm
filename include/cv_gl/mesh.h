@@ -14,6 +14,9 @@
 
 enum class MeshType {LINES, TRIANGLES};
 
+enum class TextureType {AMBIENT, DIFFUSE, SPECULAR};
+std::string TextureTypeName(TextureType texture_type);
+
 struct Vertex {
   glm::vec3 position;
   glm::vec3 normal;
@@ -21,13 +24,16 @@ struct Vertex {
 };
 
 struct Texture {
+  Texture() : type(TextureType::DIFFUSE) {}
   unsigned int id;
-  std::string type;
+  TextureType type;
   std::string path;
   unsigned int width;
   unsigned int height;
-
 };
+
+
+// Texture::texture_type_name = {""};
 
 struct Material {
   Material(const glm::vec4 amb_color = {0.15, 0.15, 0.15, 1.0},

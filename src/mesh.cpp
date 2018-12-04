@@ -8,6 +8,17 @@
 #include <stb_image.h>
 
 
+std::string TextureTypeName(TextureType texture_type) {
+  switch(texture_type) {
+    case TextureType::AMBIENT: return "texture_ambient";
+    case TextureType::DIFFUSE: return "texture_diffuse";
+    case TextureType::SPECULAR: return "texture_specular";
+    default: return "NONE";
+  }
+};
+
+
+
 Mesh::Mesh(const std::vector<Vertex>& vertices,
      const std::vector<unsigned int>& indices,
      const std::vector<Texture>& textures) : mesh_type_(MeshType::TRIANGLES) {
@@ -45,22 +56,35 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
   // setup textures
   unsigned int diffuse_num = 1;
   unsigned int specular_num = 1;
+  unsigned int ambient_num = 1;
   for (unsigned int i = 0; i < material.textures.size(); ++i) {
     glActiveTexture(GL_TEXTURE0 + i);
 
-    std::string number;
-    std::string name = material.textures[i].type;
-    if (name == "texture_diffuse") {
-      number = std::to_string(diffuse_num++);
-    } else if (name == "texture_specular") {
-      number = std::to_string(specular_num++);
+    std::string number_str;
+    unsigned int number;
+    TextureType type = material.textures[i].type;
+    std::string type_name = TextureTypeName(type); //material.textures[i].type;
+    
+    if (type == TextureType::DIFFUSE) {
+      number = diffuse_num++;
+      number_str = std::to_string(number);
+    } else if (type == TextureType::SPECULAR) {
+      number = specular_num++;
+      number_str = std::to_string(number);
+    } else if (type == TextureType::AMBIENT) {
+      number = ambient_num++;
+      number_str = std::to_string(number);
     }
 
+    // TODO!!!!
+    shader->SetInt("material." + type_name, number);
+    // std::cout << "material." + type_name << " = " << number << std::endl;
+
     glBindTexture(GL_TEXTURE_2D, material.textures[i].id);
-    shader->SetInt(name + number, i);
+    shader->SetInt(type_name + number_str, i);
   }
 
-  //TODO: setup diffuse color
+
   shader->SetVector4fv("material.ambient", glm::value_ptr(material.ambient_color));
   shader->SetVector4fv("material.diffuse", glm::value_ptr(material.diffuse_color));
 
@@ -215,7 +239,7 @@ std::ostream &operator<<(std::ostream &os, const Material &material) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Texture &texture) {
-  os << "Texture: " << texture.id << ", " << texture.type << ", " << texture.path;
+  os << "Texture: " << texture.id << ", " << TextureTypeName(texture.type) << ", " << texture.path;
   return os;
 }
 

@@ -40,7 +40,7 @@ private:
   void ProcessNode(const aiNode *node, const aiScene *scene);
   std::shared_ptr<Mesh> ProcessMesh(const aiMesh *mesh, const aiScene *scene);
   std::vector<Texture> LoadMaterialTextures(const  aiMaterial *material,
-      const aiTextureType type, const std::string& type_name);
+      const aiTextureType type, const TextureType texture_type);
 };
 
 glm::vec4 to_glm_color4(const aiColor4D& c) {
@@ -140,12 +140,12 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
 
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
     std::vector<Texture> diffuse_maps = LoadMaterialTextures(material,
-        aiTextureType_DIFFUSE, "texture_diffuse");
+        aiTextureType_DIFFUSE, TextureType::DIFFUSE);
     // std::cout << "difuse_maps = " << diffuse_maps.size() << std::endl;
     textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
 
     std::vector<Texture> specular_maps = LoadMaterialTextures(material,
-        aiTextureType_SPECULAR, "texture_specular");
+        aiTextureType_SPECULAR, TextureType::SPECULAR);
     // std::cout << "specular_maps = " << specular_maps.size() << std::endl;
 
 
@@ -194,7 +194,7 @@ Model::ProcessMesh(const aiMesh *mesh, const aiScene *scene) {
 
 std::vector<Texture>
 Model::LoadMaterialTextures(const aiMaterial *material,
-    const aiTextureType type, const std::string& type_name) {
+    const aiTextureType type, const TextureType texture_type) {
   std::vector<Texture> textures;
 
   // std::cout << "textureCount = " << material->GetTextureCount(type) << " for aiTextureType = " << type << std::endl;
@@ -217,7 +217,7 @@ Model::LoadMaterialTextures(const aiMaterial *material,
 
     if (!skip) {
       Texture texture = Mesh::TextureFromFile(std::string(str.C_Str()), directory_);
-      texture.type = type_name;
+      texture.type = texture_type;
       texture.path = std::string(str.C_Str());
       textures.emplace_back(texture);
       textures_loaded_.emplace_back(texture);
