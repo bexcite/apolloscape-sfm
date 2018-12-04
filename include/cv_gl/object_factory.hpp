@@ -2,6 +2,7 @@
 #ifndef CV_GL_OBJECT_FACTORY_H_
 #define CV_GL_OBJECT_FACTORY_H_
 
+#include <map>
 #include <iostream>
 
 #include "cv_gl/mesh.h"
@@ -177,7 +178,7 @@ public:
 };
 
 
-class CameraObject;
+// class CameraObject;
 
 
 
@@ -185,6 +186,21 @@ class CameraObject;
 class ObjectFactory {
 
 public:
+
+  static std::map<std::string, std::shared_ptr<Shader> > shaders_;
+
+  static std::shared_ptr<Shader> GetShader(const std::string& vertex_path,
+      const std::string& fragment_path) {
+    // check existence
+    auto it = shaders_.find(vertex_path + fragment_path);
+    if (it != shaders_.end()) {
+      return it->second;
+    }
+    // create new
+    std::shared_ptr<Shader> shader = std::make_shared<Shader>(vertex_path, fragment_path);
+    shaders_.insert(std::pair<std::string, std::shared_ptr<Shader> >(vertex_path + fragment_path, shader));
+    return shader;
+  }
 
 /* ================ Floor ================================*/
   static ColorObject* CreateFloor(const double step_size,
@@ -218,7 +234,11 @@ public:
     //   "../shaders/one.vs",
     //   "../shaders/one_color.fs");
 
-    auto shader_color = std::make_shared<Shader>(
+    // auto shader_color = std::make_shared<Shader>(
+    //     "../shaders/two.vs",
+    //     "../shaders/two_model.fs");
+
+    auto shader_color = ObjectFactory::GetShader(
         "../shaders/two.vs",
         "../shaders/two_model.fs");
 
@@ -266,7 +286,11 @@ public:
     //   "../shaders/one.vs",
     //   "../shaders/one_color.fs");
 
-    auto shader_color = std::make_shared<Shader>(
+    // auto shader_color = std::make_shared<Shader>(
+    //     "../shaders/two.vs",
+    //     "../shaders/two_model.fs");
+
+    auto shader_color = ObjectFactory::GetShader(
         "../shaders/two.vs",
         "../shaders/two_model.fs");
 
@@ -287,7 +311,11 @@ public:
     //   "../shaders/one.vs",
     //   "../shaders/one_color.fs");
 
-    auto shader_color = std::make_shared<Shader>(
+    // auto shader_color = std::make_shared<Shader>(
+    //     "../shaders/two.vs",
+    //     "../shaders/two_model.fs");
+
+    auto shader_color = ObjectFactory::GetShader(
         "../shaders/two.vs",
         "../shaders/two_model.fs");
 
@@ -339,8 +367,10 @@ public:
   //   return new CameraObject(width_ratio);
   // }
 
-
 };
+
+
+std::map<std::string, std::shared_ptr<Shader> > ObjectFactory::shaders_;
 
 
 class CameraObject: public DObject {

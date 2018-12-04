@@ -7,6 +7,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb_image_resize.h>
+
 
 std::string TextureTypeName(TextureType texture_type) {
   switch(texture_type) {
@@ -17,7 +20,7 @@ std::string TextureTypeName(TextureType texture_type) {
   }
 };
 
-
+int Mesh::count_ = 0;
 
 Mesh::Mesh(const std::vector<Vertex>& vertices,
      const std::vector<unsigned int>& indices,
@@ -84,6 +87,11 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
     shader->SetInt("material." + type_name + number_str, i);
   }
 
+  if (material.textures.empty()) {
+    shader->SetInt("material.texture_diffuse", 0);
+    shader->SetInt("material.texture_ambient", 0);
+  }
+
 
   shader->SetVector4fv("material.ambient", glm::value_ptr(material.ambient_color));
   shader->SetVector4fv("material.diffuse", glm::value_ptr(material.diffuse_color));
@@ -114,6 +122,8 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
 
 void
 Mesh::SetupMesh() {
+
+  // std::cout << "Mesh: Setup (" << (++count_) << ")" << std::endl;
 
   glGenVertexArrays(1, &vao_);
   glGenBuffers(1, &vbo_);
@@ -154,7 +164,7 @@ Mesh::SetupMesh() {
 }
 
 Mesh::~Mesh() {
-  // std::cout << "mesh (DESTRUCTOR) = ";
+  // std::cout << "mesh (DESTRUCTOR) " << (count_--) << std::endl;
   // this->write();
   // std::cout << std::endl;
   glDeleteVertexArrays(1, &vao_);
@@ -162,7 +172,8 @@ Mesh::~Mesh() {
   glDeleteBuffers(1, &ebo_);
 }
 
-Texture Mesh::TextureFromFile(const std::string& path, const std::string& directory, const bool flip) {
+Texture Mesh::TextureFromFile(const std::string& path, const std::string& directory,
+    const bool flip, const float scale_f) {
 
   Texture texture;
 
@@ -184,6 +195,9 @@ Texture Mesh::TextureFromFile(const std::string& path, const std::string& direct
   texture.width = width;
   texture.height = height;
 
+  // std::cout << "width = " << width << std::endl;
+  // std::cout << "height = " << height << std::endl;
+
   if (data) {
     GLenum format;
     if (nrComponents == 1) {
@@ -194,9 +208,32 @@ Texture Mesh::TextureFromFile(const std::string& path, const std::string& direct
       format = GL_RGBA;
     }
 
+    // Scale factor
+    // float scale_f = 4.5;
+
+    // TODO: Don't need to scale if it 1.0 :)) just remark for future self
+    int new_width = static_cast<int>((width * scale_f) / 4) * 4;  // sizes not aligned to a word (4 bytes) are not correctlyrendered in opengl
+    int new_height = static_cast<int>((height * scale_f) / 4) * 4;
+
+    texture.width = new_width;
+    texture.height = new_height;
+
+    unsigned char* data_resize = (unsigned char *) malloc(new_width * new_height * nrComponents * sizeof(unsigned char));
+
+    // std::cout << "nrComponents = " << nrComponents << std::endl;
+    // std::cout << "new_width = " << new_width << std::endl;
+    // std::cout << "new_height = " << new_height << std::endl;
+    stbir_resize_uint8(data, width, height, 0, data_resize, new_width, new_height, 0, nrComponents);
+
     glBindTexture(GL_TEXTURE_2D, texture.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
-        GL_UNSIGNED_BYTE, data);
+
+    // glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
+    //     GL_UNSIGNED_BYTE, data);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, format, new_width, new_height, 0, format,
+        GL_UNSIGNED_BYTE, data_resize);
+
+
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -207,6 +244,7 @@ Texture Mesh::TextureFromFile(const std::string& path, const std::string& direct
         GL_LINEAR);
 
     stbi_image_free(data);
+    free(data_resize);
 
   } else {
     std::cout << "Texture failed to load at path: " << path << std::endl;

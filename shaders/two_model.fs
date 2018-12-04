@@ -37,16 +37,17 @@ void main() {
 
   vec4 ambient = material.ambient;
 
-  vec4 diffuse = vec4(0.0);
+  vec4 diffuse = material.diffuse * (diff1 + diff2);;
 
   // ======= Diffuse part ===============
   if (material.texture_diffuse > 0) {
     vec4 texture_color = texture(material.texture_diffuse1, TexCoord);
     diffuse = texture_color * (diff1 + diff2);
     ambient = texture_color * ambient;
-  } else {
-    diffuse = material.diffuse * (diff1 + diff2);
-  }
+  } 
+  // else {
+  //   diffuse = material.diffuse * (diff1 + diff2);
+  // }
   
   // ======= Ambient part ===============
   if (material.texture_ambient > 0) {

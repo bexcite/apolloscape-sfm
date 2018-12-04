@@ -11,7 +11,10 @@ class Shader {
   // Shader();
  public:
   Shader();
-  ~Shader() { glDeleteProgram(id_); }
+  ~Shader() { 
+    std::cout << "Delete shader: " << (count_--) << std::endl;
+    glDeleteProgram(id_); 
+  }
 
   // Disable Copying and Assignment
   Shader(const Shader&) = delete;
@@ -34,7 +37,10 @@ class Shader {
   unsigned int id_;
   std::string vertex_shader_path_;
   std::string fragment_shader_path_;
+  static int count_;
 };
+
+
 
 std::ostream& operator<<(std::ostream &os, const Shader& shader);
 

@@ -85,6 +85,7 @@ int main(int argc, char* argv[]) {
 
   camera->SetOrigin(glm::vec3(camera1_poses[0].coords[3], camera1_poses[0].coords[4], camera1_poses[0].coords[5]));
   camera->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
+  // camera->SetOrigin(glm::vec3(3.0f, 0.0f, 0.0f));
 
   float width_ratio = camera->GetImageWidth()/camera->GetImageHeight();
 
@@ -95,8 +96,9 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<DObject> cameras2(new DObject());
 
+  std::cout << "Loading camera 1: " << std::flush;
   for (int i = 0; i < camera1_poses.size(); ++i) {
-    // if (i == 20) break;
+    // if (i == 40) break;
     const ImageData& im_data = camera1_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
@@ -104,13 +106,16 @@ int main(int argc, char* argv[]) {
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 
-    // fs::path image_path = camera1_image_path / fs::path(im_data.filename);
-    // co->SetImage(image_path.string());
+    fs::path image_path = camera1_image_path / fs::path(im_data.filename);
+    co->SetImage(image_path.string());
 
-    // co->AddChild(axes_obj);
+    co->AddChild(axes_obj);
     cameras1->AddChild(co);
+
+    std::cout << i << ". " << std::flush;
   }
 
+  std::cout << std::endl << "Loading camera 2: " << std::flush;
   for (int i = 0; i < camera2_poses.size(); ++i) {
     // if (i == 20) break;
     const ImageData& im_data = camera2_poses[i];
@@ -120,10 +125,13 @@ int main(int argc, char* argv[]) {
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 
-    // fs::path image_path = camera2_image_path / fs::path(im_data.filename);
-    // co->SetImage(image_path.string());
+    fs::path image_path = camera2_image_path / fs::path(im_data.filename);
+    co->SetImage(image_path.string());
 
+    co->AddChild(axes_obj);
     cameras2->AddChild(co);
+
+    std::cout << i << ". " << std::flush;
   }
 
   std::shared_ptr<DObject> origin_axes_obj(ObjectFactory::CreateAxes(kGlobalScale));

@@ -8,13 +8,18 @@
 
 #include "cv_gl/shader.h"
 
+int Shader::count_ = 0;
+
 Shader::Shader() {
   std::cout << "Shader: Constructor 0 params" << std::endl;
 }
 
 Shader::Shader(const std::string& vertex_shader_path,
     const std::string& fragment_shader_path) {
-  std::cout << "Shader: Constructor 2 params" << std::endl;
+
+  ++count_;
+
+  std::cout << "Shader: Constructor 2 params (" << count_ << ")" << std::endl;
   std::cout << "Vertex s path: " << vertex_shader_path << std::endl;
   std::cout << "Fragment s path: " << fragment_shader_path << std::endl;
 

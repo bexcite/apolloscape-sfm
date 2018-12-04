@@ -23,7 +23,7 @@ class DObject {
       scale_(glm::vec3(1.0f)),
       rotation_(glm::mat4(1.0f)),
       name_(name) {
-    std::cout << "DObject:: (con)" << std::endl;
+    // std::cout << "DObject:: (con)" << std::endl;
     InitCorrectionMatrix();
   };
 
@@ -229,14 +229,14 @@ public:
 
   void SetImage(const std::string& image_path, bool adjust_aspect_ratio = true) {
     // load image and set it into material
-    std::cout << "Set image : " << image_path << std::endl;
+    // std::cout << "Set image : " << image_path << std::endl;
 
-    Texture texture = Mesh::TextureFromFile(image_path, "", false);
+    Texture texture = Mesh::TextureFromFile(image_path, "", false, 0.25); // reduce size of the texture
     texture.type = TextureType::AMBIENT;
     texture.path = image_path;
 
-    std::cout << "  width = " << texture.width << std::endl;
-    std::cout << "  height = " << texture.height << std::endl;
+    // std::cout << "  width = " << texture.width << std::endl;
+    // std::cout << "  height = " << texture.height << std::endl;
 
     if (!mesh_->material.textures.empty()) {
       mesh_->material.textures[0] = texture;

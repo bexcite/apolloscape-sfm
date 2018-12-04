@@ -67,7 +67,8 @@ class Mesh {
 
   void Draw(const std::shared_ptr<Shader>& shader);
 
-  static Texture TextureFromFile(const std::string& path, const std::string& directory = "", const bool flip = false);
+  static Texture TextureFromFile(const std::string& path, const std::string& directory = "",
+      const bool flip = false, const float scale_f = 1.0);
 
   std::ostream& print(std::ostream& os = std::cout) const;
 
@@ -77,9 +78,12 @@ private:
   MeshType mesh_type_;
   void SetupMesh();
 
+  static int count_;
 
 
 };
+
+
 
 std::ostream &operator<<(std::ostream &os, const Vertex &vertex);
 std::ostream &operator<<(std::ostream &os, const std::vector<Vertex>& vertices);
