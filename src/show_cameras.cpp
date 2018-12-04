@@ -31,7 +31,7 @@ const char kRecordId[] = "Record001";
 const char kCamera1PoseFile[] = "Camera_1.txt";
 const char kCamera2PoseFile[] = "Camera_2.txt";
 
-const float kGlobalScale = 1.0f;
+const float kGlobalScale = 100.0f;
 
 
 int main(int argc, char* argv[]) {
@@ -45,6 +45,8 @@ int main(int argc, char* argv[]) {
 
   fs::path camera1_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
       / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_1");
+  fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+      / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_2");
 
   std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path);
   std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path);
@@ -81,16 +83,12 @@ int main(int argc, char* argv[]) {
   // camera->SetOrigin(glm::vec3(camera1_poses[110].coords[3], camera1_poses[110].coords[4], camera1_poses[110].coords[5]));
   // camera->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
 
-  // camera->SetOrigin(glm::vec3(camera1_poses[0].coords[3], camera1_poses[0].coords[4], camera1_poses[0].coords[5]));
+  camera->SetOrigin(glm::vec3(camera1_poses[0].coords[3], camera1_poses[0].coords[4], camera1_poses[0].coords[5]));
   camera->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
 
-  
+  float width_ratio = camera->GetImageWidth()/camera->GetImageHeight();
 
-  std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));  
-
-  // Create camera_objects
-  // std::vector<std::shared_ptr<ColorObject> > camera_objects1;
-  // std::vector<std::shared_ptr<ColorObject> > camera_objects2;
+  std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
 
   std::shared_ptr<DObject> cameras1(new DObject());
   // cameras1->SetTranslation(glm::vec3(-100.0f));
@@ -98,25 +96,33 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<DObject> cameras2(new DObject());
 
   for (int i = 0; i < camera1_poses.size(); ++i) {
-    if (i == 1) break;
+    // if (i == 20) break;
     const ImageData& im_data = camera1_poses[i];
-    std::shared_ptr<ColorObject> co(
-      ObjectFactory::CreateCameraFrustum());
-    co->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
+
+    // TODO: width ratio for camera obj is not good, it should be defined by image probably
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio));
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
+
+    // fs::path image_path = camera1_image_path / fs::path(im_data.filename);
+    // co->SetImage(image_path.string());
+
     // co->AddChild(axes_obj);
     cameras1->AddChild(co);
   }
 
   for (int i = 0; i < camera2_poses.size(); ++i) {
-    if (i == 1) break;
+    // if (i == 20) break;
     const ImageData& im_data = camera2_poses[i];
-    std::shared_ptr<ColorObject> co(
-      ObjectFactory::CreateCameraFrustum());
-    co->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
+
+    // TODO: width ratio for camera obj is not good, it should be defined by image probably
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio));
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
+
+    // fs::path image_path = camera2_image_path / fs::path(im_data.filename);
+    // co->SetImage(image_path.string());
+
     cameras2->AddChild(co);
   }
 
@@ -130,26 +136,33 @@ int main(int argc, char* argv[]) {
   debug_cube_obj->SetTranslation(glm::vec3(3.0f * kGlobalScale, 3.0f * kGlobalScale, 3.0f * kGlobalScale));
 
 
-  std::shared_ptr<DObject> full_camera_obj(new DObject());
+  // std::shared_ptr<DObject> full_camera_obj(new DObject());
+  // std::shared_ptr<ColorObject> camera_obj(
+  //     ObjectFactory::CreateCameraFrustum());
+  // camera_obj->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
+  // camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+  // full_camera_obj->AddChild(camera_obj);
 
-  std::shared_ptr<ColorObject> camera_obj(
-      ObjectFactory::CreateCameraFrustum());
-  camera_obj->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
-  camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
-  full_camera_obj->AddChild(camera_obj);
-
-  std::shared_ptr<ImageObject> image_obj(ObjectFactory::CreateImage());
-  image_obj->SetScale(glm::vec3(1.0f));
-  image_obj->SetTranslation(glm::vec3(0.0f, 0.0f, -1.0f));
+  // std::shared_ptr<ImageObject> image_obj(ObjectFactory::CreateImage());
+  // image_obj->SetScale(glm::vec3(camera->GetImageWidth()/camera->GetImageHeight(), 1.0f, 1.0f));
+  // image_obj->SetTranslation(glm::vec3(0.0f, 0.0f, -1.0f));
 
   fs::path image_path = camera1_image_path / fs::path(camera1_poses[0].filename);
-  image_obj->SetImage(image_path.string());
-  full_camera_obj->AddChild(image_obj);
+  // image_obj->SetImage(image_path.string(), false);
+  // full_camera_obj->AddChild(image_obj);
 
   // full_camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
 
   // full_camera_obj->SetTranslation(glm::vec3(camera1_poses[0].coords[3], camera1_poses[0].coords[4], camera1_poses[0].coords[5]));
-  full_camera_obj->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
+  // full_camera_obj->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
+
+
+  
+
+  std::shared_ptr<CameraObject> full_camera(new CameraObject(width_ratio));
+  full_camera->SetImage(image_path.string());
+  full_camera->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
+  full_camera->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
 
 
   // std::cout << "Floor = " << floor_obj << std::endl;
@@ -172,7 +185,9 @@ int main(int argc, char* argv[]) {
 
     // renderer->Draw(image_obj);
 
-    renderer->Draw(full_camera_obj);
+    // renderer->Draw(full_camera_obj);
+
+    renderer->Draw(full_camera);
   
     gl_window.RunLoop();
   }

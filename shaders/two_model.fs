@@ -55,6 +55,7 @@ void main() {
   } 
 
   FragColor = ambient + diffuse;
+  // FragColor.a = 0.8;
     
 
 }

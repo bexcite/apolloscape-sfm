@@ -49,6 +49,9 @@ GLWindow::GLWindow(const std::string& name, const unsigned int width,
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_DEPTH_TEST);
 
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
   // Check for Valid Context
   // if (window_ == nullptr) {

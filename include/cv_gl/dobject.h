@@ -227,7 +227,7 @@ public:
       : DObject(mesh, "ImageObject") { 
   }
 
-  void SetImage(const std::string& image_path) {
+  void SetImage(const std::string& image_path, bool adjust_aspect_ratio = true) {
     // load image and set it into material
     std::cout << "Set image : " << image_path << std::endl;
 
@@ -244,8 +244,10 @@ public:
       mesh_->material.textures.emplace_back(texture);
     }
 
-    this->AddToCorrectionMatrix(glm::scale(glm::mat4(1.0f),
-        glm::vec3(static_cast<float>(texture.width) / texture.height, 1.0f, 1.0f)));
+    if (adjust_aspect_ratio) {
+      this->AddToCorrectionMatrix(glm::scale(glm::mat4(1.0f),
+          glm::vec3(static_cast<float>(texture.width) / texture.height, 1.0f, 1.0f)));
+    }
 
   }
 

@@ -177,6 +177,11 @@ public:
 };
 
 
+class CameraObject;
+
+
+
+
 class ObjectFactory {
 
 public:
@@ -329,8 +334,49 @@ public:
   }
 
 
+  /* ================ Camera ================================ */
+  // static CameraObject* CreateCamera(const float width_ratio = 1.0) {
+  //   return new CameraObject(width_ratio);
+  // }
 
 
+};
+
+
+class CameraObject: public DObject {
+  public:
+  CameraObject(const float width_ratio = 1.0)
+      : DObject(nullptr, "CameraObject") {
+
+    // Construct complex object
+
+    // Camera Frustum
+    camera_obj_ = std::shared_ptr<ColorObject>(ObjectFactory::CreateCameraFrustum());
+    camera_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
+    // camera_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+    this->AddChild(camera_obj_);
+
+    // Image Plane
+    image_obj_ = std::shared_ptr<ImageObject>(ObjectFactory::CreateImage());
+    image_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
+    image_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, -1.0f));
+    this->AddChild(image_obj_);
+
+  // fs::path image_path = camera1_image_path / fs::path(camera1_poses[0].filename);
+  // image_obj->SetImage(image_path.string(), false);
+  // full_camera_obj->AddChild(image_obj);
+
+  }
+
+  void SetImage(const std::string& image_path) {
+    if (image_obj_) {
+      image_obj_->SetImage(image_path, false);
+    }
+  }
+
+  private:
+  std::shared_ptr<ImageObject> image_obj_;
+  std::shared_ptr<ColorObject> camera_obj_;
 };
 
 
