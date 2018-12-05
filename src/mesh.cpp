@@ -115,6 +115,12 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
     } else {
       glDrawArrays(GL_LINES, 0, vertices.size());
     }
+  } else if (mesh_type_ == MeshType::POINTS) {
+    if (!indices.empty()) {
+      glDrawElements(GL_POINTS, indices.size(), GL_UNSIGNED_INT, 0);
+    } else {
+      glDrawArrays(GL_POINTS, 0, vertices.size());
+    }
   }
 
   glBindVertexArray(0);
@@ -156,6 +162,7 @@ Mesh::SetupMesh() {
 
   // Ubind buffer
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
 
   // std::cout << "mesh (SETUP) = ";
   // this->write();

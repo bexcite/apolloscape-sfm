@@ -12,7 +12,7 @@
 
 #include "cv_gl/shader.h"
 
-enum class MeshType {LINES, TRIANGLES};
+enum class MeshType {LINES, TRIANGLES, POINTS};
 
 enum class TextureType {AMBIENT, DIFFUSE, SPECULAR};
 std::string TextureTypeName(TextureType texture_type);

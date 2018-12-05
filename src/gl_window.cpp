@@ -49,6 +49,9 @@ GLWindow::GLWindow(const std::string& name, const unsigned int width,
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glEnable(GL_DEPTH_TEST);
 
+  glEnable(GL_PROGRAM_POINT_SIZE);
+  glPointSize(5.0);
+
   // TODO: Do I need transparency?
   glEnable(GL_BLEND);
   // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -80,13 +83,13 @@ bool GLWindow::IsRunning() {
   last_time_ = time_value;
 
   // FPS calc and output
-  delta_time_sum_ += delta_time;
-  if (frames_ % 100 == 0) {
-    float fps = 100.0f / delta_time_sum_;
-    std::cout << "FPS = " << fps << std::endl;
-    delta_time_sum_ = 0;
-  }
-  ++frames_;
+  // delta_time_sum_ += delta_time;
+  // if (frames_ % 100 == 0) {
+  //   float fps = 100.0f / delta_time_sum_;
+  //   std::cout << "FPS = " << fps << std::endl;
+  //   delta_time_sum_ = 0;
+  // }
+  // ++frames_;
 
   // Clear everything
   glClearColor(0.25f, 0.25f, 0.25f, 1.0f);

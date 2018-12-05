@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Loading camera 1: " << std::flush;
   for (int i = 0; i < camera1_poses.size(); ++i) {
-    // if (i == 40) break;
+    if (i == 10) break;
     const ImageData& im_data = camera1_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << std::endl << "Loading camera 2: " << std::flush;
   for (int i = 0; i < camera2_poses.size(); ++i) {
-    // if (i == 20) break;
+    if (i == 10) break;
     const ImageData& im_data = camera2_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably

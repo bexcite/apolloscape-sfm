@@ -39,14 +39,15 @@ int main(int argc, char* argv[]) {
   // Renderer
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
 
-  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 50));
+  std::shared_ptr<DObject> root = std::make_shared<DObject>();
 
+  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 50));
 
   std::shared_ptr<ColorObject> camera_obj(
       ObjectFactory::CreateCameraFrustum());
   camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
   // camera_obj->SetRotation(-1.7889f, 0.0250f, 0.0f);
-  // camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
 
   std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
   camera_obj->AddChild(axes_obj);
@@ -56,6 +57,9 @@ int main(int argc, char* argv[]) {
           "../data/objects/debug_cube/debug_cube.obj"));
 //   debug_cube_obj->SetScale(glm::vec3(0.2f));
   debug_cube_obj->SetTranslation(glm::vec3(3.0f, 3.0f, 3.0f));
+
+  std::vector<glm::vec3> points = {glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(2.0f), glm::vec3(3.0f), glm::vec3(4.0f)};
+  root->AddChild(std::shared_ptr<DObject>(ObjectFactory::CreatePoints(points)));
 
 
 /*
@@ -102,6 +106,8 @@ int main(int argc, char* argv[]) {
     renderer->Draw(floor_obj);
     renderer->Draw(camera_obj);
     renderer->Draw(debug_cube_obj);
+
+    renderer->Draw(root);
 
     // renderer->Draw(axes);
 

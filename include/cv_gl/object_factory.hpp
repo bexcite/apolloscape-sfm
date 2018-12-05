@@ -85,7 +85,7 @@ public:
       3, 4
     };
     auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
-    mesh->SetMeshType(MeshType::LINES);
+    mesh->SetMeshType(MeshType::POINTS);
     return mesh;
   }
 
@@ -174,6 +174,18 @@ public:
     return mesh;
   }
 
+  static std::shared_ptr<Mesh> CreatePoints(std::vector<glm::vec3>& points) {
+    std::vector<Texture> textures;
+    std::vector<Vertex> vertices(points.size());
+    for (int i = 0; i < points.size(); ++i) {
+      vertices[i].position = points[i];
+    }
+    std::vector<unsigned int> indices;
+    auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
+    mesh->SetMeshType(MeshType::POINTS);
+    return mesh;
+  }
+
 
 };
 
@@ -246,9 +258,8 @@ public:
         new ColorObject(mesh, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
     camera_obj->SetShader(shader_color);
 
-    // Add additional correction to look forward
+    // Add additional correction to start from origin
     glm::mat4 correction(1.0f);
-    // correction = glm::rotate(correction, static_cast<float>(-M_PI_2), glm::vec3(0.0f, 1.0f, 0.0f));
     correction = glm::translate(correction, glm::vec3(0.0f, 0.0f, -1.0f));
     camera_obj->AddToCorrectionMatrix(correction);
 
@@ -359,6 +370,24 @@ public:
 
     return axes;
   
+  }
+
+  /* ================ Points ================================*/
+  static ColorObject* CreatePoints(std::vector<glm::vec3>& points) {
+
+    auto mesh = MeshFactory::CreatePoints(points);
+
+    auto shader_color = ObjectFactory::GetShader(
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
+
+    ColorObject* points_obj =
+        new ColorObject(mesh, glm::vec4(1.0f, 0.4f, 0.4f, 1.0f));
+    points_obj->SetShader(shader_color);
+
+
+    return points_obj;
+
   }
 
 
