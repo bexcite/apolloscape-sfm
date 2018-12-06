@@ -72,7 +72,7 @@ public:
       {glm::vec3(0.5f, 0.0f, 0.5f)},   // 1
       {glm::vec3(0.5f, 0.0f, -0.5f)},  // 2
       {glm::vec3(-0.5f, 0.0f, -0.5f)}, // 3
-      {glm::vec3(0.0f, 1.0f, 0.0f)},   // 4
+      {glm::vec3(0.0f, 1.0f, 0.0f)}   // 4
     };
     std::vector<unsigned int> indices = {
       0, 1,
@@ -85,7 +85,20 @@ public:
       3, 4
     };
     auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
-    mesh->SetMeshType(MeshType::POINTS);
+    mesh->SetMeshType(MeshType::LINES);
+    return mesh;
+  }
+
+  static std::shared_ptr<Mesh> CreateCameraUpTriangle() {
+    std::vector<Texture> textures;
+    std::vector<Vertex> vertices = {
+      {glm::vec3(0.0f, 0.0f, 0.5f)},  // 0
+      {glm::vec3(0.0f, 0.0f, -0.5f)},   // 1
+      {glm::vec3(-0.5f, 0.0f, 0.0f)}
+    };
+    std::vector<unsigned int> indices;
+    auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
+    mesh->SetMeshType(MeshType::TRIANGLES);
     return mesh;
   }
 
@@ -262,6 +275,15 @@ public:
     glm::mat4 correction(1.0f);
     correction = glm::translate(correction, glm::vec3(0.0f, 0.0f, -1.0f));
     camera_obj->AddToCorrectionMatrix(correction);
+
+    // Add Up Triangle
+    auto tri_mesh = MeshFactory::CreateCameraUpTriangle();
+    ColorObject* tri_up_obj =
+        new ColorObject(tri_mesh, glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
+    tri_up_obj->SetShader(shader_color);
+    tri_up_obj->SetScale(glm::vec3(0.5f));
+    tri_up_obj->SetTranslation(glm::vec3(0.0f, 0.6f, -1.0f));
+    camera_obj->AddChild(std::shared_ptr<DObject>(tri_up_obj));
 
     return camera_obj;
 

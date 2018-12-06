@@ -30,6 +30,8 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Hello edit space" << std::endl;
 
+  float width_ratio = camera->GetImageWidth()/camera->GetImageHeight();
+
   glm::vec4 v(1.0f);
   std::cout << "v = " << v << std::endl;
 
@@ -43,23 +45,33 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 50));
 
-  std::shared_ptr<ColorObject> camera_obj(
-      ObjectFactory::CreateCameraFrustum());
-  camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 0.0f));
+  std::shared_ptr<CameraObject> camera_obj(new CameraObject(width_ratio));
+  camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
   // camera_obj->SetRotation(-1.7889f, 0.0250f, 0.0f);
-  camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  // camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  root->AddChild(camera_obj);
+
+  // Main Camera pos/rot
+  // camera->SetPosition(glm::vec3(3.0f, 0.0f, 1.0f));
+  // camera->SetDirection(glm::vec3(0.0f, 0.0f, 1.0f));
 
   std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
   camera_obj->AddChild(axes_obj);
+
+
+  std::vector<glm::vec3> points = {glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(2.0f), glm::vec3(3.0f), glm::vec3(4.0f)};
+  root->AddChild(std::shared_ptr<DObject>(ObjectFactory::CreatePoints(points)));
+
+
+
 
   std::shared_ptr<ModelObject> debug_cube_obj(
       ObjectFactory::CreateModelObject(
           "../data/objects/debug_cube/debug_cube.obj"));
 //   debug_cube_obj->SetScale(glm::vec3(0.2f));
   debug_cube_obj->SetTranslation(glm::vec3(3.0f, 3.0f, 3.0f));
+  root->AddChild(debug_cube_obj);
 
-  std::vector<glm::vec3> points = {glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(2.0f), glm::vec3(3.0f), glm::vec3(4.0f)};
-  root->AddChild(std::shared_ptr<DObject>(ObjectFactory::CreatePoints(points)));
 
 
 /*
@@ -104,7 +116,7 @@ int main(int argc, char* argv[]) {
 
     /* ====================== Render ===================== */
     renderer->Draw(floor_obj);
-    renderer->Draw(camera_obj);
+    // renderer->Draw(camera_obj);
     renderer->Draw(debug_cube_obj);
 
     renderer->Draw(root);

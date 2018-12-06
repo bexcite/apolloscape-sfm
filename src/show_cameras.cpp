@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     fs::path image_path = camera1_image_path / fs::path(im_data.filename);
     co->SetImage(image_path.string());
 
-    co->AddChild(axes_obj);
+    // co->AddChild(axes_obj);
     cameras1->AddChild(co);
 
     std::cout << i << ". " << std::flush;
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
     fs::path image_path = camera2_image_path / fs::path(im_data.filename);
     co->SetImage(image_path.string());
 
-    co->AddChild(axes_obj);
+    // co->AddChild(axes_obj);
     cameras2->AddChild(co);
 
     std::cout << i << ". " << std::flush;
