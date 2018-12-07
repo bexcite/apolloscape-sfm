@@ -166,7 +166,6 @@ void Camera::UpdateCameraVectors(bool constrain_pitch) {
   // std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
   // std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
 
-
 }
 
 void Camera::SetDirection(const glm::vec3& direction_to) {
@@ -192,9 +191,14 @@ void Camera::SetOrigin(const glm::vec3& origin) {
 
 
 void Camera::SetRotation(const float x_angle, const float y_angle, const float z_angle) {
-  pitch_ = glm::degrees(y_angle);
-  yaw_ = glm::degrees(z_angle - M_PI_2);
+  // TODO[PAVLO]: This is the ad-hoc solution that works only on the ZPark rotations angles (sic)
+  pitch_ = glm::degrees(y_angle /* + M_PI_2 */);
+  yaw_ = glm::degrees(z_angle + M_PI_2);
   UpdateCameraVectors();
+
+  // glm::mat4 rotation(1.0f);
+  // rotation = glm::rotate(rotation, z_angle, glm::vec3(0.0f, 0.0f, 1.0f));
+  // rotation = glm::rotate(rotation, static_cast<float>(M_PI_2), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void Camera::SetScale(const float scale) {
@@ -207,5 +211,8 @@ void Camera::SetIntrinsics(const float fx, const float fy, const float cx,
   fy_ = fy;
   cx_ = cx;
   cy_ = cy;
+}
 
+void Camera::Print(std::ostream& os) const {
+    std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
 }

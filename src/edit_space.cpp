@@ -48,15 +48,18 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<CameraObject> camera_obj(new CameraObject(width_ratio));
   camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
   // camera_obj->SetRotation(-1.7889f, 0.0250f, 0.0f);
-  // camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  // camera_obj->SetRotation(0.0f, 0.0f, 0.0f);
   root->AddChild(camera_obj);
 
   // Main Camera pos/rot
-  // camera->SetPosition(glm::vec3(3.0f, 0.0f, 1.0f));
+  camera->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+  camera->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  // camera->SetRotation(0.0f, 0.0f, 0.0f);
   // camera->SetDirection(glm::vec3(0.0f, 0.0f, 1.0f));
 
   std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
-  camera_obj->AddChild(axes_obj);
+  // camera_obj->AddChild(axes_obj);
 
 
   std::vector<glm::vec3> points = {glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(2.0f), glm::vec3(3.0f), glm::vec3(4.0f)};
@@ -120,6 +123,8 @@ int main(int argc, char* argv[]) {
     renderer->Draw(debug_cube_obj);
 
     renderer->Draw(root);
+
+    camera->Print();
 
     // renderer->Draw(axes);
 

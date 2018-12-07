@@ -2,6 +2,8 @@
 #ifndef CV_GL_CAMERA_H_
 #define CV_GL_CAMERA_H_
 
+#include <iostream>
+
 #include <glm/glm.hpp>
 
 enum CameraMovement
@@ -43,6 +45,8 @@ class Camera {
   void SetOrigin(const glm::vec3& origin);
   void SetRotation(const float x_angle, const float y_angle, const float z_angle);
   void SetScale(const float scale);
+
+  void Print(std::ostream& os = std::cout) const;
 
   void SetIntrinsics(const float fx, const float fy, const float cx,
       const float cy);

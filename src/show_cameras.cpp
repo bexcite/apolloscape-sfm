@@ -83,8 +83,10 @@ int main(int argc, char* argv[]) {
   // camera->SetOrigin(glm::vec3(camera1_poses[110].coords[3], camera1_poses[110].coords[4], camera1_poses[110].coords[5]));
   // camera->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
 
-  camera->SetOrigin(glm::vec3(camera1_poses[0].coords[3], camera1_poses[0].coords[4], camera1_poses[0].coords[5]));
-  camera->SetRotation(camera1_poses[0].coords[0], camera1_poses[0].coords[1], camera1_poses[0].coords[2]);
+  const ImageData& camera_origin_data = camera1_poses[2];
+
+  camera->SetOrigin(glm::vec3(camera_origin_data.coords[3], camera_origin_data.coords[4], camera_origin_data.coords[5]));
+  camera->SetRotation(camera_origin_data.coords[0], camera_origin_data.coords[1], camera_origin_data.coords[2]);
   // camera->SetOrigin(glm::vec3(3.0f, 0.0f, 0.0f));
 
   float width_ratio = camera->GetImageWidth()/camera->GetImageHeight();
@@ -98,7 +100,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Loading camera 1: " << std::flush;
   for (int i = 0; i < camera1_poses.size(); ++i) {
-    if (i == 10) break;
+    if (i == 5) break;
     const ImageData& im_data = camera1_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
@@ -117,7 +119,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << std::endl << "Loading camera 2: " << std::flush;
   for (int i = 0; i < camera2_poses.size(); ++i) {
-    if (i == 10) break;
+    if (i == 5) break;
     const ImageData& im_data = camera2_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably

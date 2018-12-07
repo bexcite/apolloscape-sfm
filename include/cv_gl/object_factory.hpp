@@ -5,6 +5,9 @@
 #include <map>
 #include <iostream>
 
+// #include <glm/gtc/matrix_transform.hpp>
+
+// #include <cv_gl/dobject.h>
 #include "cv_gl/mesh.h"
 #include "cv_gl/shader.h"
 
@@ -263,6 +266,7 @@ public:
     //     "../shaders/two.vs",
     //     "../shaders/two_model.fs");
 
+
     auto shader_color = ObjectFactory::GetShader(
         "../shaders/two.vs",
         "../shaders/two_model.fs");
@@ -433,6 +437,9 @@ class CameraObject: public DObject {
 
     // Camera Frustum
     camera_obj_ = std::shared_ptr<ColorObject>(ObjectFactory::CreateCameraFrustum());
+    // glm::mat4 rr(1.0f);
+    // rr = ;
+    camera_obj_->SetRotation(glm::rotate(glm::mat4(1.0f), static_cast<float>(M_PI), glm::vec3(0.0f, 1.0f, 0.0f)));
     camera_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
     // camera_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
     this->AddChild(camera_obj_);
@@ -440,7 +447,7 @@ class CameraObject: public DObject {
     // Image Plane
     image_obj_ = std::shared_ptr<ImageObject>(ObjectFactory::CreateImage());
     image_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
-    image_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, -1.0f));
+    image_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, 1.0f));
     this->AddChild(image_obj_);
 
   // fs::path image_path = camera1_image_path / fs::path(camera1_poses[0].filename);
