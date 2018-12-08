@@ -27,6 +27,11 @@ Camera::Camera(const glm::vec3& position,
       mouse_sensitivity_(kSensitivity),
       zoom_(kZoom)
      {
+
+  // TEST
+  // cx_ = image_width_ / 2;
+  // cy_ = image_height_ / 2;
+
   UpdateCameraVectors();
 }
 
@@ -35,13 +40,19 @@ glm::mat4 Camera::GetViewMatrix() const {
 }
 
 glm::mat4 Camera::GetProjMatrix() const {
+
+  // Some info: http://ksimek.github.io/2013/06/03/calibrated_cameras_in_opengl/
+
   // My matrix
 
-  float image_width = 2 * cx_;
-  float image_height = 2 * cy_;
+  // float image_width = 2 * cx_;
+  // float image_height = 2 * cy_;
 
-  // float image_width = image_width_;
-  // float image_height = image_height_;
+  float image_width = image_width_;
+  float image_height = image_height_;
+
+  
+  
 
   glm::mat4 persp;
   persp[0] = glm::vec4(fx_ / image_width, 0.0f, 0.0f, 0.0f);
@@ -99,8 +110,8 @@ void Camera::ProcessKeyboard(CameraMovement camera_movement, float delta_time) {
   } else if (camera_movement == MOVE_ORIGIN) {
     // position_ = glm::vec3(-3.0f * scale_, 0.0f * scale_, 1.5f * scale_);
     position_ = origin_;
-    SetDirection(glm::vec3(0.0f * scale_));
-    UpdateCameraVectors();
+    // SetDirection(glm::vec3(0.0f * scale_));
+    // UpdateCameraVectors();
   } else if (camera_movement == MOVE_TOP) {
     position_ = glm::vec3(0.0f, 0.0f, 15.0f) * scale_;
     SetDirection(glm::vec3(0.0f) * scale_);
@@ -186,7 +197,7 @@ void Camera::SetPosition(const glm::vec3& position) {
 
 void Camera::SetOrigin(const glm::vec3& origin) {
   origin_ = origin;
-  SetPosition(origin);
+  SetPosition(origin_);
 }
 
 
@@ -215,4 +226,5 @@ void Camera::SetIntrinsics(const float fx, const float fy, const float cx,
 
 void Camera::Print(std::ostream& os) const {
     std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
+    std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
 }

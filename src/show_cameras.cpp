@@ -62,6 +62,10 @@ int main(int argc, char* argv[]) {
       std::make_shared<Camera>(glm::vec3(-3.0f, 0.0f, 1.5f));
   camera->SetScale(kGlobalScale);
 
+  float fx = camera->GetFx() / camera->GetImageWidth();
+  float fy = camera->GetFy() / camera->GetImageHeight();
+  float f = std::max(fx, fy);
+
   std::cout << "Hello show camera" << std::endl;
 
   GLWindow gl_window("OpenGL: Edit Space", kWindowWidth, kWindowHeight);
@@ -104,7 +108,7 @@ int main(int argc, char* argv[]) {
     const ImageData& im_data = camera1_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
-    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio));
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, f));
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 
@@ -123,7 +127,7 @@ int main(int argc, char* argv[]) {
     const ImageData& im_data = camera2_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
-    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio));
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, f));
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 

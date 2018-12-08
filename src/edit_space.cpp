@@ -31,6 +31,11 @@ int main(int argc, char* argv[]) {
   std::cout << "Hello edit space" << std::endl;
 
   float width_ratio = camera->GetImageWidth()/camera->GetImageHeight();
+  float fx = camera->GetFx() / camera->GetImageWidth();
+  float fy = camera->GetFy() / camera->GetImageHeight();
+  std::cout << "fx = " << fx << std::endl;
+  std::cout << "fy = " << fy << std::endl;
+  float f = std::max(fx, fy);
 
   glm::vec4 v(1.0f);
   std::cout << "v = " << v << std::endl;
@@ -45,25 +50,29 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 50));
 
-  std::shared_ptr<CameraObject> camera_obj(new CameraObject(width_ratio));
-  camera_obj->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+  std::shared_ptr<CameraObject> camera_obj(new CameraObject(width_ratio, f));
+  // camera_obj->SetTranslation(glm::vec3(3.0f, 0.0f, 1.0f));
   // camera_obj->SetRotation(-1.7889f, 0.0250f, 0.0f);
-  camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
-  // camera_obj->SetRotation(0.0f, 0.0f, 0.0f);
+  // camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  camera_obj->SetRotation(static_cast<float>(M_PI_2), 0.0f, static_cast<float>(M_PI_2));
   root->AddChild(camera_obj);
 
   // Main Camera pos/rot
-  camera->SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
-  camera->SetRotation(-1.7889f, 0.0250f, -1.4811f);
+  // camera->SetPosition(glm::vec3(3.0f, 0.0f, 1.0f));
+  camera->SetOrigin(glm::vec3(0.0f, 0.0f, 0.0f));
+  // camera->SetRotation(-1.7889f, 0.0250f, -1.4811f);
   // camera->SetRotation(0.0f, 0.0f, 0.0f);
   // camera->SetDirection(glm::vec3(0.0f, 0.0f, 1.0f));
 
   std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
   // camera_obj->AddChild(axes_obj);
+  // root->AddChild(axes_obj);
 
 
   std::vector<glm::vec3> points = {glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(2.0f), glm::vec3(3.0f), glm::vec3(4.0f)};
-  root->AddChild(std::shared_ptr<DObject>(ObjectFactory::CreatePoints(points)));
+  std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(points));
+  points_obj->SetTranslation(glm::vec3(10.0f, 0.0f, 0.0f));
+  root->AddChild(points_obj);
 
 
 
@@ -124,7 +133,7 @@ int main(int argc, char* argv[]) {
 
     renderer->Draw(root);
 
-    camera->Print();
+    // camera->Print();
 
     // renderer->Draw(axes);
 

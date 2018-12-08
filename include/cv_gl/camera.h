@@ -21,7 +21,7 @@ enum CameraMovement
 
 // camera constant
 const float kYaw = 0.0f;
-const float kPitch = 5.0f;  // -5.0f
+const float kPitch = 0.0f;  // -5.0f    5.0f
 const float kSpeed = 2.5f; // 2.5f
 const float kSensitivity = 0.1f;
 const float kZoom = 45.0f;
@@ -53,6 +53,11 @@ class Camera {
 
   float GetImageWidth() { return image_width_; }
   float GetImageHeight() { return image_height_; }
+
+  float GetCx() const { return cx_; }
+  float GetCy() const { return cy_; }
+  float GetFx() const { return fx_; }
+  float GetFy() const { return fy_; }
 
 
  private:

@@ -430,7 +430,7 @@ std::map<std::string, std::shared_ptr<Shader> > ObjectFactory::shaders_;
 
 class CameraObject: public DObject {
   public:
-  CameraObject(const float width_ratio = 1.0)
+  CameraObject(const float width_ratio = 1.0f, const float fx = 1.0f)
       : DObject(nullptr, "CameraObject") {
 
     // Construct complex object
@@ -440,14 +440,14 @@ class CameraObject: public DObject {
     // glm::mat4 rr(1.0f);
     // rr = ;
     camera_obj_->SetRotation(glm::rotate(glm::mat4(1.0f), static_cast<float>(M_PI), glm::vec3(0.0f, 1.0f, 0.0f)));
-    camera_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
+    camera_obj_->SetScale(glm::vec3(width_ratio, 1.0f, fx));
     // camera_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
     this->AddChild(camera_obj_);
 
     // Image Plane
     image_obj_ = std::shared_ptr<ImageObject>(ObjectFactory::CreateImage());
     image_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
-    image_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, 1.0f));
+    image_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, fx));
     this->AddChild(image_obj_);
 
   // fs::path image_path = camera1_image_path / fs::path(camera1_poses[0].filename);
