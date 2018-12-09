@@ -22,6 +22,7 @@ class DObject {
       translation_(glm::vec3(0.0f)),
       scale_(glm::vec3(1.0f)),
       rotation_(glm::mat4(1.0f)),
+      no_correction_(false),
       name_(name) {
     // std::cout << "DObject:: (con)" << std::endl;
     InitCorrectionMatrix();
@@ -29,12 +30,14 @@ class DObject {
 
   virtual void InitCorrectionMatrix() {
     glm::mat4 model_matrix(1.0f);
-    // Correction from OpenGL standard (Z - pointing backwards) to robot coord X - pointing forward)
-    model_matrix[0] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-    model_matrix[1] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
-    model_matrix[2] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-    model_matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    model_matrix = glm::transpose(model_matrix);
+    if (!no_correction_) {
+      // Correction from OpenGL standard (Z - pointing backwards) to robot coord X - pointing forward)
+      model_matrix[0] = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+      model_matrix[1] = glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f);
+      model_matrix[2] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+      model_matrix[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+      model_matrix = glm::transpose(model_matrix);
+    }
     correction_ = model_matrix;
   };
 
@@ -172,6 +175,10 @@ class DObject {
   void SetName(const std::string& name) { name_ = name; }
   std::string GetName() { return name_; }
 
+  void NoCorrection() {
+    no_correction_ = true;
+    InitCorrectionMatrix();
+  }
 
 
  protected:
@@ -182,6 +189,8 @@ class DObject {
   glm::mat4 rotation_;
   glm::mat4 correction_;
   std::string name_;
+
+  bool no_correction_;
 
   std::list<std::shared_ptr<DObject> > children;
 
@@ -225,6 +234,8 @@ class ImageObject: public DObject {
 public:
   ImageObject(const std::shared_ptr<Mesh> mesh) 
       : DObject(mesh, "ImageObject") { 
+    mesh_->material.ambient_color = glm::vec4({0.15f, 0.15f, 0.15f, 0.2f});
+    mesh_->material.diffuse_color = glm::vec4(0.0f);
   }
 
   void SetImage(const std::string& image_path, bool adjust_aspect_ratio = true) {

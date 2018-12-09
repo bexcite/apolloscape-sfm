@@ -54,7 +54,10 @@ GLWindow::GLWindow(const std::string& name, const unsigned int width,
 
   // TODO: Do I need transparency?
   glEnable(GL_BLEND);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // https://stackoverflow.com/questions/5984887/opengl-z-sorting-transparency
+  // TODO: Render with sorting and transparency
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
   // Check for Valid Context

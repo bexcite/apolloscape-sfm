@@ -39,7 +39,7 @@ void main() {
 
   vec4 diffuse = material.diffuse * (diff1 + diff2);;
 
-  // ======= Diffuse part ===============
+  // ======= Diffuse pa rt ===============
   if (material.texture_diffuse > 0) {
     vec4 texture_color = texture(material.texture_diffuse1, TexCoord);
     diffuse = texture_color * (diff1 + diff2);
@@ -52,7 +52,9 @@ void main() {
   // ======= Ambient part ===============
   if (material.texture_ambient > 0) {
     vec4 texture_color = texture(material.texture_ambient1, TexCoord);
+    // float a = ambient.a;
     ambient = texture_color;
+    // ambient.a = a;
   } 
 
   FragColor = ambient + diffuse;

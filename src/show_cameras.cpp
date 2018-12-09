@@ -62,9 +62,11 @@ int main(int argc, char* argv[]) {
       std::make_shared<Camera>(glm::vec3(-3.0f, 0.0f, 1.5f));
   camera->SetScale(kGlobalScale);
 
-  float fx = camera->GetFx() / camera->GetImageWidth();
-  float fy = camera->GetFy() / camera->GetImageHeight();
-  float f = std::max(fx, fy);
+  CameraIntrinsics camera_intr = camera->GetCameraIntrinsics();
+
+  // float fx = camera->GetFx() / camera->GetImageWidth();
+  // float fy = camera->GetFy() / camera->GetImageHeight();
+  // float f = std::max(fx, fy);
 
   std::cout << "Hello show camera" << std::endl;
 
@@ -87,7 +89,7 @@ int main(int argc, char* argv[]) {
   // camera->SetOrigin(glm::vec3(camera1_poses[110].coords[3], camera1_poses[110].coords[4], camera1_poses[110].coords[5]));
   // camera->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
 
-  const ImageData& camera_origin_data = camera1_poses[2];
+  const ImageData& camera_origin_data = camera1_poses[23];
 
   camera->SetOrigin(glm::vec3(camera_origin_data.coords[3], camera_origin_data.coords[4], camera_origin_data.coords[5]));
   camera->SetRotation(camera_origin_data.coords[0], camera_origin_data.coords[1], camera_origin_data.coords[2]);
@@ -103,12 +105,12 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<DObject> cameras2(new DObject());
 
   std::cout << "Loading camera 1: " << std::flush;
-  for (int i = 0; i < camera1_poses.size(); ++i) {
-    if (i == 5) break;
+  for (int i = 22; i < camera1_poses.size(); ++i) {
+    if (i == 28) break;
     const ImageData& im_data = camera1_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
-    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, f));
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, camera_intr));
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 
@@ -122,12 +124,12 @@ int main(int argc, char* argv[]) {
   }
 
   std::cout << std::endl << "Loading camera 2: " << std::flush;
-  for (int i = 0; i < camera2_poses.size(); ++i) {
-    if (i == 5) break;
+  for (int i = 22; i < camera2_poses.size(); ++i) {
+    if (i == 28) break;
     const ImageData& im_data = camera2_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
-    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, f));
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, camera_intr));
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 

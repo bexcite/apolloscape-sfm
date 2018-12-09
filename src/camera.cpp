@@ -51,9 +51,6 @@ glm::mat4 Camera::GetProjMatrix() const {
   float image_width = image_width_;
   float image_height = image_height_;
 
-  
-  
-
   glm::mat4 persp;
   persp[0] = glm::vec4(fx_ / image_width, 0.0f, 0.0f, 0.0f);
   persp[1] = glm::vec4(0.0f, fy_ / image_height, 0.0f, 0.0f);
@@ -227,4 +224,14 @@ void Camera::SetIntrinsics(const float fx, const float fy, const float cx,
 void Camera::Print(std::ostream& os) const {
     std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
     std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;
+}
+
+CameraIntrinsics Camera::GetCameraIntrinsics() const {
+  CameraIntrinsics intr;
+  intr.fx = fx_ / image_width_;
+  intr.fy = fy_ / image_height_;
+  intr.s = 0.0f ;
+  intr.cx = cx_ / image_width_;
+  intr.cy = cy_ / image_height_;
+  return intr;
 }

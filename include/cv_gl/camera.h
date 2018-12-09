@@ -19,6 +19,14 @@ enum CameraMovement
   MOVE_SIDEWAYS_LEFT
 };
 
+struct CameraIntrinsics {
+  float fx;
+  float fy;
+  float s;
+  float cx;
+  float cy;
+};
+
 // camera constant
 const float kYaw = 0.0f;
 const float kPitch = 0.0f;  // -5.0f    5.0f
@@ -59,6 +67,8 @@ class Camera {
   float GetFx() const { return fx_; }
   float GetFy() const { return fy_; }
 
+  CameraIntrinsics GetCameraIntrinsics() const;
+
 
  private:
 
@@ -66,6 +76,7 @@ class Camera {
    float fx_ = 1450.317230113;
    float fy_ = 1451.184836113;
    float cx_ = 1244.386581025;
+  //  float cx_ = 1480.0;  // TEST TEST
    float cy_ = 1013.145997723;
 
    float image_width_ = 2452;

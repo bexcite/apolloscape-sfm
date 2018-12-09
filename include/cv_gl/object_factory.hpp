@@ -410,6 +410,7 @@ public:
     ColorObject* points_obj =
         new ColorObject(mesh, glm::vec4(1.0f, 0.4f, 0.4f, 1.0f));
     points_obj->SetShader(shader_color);
+    points_obj->NoCorrection();
 
 
     return points_obj;
@@ -424,30 +425,80 @@ public:
 
 };
 
-
+// Cache of shaders (reusable ones)
 std::map<std::string, std::shared_ptr<Shader> > ObjectFactory::shaders_;
-
 
 class CameraObject: public DObject {
   public:
-  CameraObject(const float width_ratio = 1.0f, const float fx = 1.0f)
-      : DObject(nullptr, "CameraObject") {
+  CameraObject(const float width_ratio = 1.0f, const CameraIntrinsics intr = CameraIntrinsics())
+      : DObject(nullptr, "CameraObject"), intrinsics_(intr), width_ratio_(width_ratio) {
+
+    float f = std::max(intrinsics_.fx, intrinsics_.fy);
 
     // Construct complex object
 
+    // ========== Create New Frustrum ===============
+    std::vector<Texture> textures;
+    std::vector<Vertex> vertices = {
+      // {glm::vec3(-0.5f, -0.5f, f)},  // 0
+      {glm::vec3(- (1 - intrinsics_.cx) * width_ratio_, - intrinsics_.cy, f)},  // 0
+      // {glm::vec3(0.5f, -0.5f, f)},   // 1
+      {glm::vec3(intrinsics_.cx * width_ratio_, - intrinsics_.cy, f)},   // 1
+      // {glm::vec3(0.5f, 0.5f, f)},  // 2
+      {glm::vec3(intrinsics_.cx * width_ratio_,  (1 - intrinsics_.cy), f)},  // 2
+      // {glm::vec3(-0.5f, 0.5f, f)}, // 3
+      {glm::vec3(- (1 - intrinsics_.cx) * width_ratio_, (1 - intrinsics_.cy), f)}, // 3
+      {glm::vec3(0.0f, 0.0f, 0.0f)}   // 4
+    };
+    std::vector<unsigned int> indices = {
+      0, 1,
+      1, 2,
+      2, 3,
+      3, 0,
+      0, 4,
+      1, 4,
+      2, 4,
+      3, 4
+    };
+    auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
+    mesh->SetMeshType(MeshType::LINES);
+    auto shader_color = ObjectFactory::GetShader(
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
+    std::shared_ptr<ColorObject> new_camera_obj = std::make_shared<ColorObject>(
+        mesh, glm::vec4(1.0f, 0.7f, 0.7f, 1.0f));
+    new_camera_obj->SetShader(shader_color);
+    new_camera_obj->NoCorrection();
+    this->AddChild(new_camera_obj);
+
+    // Add Up Triangle
+    auto tri_mesh = MeshFactory::CreateCameraUpTriangle();
+    ColorObject* tri_up_obj =
+        new ColorObject(tri_mesh, glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
+    tri_up_obj->SetShader(shader_color);
+    tri_up_obj->SetScale(glm::vec3(0.5f));
+    // tri_up_obj->SetTranslation(glm::vec3(0.0f, 0.6f, f));
+    tri_up_obj->SetTranslation(glm::vec3((intrinsics_.cx * width_ratio_ - 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f) + 0.55f, f));
+    new_camera_obj->AddChild(std::shared_ptr<DObject>(tri_up_obj));
+
+    camera_obj_ = new_camera_obj;
+
+
+    /* - old camera object 
     // Camera Frustum
     camera_obj_ = std::shared_ptr<ColorObject>(ObjectFactory::CreateCameraFrustum());
     // glm::mat4 rr(1.0f);
     // rr = ;
     camera_obj_->SetRotation(glm::rotate(glm::mat4(1.0f), static_cast<float>(M_PI), glm::vec3(0.0f, 1.0f, 0.0f)));
-    camera_obj_->SetScale(glm::vec3(width_ratio, 1.0f, fx));
+    camera_obj_->SetScale(glm::vec3(width_ratio, 1.0f, f));
     // camera_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
-    this->AddChild(camera_obj_);
+    // this->AddChild(camera_obj_);
+    */
 
     // Image Plane
     image_obj_ = std::shared_ptr<ImageObject>(ObjectFactory::CreateImage());
     image_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
-    image_obj_->SetTranslation(glm::vec3(0.0f, 0.0f, fx));
+    image_obj_->SetTranslation(glm::vec3((intrinsics_.cx * width_ratio_ - 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f), f));
     this->AddChild(image_obj_);
 
   // fs::path image_path = camera1_image_path / fs::path(camera1_poses[0].filename);
@@ -462,9 +513,57 @@ class CameraObject: public DObject {
     }
   }
 
+  void AddProjectedPoints(const std::vector<glm::vec3>& points) {
+    projected_points_.insert(projected_points_.end(), points.begin(), points.end());
+
+    float f = std::max(intrinsics_.fx, intrinsics_.fy);
+
+    std::cout << "intr_.cx = " << intrinsics_.cx << std::endl;
+    std::cout << "intr_.cy = " << intrinsics_.cy << std::endl;
+
+    // Translate to Camera Coordinate System
+    
+    std::vector<glm::vec3> p(points);
+    std::cout << "proj_points.size = " << p.size() << std::endl;
+    for (int i = 0; i < p.size(); ++i) {
+      std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
+      p[i] -= translation_;
+      glm::vec3 r = glm::vec3(glm::transpose(rotation_) * glm::vec4(p[i], 1.0f));
+      float sx = intrinsics_.fx * r[0] / r[2]; // + intrinsics_.cx; // TODO: Add s to calculation
+      float sy = intrinsics_.fy * r[1] / r[2]; // + intrinsics_.cy;
+
+      float ssx = sx * width_ratio_; // - intrinsics_.cx * width_ratio_;
+      float ssy = sy; // - intrinsics_.cy;
+      float ssz = f;
+      p[i] = glm::vec3(ssx, ssy, ssz);
+      // std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
+      std::cout << "r[" << i << "] = " << glm::to_string(r) << std::endl;
+      std::cout << "sx, sy = " << sx << ", " << sy << std::endl;
+      std::cout << "ssx, ssy, ssz = " << ssx << ", " << ssy << ", " << ssz << std::endl;
+    }
+
+    // Corner Points
+    std::vector<glm::vec3> cp(1);
+    // cp[0] = glm::vec3((1 - intrinsics_.cx) * width_ratio_, -intrinsics_.cy, f);
+    cp[0] = glm::vec3(intrinsics_.cx * width_ratio_, -intrinsics_.cy, f);
+    // cp[1] = glm::vec3(-(1 - intrinsics_.cx) * width_ratio_, -intrinsics_.cy, f);
+    // cp[2] = glm::vec3(-(1 - intrinsics_.cx) * width_ratio_, (1 - intrinsics_.cy), f);
+    // cp[3] = glm::vec3(intrinsics_.cx * width_ratio_, (1 - intrinsics_.cy), f);
+    // std::shared_ptr<DObject> cp_points_obj(ObjectFactory::CreatePoints(cp));
+    // this->AddChild(cp_points_obj);
+
+    std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(p));
+    this->AddChild(points_obj);
+
+
+  }
+
   private:
   std::shared_ptr<ImageObject> image_obj_;
   std::shared_ptr<ColorObject> camera_obj_;
+  CameraIntrinsics intrinsics_;
+  float width_ratio_;
+  std::vector<glm::vec3> projected_points_;
 };
 
 
