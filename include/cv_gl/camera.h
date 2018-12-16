@@ -59,6 +59,8 @@ class Camera {
   void SetIntrinsics(const float fx, const float fy, const float cx,
       const float cy);
 
+  void SetIntrinsics(const CameraIntrinsics& camera_intr);
+
   float GetImageWidth() { return image_width_; }
   float GetImageHeight() { return image_height_; }
 

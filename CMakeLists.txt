@@ -1,8 +1,11 @@
 # Get the project_name from the current directory
-get_filename_component(project_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0.2)
+cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0048 NEW)
 
-project(${project_name})
+get_filename_component(project_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+
+project(${project_name} VERSION 0.0.1)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -48,9 +51,9 @@ add_subdirectory(${GLFW_DIR})
 # add libs
 add_subdirectory(${PROJECT_SOURCE_DIR}/lib)
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/tests)
-add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 
 
 

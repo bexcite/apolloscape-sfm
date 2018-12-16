@@ -52,9 +52,9 @@ void main() {
   // ======= Ambient part ===============
   if (material.texture_ambient > 0) {
     vec4 texture_color = texture(material.texture_ambient1, TexCoord);
-    // float a = ambient.a;
+    float a = ambient.a;
     ambient = texture_color;
-    // ambient.a = a;
+    ambient.a = a;
   } 
 
   FragColor = ambient + diffuse;

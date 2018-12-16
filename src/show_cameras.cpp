@@ -1,5 +1,6 @@
 // Copyright Pavlo 2018
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <iomanip>
@@ -33,6 +34,8 @@ const char kCamera2PoseFile[] = "Camera_2.txt";
 
 const float kGlobalScale = 100.0f;
 
+#define TAG_CAMERA_OBJECT 10
+
 
 int main(int argc, char* argv[]) {
 
@@ -48,6 +51,20 @@ int main(int argc, char* argv[]) {
   fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
       / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_2");
 
+  float image_width = 2452;
+  float image_height = 2056;
+
+  CameraIntrinsics camera1_intr, camera2_intr;
+  camera1_intr.cx = 1244.386581025;
+  camera1_intr.cy = 1013.145997723;
+  camera1_intr.fx = 1450.317230113;
+  camera1_intr.fy = 1451.184836113;
+
+  camera2_intr.cx = 1250.940749515;
+  camera2_intr.cy = 1013.259732772;
+  camera2_intr.fx = 1448.572928508;
+  camera2_intr.fy = 1449.555907804;
+
   std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path);
   std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path);
 
@@ -60,9 +77,21 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<Camera> camera =
       std::make_shared<Camera>(glm::vec3(-3.0f, 0.0f, 1.5f));
+  camera->SetIntrinsics(camera1_intr);
   camera->SetScale(kGlobalScale);
 
-  CameraIntrinsics camera_intr = camera->GetCameraIntrinsics();
+  // Normalize Intrinsics
+  camera1_intr.cx /= image_width;
+  camera1_intr.cy /= image_height;
+  camera1_intr.fx /= image_width;
+  camera1_intr.fy /= image_height;
+
+  camera2_intr.cx /= image_width;
+  camera2_intr.cy /= image_height;
+  camera2_intr.fx /= image_width;
+  camera2_intr.fy /= image_height;
+
+  // CameraIntrinsics camera_intr = camera->GetCameraIntrinsics();
 
   // float fx = camera->GetFx() / camera->GetImageWidth();
   // float fy = camera->GetFy() / camera->GetImageHeight();
@@ -89,7 +118,11 @@ int main(int argc, char* argv[]) {
   // camera->SetOrigin(glm::vec3(camera1_poses[110].coords[3], camera1_poses[110].coords[4], camera1_poses[110].coords[5]));
   // camera->SetRotation(camera1_poses[110].coords[0], camera1_poses[110].coords[1], camera1_poses[110].coords[2]);
 
-  const ImageData& camera_origin_data = camera1_poses[23];
+  int p_camera_pose = 24; // 24
+  int p_camera_start = 22; //22
+  int p_camera_finish = 25; //25
+
+  const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
 
   camera->SetOrigin(glm::vec3(camera_origin_data.coords[3], camera_origin_data.coords[4], camera_origin_data.coords[5]));
   camera->SetRotation(camera_origin_data.coords[0], camera_origin_data.coords[1], camera_origin_data.coords[2]);
@@ -105,36 +138,72 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<DObject> cameras2(new DObject());
 
   std::cout << "Loading camera 1: " << std::flush;
-  for (int i = 22; i < camera1_poses.size(); ++i) {
-    if (i == 28) break;
+  for (int i = p_camera_start; i < camera1_poses.size(); ++i) {
+    if (i == p_camera_finish) break;
     const ImageData& im_data = camera1_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
-    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, camera_intr));
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, camera1_intr));
+    co->SetTag(TAG_CAMERA_OBJECT);
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 
     fs::path image_path = camera1_image_path / fs::path(im_data.filename);
     co->SetImage(image_path.string());
 
+    // Add points of previous camera
+    if (i > 0) {
+      const ImageData& im_data1 = camera1_poses[i-1];
+      const ImageData& im_data2 = camera2_poses[i-1];
+
+      std::vector<glm::vec3> points = {
+        glm::vec3(im_data1.coords[3], im_data1.coords[4], im_data1.coords[5]),
+        glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5])
+      };
+
+      std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(points));
+      cameras1->AddChild(points_obj);
+
+      co->AddProjectedPoints(points);
+    }
+
     // co->AddChild(axes_obj);
     cameras1->AddChild(co);
 
     std::cout << i << ". " << std::flush;
+
+    std::cout << "co = " << co << std::endl;
   }
 
   std::cout << std::endl << "Loading camera 2: " << std::flush;
-  for (int i = 22; i < camera2_poses.size(); ++i) {
-    if (i == 28) break;
+  for (int i = p_camera_start; i < camera2_poses.size(); ++i) {
+    if (i == p_camera_finish) break;
     const ImageData& im_data = camera2_poses[i];
 
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
-    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, camera_intr));
+    std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, camera2_intr));
+    co->SetTag(TAG_CAMERA_OBJECT);
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
 
     fs::path image_path = camera2_image_path / fs::path(im_data.filename);
     co->SetImage(image_path.string());
+
+    // Add points of previous camera
+    if (i > 0) {
+      const ImageData& im_data1 = camera1_poses[i-1];
+      const ImageData& im_data2 = camera2_poses[i-1];
+
+      std::vector<glm::vec3> points = {
+        glm::vec3(im_data1.coords[3], im_data1.coords[4], im_data1.coords[5]),
+        glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5])
+      };
+
+      std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(points));
+      cameras1->AddChild(points_obj);
+
+      co->AddProjectedPoints(points);
+    }
 
     // co->AddChild(axes_obj);
     cameras2->AddChild(co);
@@ -185,6 +254,34 @@ int main(int argc, char* argv[]) {
   // std::cout << "Camera = " << camera_obj << std::endl;
   // std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
 
+  // int cntr = 0;
+
+
+  float alpha = 0.0f;
+
+  auto change_alpha = [&cameras1, &cameras2, &alpha]() {
+    auto set_alpha = [&alpha](std::shared_ptr<DObject> obj) {
+      std::shared_ptr<CameraObject> co = std::static_pointer_cast<CameraObject>(obj);
+      co->SetImageAlpha(alpha);
+    };
+    cameras1->Apply(TAG_CAMERA_OBJECT, set_alpha);
+    cameras2->Apply(TAG_CAMERA_OBJECT, set_alpha);
+  };
+
+
+  gl_window.AddProcessInput(GLFW_KEY_Z, [&alpha, &change_alpha](float dt) {
+    alpha = std::max(alpha - 0.9f * dt, 0.0f);
+    // std::cout << "AddProcessInput!! == Z = " << alpha << std::endl;
+    change_alpha();
+  });
+
+  gl_window.AddProcessInput(GLFW_KEY_X, [&alpha, &change_alpha](float dt) {
+    alpha = std::min(alpha + 0.9f * dt, 1.0f);
+    // std::cout << "AddProcessInput!! == X = " << alpha << std::endl;
+    change_alpha();
+  });
+
+  
 
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
@@ -198,6 +295,45 @@ int main(int argc, char* argv[]) {
 
     renderer->Draw(cameras1);
     renderer->Draw(cameras2);
+
+    // float a = sin(2 * M_PI * (cntr) / 5000.0f);
+    // auto set_alpha = [=](std::shared_ptr<DObject> obj) {
+    //   std::shared_ptr<CameraObject> co = std::static_pointer_cast<CameraObject>(obj);
+    //   co->SetImageAlpha(a);
+    // };
+    // cameras1->Apply(TAG_CAMERA_OBJECT, set_alpha);
+
+    /*
+    std::list<std::shared_ptr<DObject> > chlds = cameras1->GetChildren();
+    // std::shared_ptr<CameraObject> c1 = std::static_pointer_cast<CameraObject>(chlds.front());
+    // std::cout << "chlds.size = " << chlds.size() << std::endl;
+    // std::cout << "c1 = " << c1 << std::endl;
+    for (auto it = chlds.begin(); it != chlds.end(); ++it) {
+      std::shared_ptr<DObject> dobj = *it;
+      if (dobj->GetTag() == TAG_CAMERA_OBJECT) {
+        float a = sin(2 * M_PI * (cntr) / 5000.0f);
+
+        auto set_alpha = [=](std::shared_ptr<DObject> obj) {
+          std::shared_ptr<CameraObject> co = std::static_pointer_cast<CameraObject>(obj);
+          co->SetImageAlpha(a);
+        };
+
+        set_alpha(dobj);
+
+
+        // std::shared_ptr<CameraObject> co = std::static_pointer_cast<CameraObject>(dobj);
+        // std::cout << "dobj = " << co << std::endl;
+        // float alpha = 
+        // co->SetImageAlpha(sin(2 * M_PI * (cntr) / 5000.0f)); 
+      }
+    }
+    */
+
+    // ++cntr;
+
+    // std::cout << "cntr = " << cntr << std::endl;
+
+    // c1->SetImageAlpha((cntr % 1000) / 1000.0f);
 
     // renderer->Draw(image_obj);
 

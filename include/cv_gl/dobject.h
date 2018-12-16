@@ -23,7 +23,8 @@ class DObject {
       scale_(glm::vec3(1.0f)),
       rotation_(glm::mat4(1.0f)),
       no_correction_(false),
-      name_(name) {
+      name_(name),
+      tag_(0) {
     // std::cout << "DObject:: (con)" << std::endl;
     InitCorrectionMatrix();
   };
@@ -74,7 +75,7 @@ class DObject {
     glm::mat4 model_matrix = parent_model_matrix * GetModelMatrix(false);
 
     // Draw children if any
-    for (auto& c : children) {
+    for (auto& c : children_) {
       // std::cout << "-=-= DRAW CHILDREN <<<<<<<<<<<< " << std::endl;
       c->Draw(view_matrix, proj_matrix, model_matrix, shdr);
     }
@@ -89,7 +90,7 @@ class DObject {
     //   std::cout << "children is NULL " << std::endl;
     // }
     
-    children.emplace_back(child);
+    children_.emplace_back(child);
   }
 
   virtual void PrepareShader(const std::shared_ptr<Shader> shader) const {
@@ -136,8 +137,10 @@ class DObject {
     os << this->name_ << ": " << std::endl << 
     "  trans = " << translation_ << std::endl <<
     "  scale = " << scale_ << std::endl <<
-    "  rotation = " << rotation_ << //  std::endl <<
-    "  shader = " << shader_;
+    "  rotation = " << rotation_; //  std::endl <<
+    if (shader_) {
+      os << "  shader = " << shader_;
+    }
     if (mesh_) {
       os << std::endl << "  mesh = " << mesh_;
     }
@@ -173,12 +176,28 @@ class DObject {
   }
 
   void SetName(const std::string& name) { name_ = name; }
-  std::string GetName() { return name_; }
+  std::string GetName() const { return name_; }
+
+  void SetTag(const int tag) { tag_ = tag; }
+  int GetTag() const { return tag_; }
 
   void NoCorrection() {
     no_correction_ = true;
     InitCorrectionMatrix();
   }
+
+  template<typename Func>
+  void Apply(const int tag, Func f) {
+
+    // Iterate through children
+    for (auto it = children_.begin(); it != children_.end(); ++it) {
+      if ((*it)->tag_ == tag) {
+        f(*it);
+      }
+    }
+  }
+
+  std::list<std::shared_ptr<DObject> > GetChildren() { return children_; }
 
 
  protected:
@@ -192,7 +211,9 @@ class DObject {
 
   bool no_correction_;
 
-  std::list<std::shared_ptr<DObject> > children;
+  std::list<std::shared_ptr<DObject> > children_;
+
+  int tag_;
 
 };
 
@@ -260,6 +281,10 @@ public:
           glm::vec3(static_cast<float>(texture.width) / texture.height, 1.0f, 1.0f)));
     }
 
+  }
+
+  void SetImageAlpha(const float alpha) {
+    mesh_->material.ambient_color[3] = alpha;
   }
 
 };

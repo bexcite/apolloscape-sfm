@@ -86,13 +86,13 @@ bool GLWindow::IsRunning() {
   last_time_ = time_value;
 
   // FPS calc and output
-  // delta_time_sum_ += delta_time;
-  // if (frames_ % 100 == 0) {
-  //   float fps = 100.0f / delta_time_sum_;
-  //   std::cout << "FPS = " << fps << std::endl;
-  //   delta_time_sum_ = 0;
-  // }
-  // ++frames_;
+  delta_time_sum_ += delta_time;
+  if (frames_ % 100 == 0) {
+    float fps = 100.0f / delta_time_sum_;
+    std::cout << "FPS = " << fps << std::endl;
+    delta_time_sum_ = 0;
+  }
+  ++frames_;
 
   // Clear everything
   glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
@@ -144,7 +144,22 @@ void GLWindow::ProcessInput() {
   } else if (glfwGetKey(window_, GLFW_KEY_3) == GLFW_PRESS) {
     camera_->ProcessKeyboard(MOVE_SIDEWAYS_LEFT, delta_time);
   }
+
+  // Process all other functions that was attached
+  this->ProcessInputFunctions();
+  
 }
+
+void GLWindow::ProcessInputFunctions() {
+  if (!this->process_input_funcs_.empty()) {
+    for (const ProcessInputFunc& input_func: process_input_funcs_) {
+      if (glfwGetKey(window_, input_func.key) == GLFW_PRESS) {
+        input_func.func(delta_time);
+      }
+    }
+  }
+}
+
 
 void GLWindow::MouseCallback(double xpos, double ypos) {
   if (first_mouse_) {

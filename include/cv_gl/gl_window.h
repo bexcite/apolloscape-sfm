@@ -3,10 +3,17 @@
 #define CV_GL_GL_WINDOW_H_
 
 #include <string>
+#include <vector>
 #include "cv_gl/camera.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+struct ProcessInputFunc {
+  unsigned int key;
+  // void (*func)();
+  std::function<void(float)> func;
+};
 
 class GLWindow {
 public:
@@ -19,11 +26,15 @@ public:
   bool IsRunning();
   void RunLoop();
 
-
-
   void SetCamera(const std::shared_ptr<Camera> camera);
 
+  template<typename Func>
+  void AddProcessInput(const unsigned int key, Func f);
+
   float delta_time;
+
+  // void (*f_ptr)();
+  std::vector<ProcessInputFunc> process_input_funcs_;
 
 private:
 
@@ -33,6 +44,7 @@ private:
 
   void ProcessInput();
   void MouseCallback(double xpos, double ypos);
+  void ProcessInputFunctions();
 
   GLFWwindow *window_;
   std::shared_ptr<Camera> camera_ = nullptr;
@@ -51,5 +63,12 @@ private:
   float delta_time_sum_ = 0;
 
 };
+
+
+template<typename Func>
+void GLWindow::AddProcessInput(const unsigned int key, Func f) {
+  process_input_funcs_.push_back(ProcessInputFunc{.key = key, .func = f});
+}
+
 
 #endif  // CV_GL_GL_WINDOW_H_

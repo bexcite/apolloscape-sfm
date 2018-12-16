@@ -221,6 +221,10 @@ void Camera::SetIntrinsics(const float fx, const float fy, const float cx,
   cy_ = cy;
 }
 
+void Camera::SetIntrinsics(const CameraIntrinsics& camera_intr) {
+  this->SetIntrinsics(camera_intr.fx, camera_intr.fy, camera_intr.cx, camera_intr.cy);
+}
+
 void Camera::Print(std::ostream& os) const {
     std::cout << "CAMERA: p, y = " << pitch_ << ", " << yaw_ << std::endl;
     std::cout << "CAMERA: position_ = " << glm::to_string(position_) << std::endl;

@@ -513,6 +513,12 @@ class CameraObject: public DObject {
     }
   }
 
+  void SetImageAlpha(const float alpha) {
+    if (image_obj_) {
+      image_obj_->SetImageAlpha(alpha);
+    }
+  }
+
   void AddProjectedPoints(const std::vector<glm::vec3>& points) {
     projected_points_.insert(projected_points_.end(), points.begin(), points.end());
 
