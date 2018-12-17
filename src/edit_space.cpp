@@ -98,9 +98,9 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<ModelObject> debug_cube_obj(
       ObjectFactory::CreateModelObject(
           "../data/objects/debug_cube/debug_cube.obj"));
-//   debug_cube_obj->SetScale(glm::vec3(0.2f));
+  debug_cube_obj->SetScale(glm::vec3(1.0f));
   debug_cube_obj->SetTranslation(glm::vec3(3.0f, 3.0f, 3.0f));
-  root->AddChild(debug_cube_obj);
+  // root->AddChild(debug_cube_obj);
 
 
 
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
 
 //   std::cout << "Floor = " << floor_obj << std::endl;
 //   std::cout << "Camera = " << camera_obj << std::endl;
-//   std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
+  std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
 
   /*
   std::cout << "Nanosuit = " << nanosuit_obj << std::endl;
@@ -146,12 +146,14 @@ int main(int argc, char* argv[]) {
 
     /* ====================== Render ===================== */
     renderer->Draw(floor_obj);
+
+    renderer->Draw(camera_obj);
     
     renderer->Draw(debug_cube_obj);
 
     renderer->Draw(root);
 
-    renderer->Draw(camera_obj);
+    
 
     // camera->Print();
 

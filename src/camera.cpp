@@ -54,12 +54,11 @@ glm::mat4 Camera::GetProjMatrix() const {
   glm::mat4 persp;
   persp[0] = glm::vec4(fx_ / image_width, 0.0f, 0.0f, 0.0f);
   persp[1] = glm::vec4(0.0f, fy_ / image_height, 0.0f, 0.0f);
-  persp[2] = glm::vec4(-cx_ / image_width, -cy_ / image_height, near_ + far_, -1.0f);
+  // persp[2] = glm::vec4(-cx_ / image_width, -cy_ / image_height, near_ + far_, -1.0f);
+  persp[2] = glm::vec4(- (1 - cx_ / image_width), -cy_ / image_height, near_ + far_, -1.0f); // TEST TEST
   persp[3] = glm::vec4(0.0f, 0.0f, near_ * far_, 0.0f);
 
   // std::cout << "persp1 = " << persp1 << std::endl;
-
-
 
   // glm::vec4 p_eye = {1.1f, 1.1f, -2.0f, 1.0f};
   //
@@ -214,15 +213,16 @@ void Camera::SetScale(const float scale) {
 }
 
 void Camera::SetIntrinsics(const float fx, const float fy, const float cx,
-    const float cy) {
+    const float cy, const float wr = 1.0f) {
   fx_ = fx;
   fy_ = fy;
   cx_ = cx;
   cy_ = cy;
+  wr_ = wr;
 }
 
 void Camera::SetIntrinsics(const CameraIntrinsics& camera_intr) {
-  this->SetIntrinsics(camera_intr.fx, camera_intr.fy, camera_intr.cx, camera_intr.cy);
+  this->SetIntrinsics(camera_intr.fx, camera_intr.fy, camera_intr.cx, camera_intr.cy, camera_intr.wr);
 }
 
 void Camera::Print(std::ostream& os) const {
@@ -237,5 +237,6 @@ CameraIntrinsics Camera::GetCameraIntrinsics() const {
   intr.s = 0.0f ;
   intr.cx = cx_ / image_width_;
   intr.cy = cy_ / image_height_;
+  intr.wr = wr_;
   return intr;
 }

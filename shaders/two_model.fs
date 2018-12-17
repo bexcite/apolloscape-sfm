@@ -12,6 +12,8 @@ struct Material {
     int texture_ambient;
     int texture_specular;
 
+    int texture_ambient_transparent;
+
     sampler2D texture_ambient1;
     sampler2D texture_diffuse1;
 };
@@ -54,9 +56,15 @@ void main() {
     vec4 texture_color = texture(material.texture_ambient1, TexCoord);
     float a = ambient.a;
     ambient = texture_color;
-    ambient.a = a;
+
+    // if transparent enable set transparent ambient from material
+    if (material.texture_ambient_transparent > 0) {
+      ambient.a = a;
+    }
+    
   } 
 
+  // FragColor = vec4(1.0, 0.6, 0.6, 1.0);
   FragColor = ambient + diffuse;
   // FragColor.a = 0.8;
     

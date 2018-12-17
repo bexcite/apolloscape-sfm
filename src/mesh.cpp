@@ -92,6 +92,8 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
     shader->SetInt("material.texture_ambient", 0);
   }
 
+  shader->SetInt("material.texture_ambient_transparent", material.ambient_transparent);
+  // shader->SetInt("material.texture_ambient_transparent", 0);
 
   shader->SetVector4fv("material.ambient", glm::value_ptr(material.ambient_color));
   shader->SetVector4fv("material.diffuse", glm::value_ptr(material.diffuse_color));
@@ -279,6 +281,8 @@ std::ostream &operator<<(std::ostream &os, const std::vector<Vertex> &vertices) 
 
 std::ostream &operator<<(std::ostream &os, const Material &material) {
   os << "Material: diffuse_color = " << glm::to_string(material.diffuse_color) << ", ";
+  os << "ambient_color = " << glm::to_string(material.ambient_color) << ", ";
+  os << "ambient_transparent = " << material.ambient_transparent << ", ";
   os << "textures.size = " << material.textures.size();
   return os;
 }

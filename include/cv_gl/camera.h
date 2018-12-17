@@ -25,6 +25,7 @@ struct CameraIntrinsics {
   float s;
   float cx;
   float cy;
+  float wr;
 };
 
 // camera constant
@@ -57,7 +58,7 @@ class Camera {
   void Print(std::ostream& os = std::cout) const;
 
   void SetIntrinsics(const float fx, const float fy, const float cx,
-      const float cy);
+      const float cy, const float wr);
 
   void SetIntrinsics(const CameraIntrinsics& camera_intr);
 
@@ -80,9 +81,12 @@ class Camera {
    float cx_ = 1244.386581025;
   //  float cx_ = 1480.0;  // TEST TEST
    float cy_ = 1013.145997723;
+  //  float cy_ = 1313.145997723; // TEST TEST
 
    float image_width_ = 2452;
    float image_height_ = 2056;
+
+   float wr_ = 2452.0f / 2056.0f;
 
    // float width = 1.0f;
    // float height = 1.0f;

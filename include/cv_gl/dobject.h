@@ -9,6 +9,15 @@
 
 #include <iostream>
 
+struct DrawableElement {
+  std::shared_ptr<Mesh> mesh;
+  std::shared_ptr<Shader> shader;
+  glm::mat4 view;
+  glm::mat4 projection;
+  glm::mat4 model;
+  float depth;
+};
+
 
 class DObject {
 
@@ -44,7 +53,8 @@ class DObject {
 
   virtual void Draw(const glm::mat4& view_matrix, const glm::mat4& proj_matrix,
       const glm::mat4& parent_model_matrix = glm::mat4(1.0f),
-      const std::shared_ptr<Shader> default_shader = nullptr) const {
+      const std::shared_ptr<Shader> default_shader = nullptr,
+      std::shared_ptr<std::vector<DrawableElement> > d_elements = nullptr) const {
     // std::cout << "DObject::Draw" << std::endl;
     std::shared_ptr<Shader> shdr = nullptr;
     if (shader_) {
@@ -57,9 +67,7 @@ class DObject {
     //   std::cout << "shdr = " << shdr << std::endl;
     // }
 
-    
-
-    if (shdr) {
+    if (shdr && !d_elements) {
       shdr->Use();
       shdr->SetMatrix4fv("view", glm::value_ptr(view_matrix));
       shdr->SetMatrix4fv("projection", glm::value_ptr(proj_matrix));
@@ -68,8 +76,21 @@ class DObject {
     }
 
     // Draw current mesh
-    if (mesh_) {
+    if (mesh_ && !d_elements) {
       mesh_->Draw(shdr);
+    }
+
+    if (d_elements && mesh_ && shdr) {
+      std::cout << "Collect d_elements!" << std::endl;
+      DrawableElement d_element;
+      d_element.mesh = mesh_;
+      d_element.shader = shdr;
+      d_element.view = view_matrix;
+      d_element.model = parent_model_matrix * GetModelMatrix();
+      d_element.projection = proj_matrix;
+      glm::vec4 el_location = d_element.view * d_element.model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+      std::cout << "el_location = " << glm::to_string(el_location) << std::endl;
+      d_elements->push_back(d_element);
     }
 
     glm::mat4 model_matrix = parent_model_matrix * GetModelMatrix(false);
@@ -77,7 +98,7 @@ class DObject {
     // Draw children if any
     for (auto& c : children_) {
       // std::cout << "-=-= DRAW CHILDREN <<<<<<<<<<<< " << std::endl;
-      c->Draw(view_matrix, proj_matrix, model_matrix, shdr);
+      c->Draw(view_matrix, proj_matrix, model_matrix, shdr, d_elements);
     }
 
   };
@@ -253,10 +274,11 @@ class ColorObject: public DObject {
 
 class ImageObject: public DObject {
 public:
-  ImageObject(const std::shared_ptr<Mesh> mesh) 
+  ImageObject(const std::shared_ptr<Mesh> mesh, bool transparency = false)
       : DObject(mesh, "ImageObject") { 
     mesh_->material.ambient_color = glm::vec4({0.15f, 0.15f, 0.15f, 0.2f});
     mesh_->material.diffuse_color = glm::vec4(0.0f);
+    mesh_->material.ambient_transparent = transparency; // enable tranparency
   }
 
   void SetImage(const std::string& image_path, bool adjust_aspect_ratio = true) {
@@ -287,6 +309,10 @@ public:
     mesh_->material.ambient_color[3] = alpha;
   }
 
+  void SetImageTransparency(const bool transparency) {
+    mesh_->material.ambient_transparent = transparency;
+  }
+
 };
 
 
@@ -298,9 +324,11 @@ public:
 
   virtual void Draw(const glm::mat4& view_matrix, const glm::mat4& proj_matrix,
       const glm::mat4& model_matrix = glm::mat4(1.0f),
-      const std::shared_ptr<Shader> default_shader = nullptr) const {
+      const std::shared_ptr<Shader> default_shader = nullptr,
+      std::shared_ptr<std::vector<DrawableElement> > d_elements = nullptr) const {
 
-    DObject::Draw(view_matrix, proj_matrix, model_matrix, default_shader);
+    // std::cout << "ModelObject::Draw" << std::endl;
+    DObject::Draw(view_matrix, proj_matrix, model_matrix, default_shader, d_elements);
 
     std::shared_ptr<Shader> shdr = nullptr;
     if (shader_) {

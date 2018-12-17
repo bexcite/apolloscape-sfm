@@ -85,11 +85,13 @@ int main(int argc, char* argv[]) {
   camera1_intr.cy /= image_height;
   camera1_intr.fx /= image_width;
   camera1_intr.fy /= image_height;
+  camera1_intr.wr = image_width / image_height;
 
   camera2_intr.cx /= image_width;
   camera2_intr.cy /= image_height;
   camera2_intr.fx /= image_width;
   camera2_intr.fy /= image_height;
+  camera2_intr.wr = image_width / image_height;
 
   // CameraIntrinsics camera_intr = camera->GetCameraIntrinsics();
 
@@ -145,8 +147,10 @@ int main(int argc, char* argv[]) {
     // TODO: width ratio for camera obj is not good, it should be defined by image probably
     std::shared_ptr<CameraObject> co(new CameraObject(width_ratio, camera1_intr));
     co->SetTag(TAG_CAMERA_OBJECT);
+    co->SetImageTransparency(true);
     co->SetTranslation(glm::vec3(im_data.coords[3], im_data.coords[4], im_data.coords[5]));
     co->SetRotation(im_data.coords[0], im_data.coords[1], im_data.coords[2]);
+
 
     fs::path image_path = camera1_image_path / fs::path(im_data.filename);
     co->SetImage(image_path.string());
@@ -252,7 +256,7 @@ int main(int argc, char* argv[]) {
 
   // std::cout << "Floor = " << floor_obj << std::endl;
   // std::cout << "Camera = " << camera_obj << std::endl;
-  // std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
+  std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
 
   // int cntr = 0;
 
@@ -293,7 +297,7 @@ int main(int argc, char* argv[]) {
 
     renderer->Draw(origin_axes_obj);
 
-    renderer->Draw(cameras1);
+    renderer->Draw(cameras1, false);
     renderer->Draw(cameras2);
 
     // float a = sin(2 * M_PI * (cntr) / 5000.0f);

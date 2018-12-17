@@ -9,7 +9,10 @@
     "stdexcept": "cpp",
     "type_traits": "cpp",
     "typeinfo": "cpp",
-    "algorithm": "cpp"
+    "algorithm": "cpp",
+    "vector": "cpp",
+    "memory": "cpp"
   },
-  "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools"
+  "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
+  "C_Cpp.configurationWarnings": "Disabled"
 }

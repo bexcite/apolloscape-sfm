@@ -38,10 +38,12 @@ struct Texture {
 struct Material {
   Material(const glm::vec4 amb_color = {0.15, 0.15, 0.15, 1.0},
            const glm::vec4 diff_color = {0.5, 0.5, 0.5, 1.0})
-      : ambient_color(amb_color), diffuse_color(diff_color) {};
+      : ambient_color(amb_color), diffuse_color(diff_color), ambient_transparent(0) {};
   glm::vec4 ambient_color;
   glm::vec4 diffuse_color;
+  int ambient_transparent;
   std::vector<Texture> textures;
+  bool IsTransparent() const { return ambient_transparent > 0; }
 };
 
 class Mesh {

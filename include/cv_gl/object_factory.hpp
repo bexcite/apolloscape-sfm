@@ -399,7 +399,7 @@ public:
   }
 
   /* ================ Points ================================*/
-  static ColorObject* CreatePoints(std::vector<glm::vec3>& points) {
+  static ColorObject* CreatePoints(std::vector<glm::vec3>& points, const glm::vec4& color = glm::vec4(1.0f, 0.4f, 0.4f, 1.0f)) {
 
     auto mesh = MeshFactory::CreatePoints(points);
 
@@ -408,7 +408,7 @@ public:
         "../shaders/two_model.fs");
 
     ColorObject* points_obj =
-        new ColorObject(mesh, glm::vec4(1.0f, 0.4f, 0.4f, 1.0f));
+        new ColorObject(mesh, color);
     points_obj->SetShader(shader_color);
     points_obj->NoCorrection();
 
@@ -441,13 +441,17 @@ class CameraObject: public DObject {
     std::vector<Texture> textures;
     std::vector<Vertex> vertices = {
       // {glm::vec3(-0.5f, -0.5f, f)},  // 0
-      {glm::vec3(- (1 - intrinsics_.cx) * width_ratio_, - intrinsics_.cy, f)},  // 0
+      // {glm::vec3(- (1 - intrinsics_.cx) * width_ratio_, - intrinsics_.cy, f)},  // 0
+      {glm::vec3(- intrinsics_.cx * width_ratio_, - intrinsics_.cy, f)},  // 0 TEST
       // {glm::vec3(0.5f, -0.5f, f)},   // 1
-      {glm::vec3(intrinsics_.cx * width_ratio_, - intrinsics_.cy, f)},   // 1
+      // {glm::vec3(intrinsics_.cx * width_ratio_, - intrinsics_.cy, f)},   // 1
+      {glm::vec3((1 - intrinsics_.cx) * width_ratio_, - intrinsics_.cy, f)},   // 1 TEST
       // {glm::vec3(0.5f, 0.5f, f)},  // 2
-      {glm::vec3(intrinsics_.cx * width_ratio_,  (1 - intrinsics_.cy), f)},  // 2
+      // {glm::vec3(intrinsics_.cx * width_ratio_,  (1 - intrinsics_.cy), f)},  // 2
+      {glm::vec3((1 - intrinsics_.cx) * width_ratio_,  (1 - intrinsics_.cy), f)},  // 2 TEST
       // {glm::vec3(-0.5f, 0.5f, f)}, // 3
-      {glm::vec3(- (1 - intrinsics_.cx) * width_ratio_, (1 - intrinsics_.cy), f)}, // 3
+      // {glm::vec3(- (1 - intrinsics_.cx) * width_ratio_, (1 - intrinsics_.cy), f)}, // 3
+      {glm::vec3(- intrinsics_.cx * width_ratio_, (1 - intrinsics_.cy), f)}, // 3 TEST
       {glm::vec3(0.0f, 0.0f, 0.0f)}   // 4
     };
     std::vector<unsigned int> indices = {
@@ -478,7 +482,8 @@ class CameraObject: public DObject {
     tri_up_obj->SetShader(shader_color);
     tri_up_obj->SetScale(glm::vec3(0.5f));
     // tri_up_obj->SetTranslation(glm::vec3(0.0f, 0.6f, f));
-    tri_up_obj->SetTranslation(glm::vec3((intrinsics_.cx * width_ratio_ - 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f) + 0.55f, f));
+    // tri_up_obj->SetTranslation(glm::vec3((intrinsics_.cx * width_ratio_ - 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f) + 0.55f, f));
+    tri_up_obj->SetTranslation(glm::vec3((- intrinsics_.cx * width_ratio_ + 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f) + 0.55f, f));  // TEST
     new_camera_obj->AddChild(std::shared_ptr<DObject>(tri_up_obj));
 
     camera_obj_ = new_camera_obj;
@@ -498,7 +503,8 @@ class CameraObject: public DObject {
     // Image Plane
     image_obj_ = std::shared_ptr<ImageObject>(ObjectFactory::CreateImage());
     image_obj_->SetScale(glm::vec3(width_ratio, 1.0f, 1.0f));
-    image_obj_->SetTranslation(glm::vec3((intrinsics_.cx * width_ratio_ - 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f), f));
+    // image_obj_->SetTranslation(glm::vec3((intrinsics_.cx * width_ratio_ - 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f), f));
+    image_obj_->SetTranslation(glm::vec3((- intrinsics_.cx * width_ratio_ + 0.5f * width_ratio_), (-intrinsics_.cy + 0.5f), f));
     this->AddChild(image_obj_);
 
   // fs::path image_path = camera1_image_path / fs::path(camera1_poses[0].filename);
@@ -516,6 +522,12 @@ class CameraObject: public DObject {
   void SetImageAlpha(const float alpha) {
     if (image_obj_) {
       image_obj_->SetImageAlpha(alpha);
+    }
+  }
+
+  void SetImageTransparency(const bool transparency) {
+    if (image_obj_) {
+      image_obj_->SetImageTransparency(transparency);
     }
   }
 
@@ -551,12 +563,12 @@ class CameraObject: public DObject {
     // Corner Points
     std::vector<glm::vec3> cp(1);
     // cp[0] = glm::vec3((1 - intrinsics_.cx) * width_ratio_, -intrinsics_.cy, f);
-    cp[0] = glm::vec3(intrinsics_.cx * width_ratio_, -intrinsics_.cy, f);
+    cp[0] = glm::vec3(-intrinsics_.cx * width_ratio_, -intrinsics_.cy, f);
     // cp[1] = glm::vec3(-(1 - intrinsics_.cx) * width_ratio_, -intrinsics_.cy, f);
     // cp[2] = glm::vec3(-(1 - intrinsics_.cx) * width_ratio_, (1 - intrinsics_.cy), f);
     // cp[3] = glm::vec3(intrinsics_.cx * width_ratio_, (1 - intrinsics_.cy), f);
-    // std::shared_ptr<DObject> cp_points_obj(ObjectFactory::CreatePoints(cp));
-    // this->AddChild(cp_points_obj);
+    std::shared_ptr<DObject> cp_points_obj(ObjectFactory::CreatePoints(cp));
+    this->AddChild(cp_points_obj);
 
     std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(p));
     this->AddChild(points_obj);
