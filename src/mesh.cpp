@@ -170,7 +170,19 @@ Mesh::SetupMesh() {
   // this->write();
   // std::cout << std::endl;
 
+  // Calc center_point
+  if (!vertices.empty()) {
+    glm::vec3 cp(0.0f);
+    for (auto& v : vertices) {
+      cp += v.position;
+    }
+    cp /= vertices.size();
+    center_point_ = cp;
+    // std::cout << "center_point = " << glm::to_string(center_point_) << std::endl;
+  }
+
 }
+
 
 Mesh::~Mesh() {
   // std::cout << "mesh (DESTRUCTOR) " << (count_--) << std::endl;

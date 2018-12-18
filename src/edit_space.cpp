@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
 
 //   std::cout << "Floor = " << floor_obj << std::endl;
 //   std::cout << "Camera = " << camera_obj << std::endl;
-  std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
+  // std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
 
   /*
   std::cout << "Nanosuit = " << nanosuit_obj << std::endl;

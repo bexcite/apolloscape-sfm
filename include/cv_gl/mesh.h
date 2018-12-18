@@ -53,6 +53,8 @@ class Mesh {
   Material material;
   // std::vector<Texture> textures;
 
+  
+
   void SetMeshType(const MeshType& mesh_type) { mesh_type_ = mesh_type; }
   MeshType GetMeshType() const { return mesh_type_; }
 
@@ -64,6 +66,8 @@ class Mesh {
        const Material& material);
   Mesh(const Mesh& mesh);
   Mesh operator=(const Mesh& mesh);
+
+  glm::vec3 GetCenterPoint() { return center_point_; }
 
   ~Mesh();
 
@@ -78,6 +82,7 @@ class Mesh {
 private:
   unsigned int vao_, vbo_, ebo_;
   MeshType mesh_type_;
+  glm::vec3 center_point_;
   void SetupMesh();
 
   static int count_;

@@ -99,7 +99,7 @@ class DObject {
       d_element.view = view_matrix;
       d_element.model = parent_model_matrix * GetModelMatrix();
       d_element.projection = proj_matrix;
-      glm::vec4 el_location = d_element.view * d_element.model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+      glm::vec4 el_location = d_element.view * d_element.model * glm::vec4(mesh_->GetCenterPoint(), 1.0f);
       d_element.depth = el_location[2];
       // std::cout << "el_location = " << glm::to_string(el_location) << std::endl;
       // std::cout << "depth = " << d_element.depth << std::endl;
@@ -371,7 +371,7 @@ public:
         d_element.view = view_matrix;
         d_element.model = parent_model_matrix * GetModelMatrix();
         d_element.projection = proj_matrix;
-        glm::vec4 el_location = d_element.view * d_element.model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        glm::vec4 el_location = d_element.view * d_element.model * glm::vec4(m->GetCenterPoint(), 1.0f);
         d_element.depth = el_location[2];
         // std::cout << "el_location = " << glm::to_string(el_location) << std::endl;
         // std::cout << "depth = " << d_element.depth << std::endl;
