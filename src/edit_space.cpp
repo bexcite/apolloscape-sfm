@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
   // }
   
   std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(points));
-  // points_obj->SetTranslation(glm::vec3(10.0f, 0.0f, 0.0f));
+  // points_obj->SetTranslation(glm::vec3(10.0f, 0.0f, 1.0f));
   // points_obj->AddChild(axes_obj);
   root->AddChild(points_obj);
   root->AddChild(axes_obj);
@@ -141,17 +141,21 @@ int main(int argc, char* argv[]) {
   std::cout << "Rock = " << rock_obj << std::endl;
   */
 
+ root->AddChild(camera_obj);
+ root->AddChild(debug_cube_obj);
+ 
+
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
 
     /* ====================== Render ===================== */
     renderer->Draw(floor_obj);
 
-    renderer->Draw(debug_cube_obj);
+    // renderer->Draw(debug_cube_obj, true);
 
-    renderer->Draw(root);
+    renderer->Draw(root, true);
 
-    renderer->Draw(camera_obj, true);
+    // renderer->Draw(camera_obj, true);
     
     
 

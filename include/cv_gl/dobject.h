@@ -51,6 +51,15 @@ class DObject {
     correction_ = model_matrix;
   };
 
+  void ShaderUseWithMatrix(const std::shared_ptr<Shader> shader, const glm::mat4& view, const glm::mat4& proj,
+      const glm::mat4& model) const {
+    shader->Use();
+    shader->SetMatrix4fv("view", glm::value_ptr(view));
+    shader->SetMatrix4fv("projection", glm::value_ptr(proj));
+    shader->SetMatrix4fv("model", glm::value_ptr(model));
+    PrepareShader(shader);
+  }
+
   virtual void Draw(const glm::mat4& view_matrix, const glm::mat4& proj_matrix,
       const glm::mat4& parent_model_matrix = glm::mat4(1.0f),
       const std::shared_ptr<Shader> default_shader = nullptr,
@@ -68,11 +77,13 @@ class DObject {
     // }
 
     if (shdr && !d_elements) {
-      shdr->Use();
-      shdr->SetMatrix4fv("view", glm::value_ptr(view_matrix));
-      shdr->SetMatrix4fv("projection", glm::value_ptr(proj_matrix));
-      shdr->SetMatrix4fv("model", glm::value_ptr(parent_model_matrix * GetModelMatrix()));
-      PrepareShader(shdr);
+      ShaderUseWithMatrix(shdr, view_matrix, proj_matrix,
+          parent_model_matrix * GetModelMatrix());
+      // shdr->Use();
+      // shdr->SetMatrix4fv("view", glm::value_ptr(view_matrix));
+      // shdr->SetMatrix4fv("projection", glm::value_ptr(proj_matrix));
+      // shdr->SetMatrix4fv("model", glm::value_ptr(parent_model_matrix * GetModelMatrix()));
+      // PrepareShader(shdr);
     }
 
     // Draw current mesh
@@ -331,12 +342,12 @@ public:
   ModelObject(Model* model) : model_(model) {}
 
   virtual void Draw(const glm::mat4& view_matrix, const glm::mat4& proj_matrix,
-      const glm::mat4& model_matrix = glm::mat4(1.0f),
+      const glm::mat4& parent_model_matrix = glm::mat4(1.0f),
       const std::shared_ptr<Shader> default_shader = nullptr,
       std::shared_ptr<std::vector<DrawableElement> > d_elements = nullptr) const {
 
     // std::cout << "ModelObject::Draw" << std::endl;
-    DObject::Draw(view_matrix, proj_matrix, model_matrix, default_shader, d_elements);
+    DObject::Draw(view_matrix, proj_matrix, parent_model_matrix, default_shader, d_elements);
 
     std::shared_ptr<Shader> shdr = nullptr;
     if (shader_) {
@@ -344,7 +355,35 @@ public:
     } else if (default_shader) {
       shdr = default_shader;
     }
-    model_->Draw(shdr);
+
+    if (!shdr) return;
+
+    if (!d_elements) {
+      model_->Draw(shdr);
+    } else {
+      // Get Meshes from the model
+      std::vector<std::shared_ptr<Mesh> > meshes = model_->GetMeshes();
+      for (const std::shared_ptr<Mesh>& m : meshes) {
+        // Create Drawable
+        DrawableElement d_element;
+        d_element.mesh = m;
+        d_element.shader = shdr;
+        d_element.view = view_matrix;
+        d_element.model = parent_model_matrix * GetModelMatrix();
+        d_element.projection = proj_matrix;
+        glm::vec4 el_location = d_element.view * d_element.model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        d_element.depth = el_location[2];
+        // std::cout << "el_location = " << glm::to_string(el_location) << std::endl;
+        // std::cout << "depth = " << d_element.depth << std::endl;
+        // std::cout << "transparent = " << mesh_->material.IsTransparent() << std::endl;
+
+        // std::cout << this->name_ << ":mesh = " << mesh_ << std::endl;
+        d_elements->push_back(d_element);
+      }
+    }
+
+
+    // model_->Draw(shdr);
 
   }
 

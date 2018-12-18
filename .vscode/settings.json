@@ -11,7 +11,8 @@
     "typeinfo": "cpp",
     "algorithm": "cpp",
     "vector": "cpp",
-    "memory": "cpp"
+    "memory": "cpp",
+    "ostream": "cpp"
   },
   "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
   "C_Cpp.configurationWarnings": "Disabled"

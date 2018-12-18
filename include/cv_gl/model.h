@@ -27,10 +27,11 @@ public:
     LoadModel(path);
   }
   void Draw(const std::shared_ptr<Shader>& shader);
+  std::vector<std::shared_ptr<Mesh> > GetMeshes() { return meshes_; }
   void print(std::ostream &os = std::cout) const;
 
 
-  std::vector<std::shared_ptr<Mesh> > meshes_;  
+  std::vector<std::shared_ptr<Mesh> > meshes_;
 
 private:
   std::string directory_;

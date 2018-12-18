@@ -23,6 +23,7 @@ class Renderer {
 
     // Collect all Drawables 
     std::shared_ptr<std::vector<DrawableElement> > d_elements = std::make_shared<std::vector<DrawableElement> >();
+
     object.Draw(camera_->GetViewMatrix(), camera_->GetProjMatrix(), glm::mat4(1.0f), nullptr, d_elements);
     // std::cout << "d_elements.size() = " << d_elements->size() << " to draw!" << std::endl;;
 
