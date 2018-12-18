@@ -204,7 +204,7 @@ int main(int argc, char* argv[]) {
       };
 
       std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(points));
-      cameras1->AddChild(points_obj);
+      cameras2->AddChild(points_obj);
 
       co->AddProjectedPoints(points);
     }
@@ -256,7 +256,7 @@ int main(int argc, char* argv[]) {
 
   // std::cout << "Floor = " << floor_obj << std::endl;
   // std::cout << "Camera = " << camera_obj << std::endl;
-  std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
+  // std::cout << "Debug Cube = " << debug_cube_obj << std::endl;
 
   // int cntr = 0;
 
@@ -285,6 +285,12 @@ int main(int argc, char* argv[]) {
     change_alpha();
   });
 
+
+  std::cout << "cameras1 = " << cameras1 << std::endl;
+
+  std::shared_ptr<DObject> root = std::make_shared<DObject>();
+  root->AddChild(cameras1);
+  root->AddChild(cameras2);
   
 
   while(gl_window.IsRunning()) {
@@ -293,12 +299,14 @@ int main(int argc, char* argv[]) {
     /* ====================== Render ===================== */
     renderer->Draw(floor_obj);
     // renderer->Draw(camera_obj);
-    renderer->Draw(debug_cube_obj);
+    renderer->Draw(debug_cube_obj, true);
 
     renderer->Draw(origin_axes_obj);
 
-    renderer->Draw(cameras1, false);
-    renderer->Draw(cameras2);
+    renderer->Draw(root, true);
+
+    // renderer->Draw(cameras1, true);
+    // renderer->Draw(cameras2);
 
     // float a = sin(2 * M_PI * (cntr) / 5000.0f);
     // auto set_alpha = [=](std::shared_ptr<DObject> obj) {

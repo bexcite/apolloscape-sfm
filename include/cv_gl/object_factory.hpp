@@ -568,7 +568,7 @@ class CameraObject: public DObject {
     // cp[2] = glm::vec3(-(1 - intrinsics_.cx) * width_ratio_, (1 - intrinsics_.cy), f);
     // cp[3] = glm::vec3(intrinsics_.cx * width_ratio_, (1 - intrinsics_.cy), f);
     std::shared_ptr<DObject> cp_points_obj(ObjectFactory::CreatePoints(cp));
-    this->AddChild(cp_points_obj);
+    // this->AddChild(cp_points_obj);
 
     std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(p));
     this->AddChild(points_obj);

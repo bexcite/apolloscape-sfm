@@ -147,11 +147,15 @@ int main(int argc, char* argv[]) {
     /* ====================== Render ===================== */
     renderer->Draw(floor_obj);
 
-    renderer->Draw(camera_obj);
-    
     renderer->Draw(debug_cube_obj);
 
     renderer->Draw(root);
+
+    renderer->Draw(camera_obj, true);
+    
+    
+
+    
 
     
 

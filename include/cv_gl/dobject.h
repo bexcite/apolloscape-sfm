@@ -81,7 +81,7 @@ class DObject {
     }
 
     if (d_elements && mesh_ && shdr) {
-      std::cout << "Collect d_elements!" << std::endl;
+      // std::cout << "Collect d_elements!" << std::endl;
       DrawableElement d_element;
       d_element.mesh = mesh_;
       d_element.shader = shdr;
@@ -89,7 +89,12 @@ class DObject {
       d_element.model = parent_model_matrix * GetModelMatrix();
       d_element.projection = proj_matrix;
       glm::vec4 el_location = d_element.view * d_element.model * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-      std::cout << "el_location = " << glm::to_string(el_location) << std::endl;
+      d_element.depth = el_location[2];
+      // std::cout << "el_location = " << glm::to_string(el_location) << std::endl;
+      // std::cout << "depth = " << d_element.depth << std::endl;
+      // std::cout << "transparent = " << mesh_->material.IsTransparent() << std::endl;
+
+      // std::cout << this->name_ << ":mesh = " << mesh_ << std::endl;
       d_elements->push_back(d_element);
     }
 
@@ -161,6 +166,9 @@ class DObject {
     "  rotation = " << rotation_; //  std::endl <<
     if (shader_) {
       os << "  shader = " << shader_;
+    }
+    if (!children_.empty()) {
+      os << std::endl << "  children.size = " << children_.size();
     }
     if (mesh_) {
       os << std::endl << "  mesh = " << mesh_;
