@@ -7,6 +7,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <opencv2/opencv.hpp>
+
 #include "cv_gl/camera.h"
 #include "cv_gl/mesh.h"
 #include "cv_gl/shader.h"
@@ -22,8 +24,47 @@
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
 
+const char kApolloDatasetPath[] = "../data/apolloscape";
+
+const char kRoadId[] = "zpark-sample";
+const char kRecordId[] = "Record001";
+
+const char kCamera1PoseFile[] = "Camera_1.txt";
+const char kCamera2PoseFile[] = "Camera_2.txt";
+
+
 
 int main(int argc, char* argv[]) {
+
+  fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+      / fs::path("pose") / fs::path(kRecordId) / fs::path(kCamera1PoseFile);
+  fs::path camera2_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+      / fs::path("pose") / fs::path(kRecordId) / fs::path(kCamera2PoseFile);
+  std::cout << "Camera 1 path: " << camera1_path << std::endl;
+  std::cout << "Camera 2 path: " << camera2_path << std::endl;
+
+  fs::path camera1_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+      / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_1");
+  fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+      / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_2");
+
+  std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path);
+  std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path);
+
+
+  ImageData& im_data = camera1_poses[0];
+
+  fs::path image_path = camera1_image_path / fs::path(im_data.filename);
+  std::cout << "image_path = " << image_path << std::endl;
+
+
+  cv::Mat img = cv::imread(image_path.string().c_str());
+  std::cout << "img = " << img.size << std::endl;
+  std::cout << "img.step = " << img.step << std::endl;
+  std::cout << "img.step[0] = " << img.step[0] << std::endl;
+  std::cout << "img.step[1] = " << img.step[1] << std::endl;
+  std::cout << "img.elemSize = " << img.elemSize() << std::endl;
+
 
   std::shared_ptr<Camera> camera =
       std::make_shared<Camera>(glm::vec3(-3.0f, 0.0f, 1.5f));
@@ -57,6 +98,7 @@ int main(int argc, char* argv[]) {
   // camera_obj->SetRotation(-1.7889f, 0.0250f, 0.0f);
   // camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
   camera_obj->SetRotation(static_cast<float>(M_PI_2), 0.0f, static_cast<float>(M_PI_2));
+  camera_obj->SetImage(image_path.string());
   // root->AddChild(camera_obj);
 
   // Main Camera pos/rot

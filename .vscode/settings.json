@@ -12,7 +12,9 @@
     "algorithm": "cpp",
     "vector": "cpp",
     "memory": "cpp",
-    "ostream": "cpp"
+    "ostream": "cpp",
+    "__locale": "cpp",
+    "string": "cpp"
   },
   "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
   "C_Cpp.configurationWarnings": "Disabled"

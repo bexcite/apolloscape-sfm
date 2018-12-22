@@ -536,15 +536,15 @@ class CameraObject: public DObject {
 
     float f = std::max(intrinsics_.fx, intrinsics_.fy);
 
-    std::cout << "intr_.cx = " << intrinsics_.cx << std::endl;
-    std::cout << "intr_.cy = " << intrinsics_.cy << std::endl;
+    // std::cout << "intr_.cx = " << intrinsics_.cx << std::endl;
+    // std::cout << "intr_.cy = " << intrinsics_.cy << std::endl;
 
     // Translate to Camera Coordinate System
     
     std::vector<glm::vec3> p(points);
     std::cout << "proj_points.size = " << p.size() << std::endl;
     for (int i = 0; i < p.size(); ++i) {
-      std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
+      // std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
       p[i] -= translation_;
       glm::vec3 r = glm::vec3(glm::transpose(rotation_) * glm::vec4(p[i], 1.0f));
       float sx = intrinsics_.fx * r[0] / r[2]; // + intrinsics_.cx; // TODO: Add s to calculation
@@ -555,9 +555,9 @@ class CameraObject: public DObject {
       float ssz = f;
       p[i] = glm::vec3(ssx, ssy, ssz);
       // std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
-      std::cout << "r[" << i << "] = " << glm::to_string(r) << std::endl;
-      std::cout << "sx, sy = " << sx << ", " << sy << std::endl;
-      std::cout << "ssx, ssy, ssz = " << ssx << ", " << ssy << ", " << ssz << std::endl;
+      // std::cout << "r[" << i << "] = " << glm::to_string(r) << std::endl;
+      // std::cout << "sx, sy = " << sx << ", " << sy << std::endl;
+      // std::cout << "ssx, ssy, ssz = " << ssx << ", " << ssy << ", " << ssz << std::endl;
     }
 
     // Corner Points
@@ -572,7 +572,6 @@ class CameraObject: public DObject {
 
     std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(p));
     this->AddChild(points_obj);
-
 
   }
 

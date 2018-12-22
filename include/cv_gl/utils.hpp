@@ -82,7 +82,7 @@ std::vector<std::string> StringSplit(const std::string& s, const char c) {
     std::size_t found = s.find(c);
     while (found != std::string::npos) {
       // std::cout << "found1 = " << s.substr(0, found - pos) << "|\n";
-      result.push_back(s.substr(0, found - pos));
+      result.push_back(s.substr(pos, found - pos));
       pos = found + 1;
       found = s.find(c, pos);
     }
