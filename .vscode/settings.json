@@ -14,7 +14,9 @@
     "memory": "cpp",
     "ostream": "cpp",
     "__locale": "cpp",
-    "string": "cpp"
+    "string": "cpp",
+    "iostream": "cpp",
+    "iosfwd": "cpp"
   },
   "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools",
   "C_Cpp.configurationWarnings": "Disabled"

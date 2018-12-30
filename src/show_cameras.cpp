@@ -18,7 +18,7 @@
 #include "cv_gl/renderer.h"
 #include "cv_gl/dobject.h"
 #include "cv_gl/object_factory.hpp"
-
+ 
 
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;

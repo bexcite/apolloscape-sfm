@@ -4,6 +4,8 @@
 
 #include <glm/glm.hpp>
 
+#include <opencv2/opencv.hpp>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
@@ -75,6 +77,8 @@ class Mesh {
 
   static Texture TextureFromFile(const std::string& path, const std::string& directory = "",
       const bool flip = false, const float scale_f = 1.0);
+      
+  static Texture TextureFromMat(const cv::Mat& img, const bool flip = false);
 
   std::ostream& print(std::ostream& os = std::cout) const;
 

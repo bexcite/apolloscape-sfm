@@ -64,6 +64,8 @@ int main(int argc, char* argv[]) {
   std::cout << "img.step[0] = " << img.step[0] << std::endl;
   std::cout << "img.step[1] = " << img.step[1] << std::endl;
   std::cout << "img.elemSize = " << img.elemSize() << std::endl;
+  glm::vec3 im_size_vec = glm::vec3(img.size().width, img.size().height, 1.0f);
+  std::cout << "im_size_vec = " << glm::to_string(im_size_vec) << std::endl;
 
 
   std::shared_ptr<Camera> camera =
@@ -99,6 +101,9 @@ int main(int argc, char* argv[]) {
   // camera_obj->SetRotation(-1.7889f, 0.0250f, -1.4811f);
   camera_obj->SetRotation(static_cast<float>(M_PI_2), 0.0f, static_cast<float>(M_PI_2));
   camera_obj->SetImage(image_path.string());
+  // camera_obj->SetImage(img);
+  camera_obj->SetImageTransparency(true);
+  camera_obj->SetImageAlpha(0.3);
   // root->AddChild(camera_obj);
 
   // Main Camera pos/rot
@@ -107,6 +112,97 @@ int main(int argc, char* argv[]) {
   // camera->SetRotation(-1.7889f, 0.0250f, -1.4811f);
   // camera->SetRotation(0.0f, 0.0f, 0.0f);
   // camera->SetDirection(glm::vec3(0.0f, 0.0f, 1.0f));
+
+  camera_intr = camera_obj->GetCameraIntrinsics();
+  glm::mat3 camera_matrix = camera_intr.GetCameraMatrix();
+  std::cout << "wr = " << camera_intr.wr << std::endl;
+  std::cout << "Camera Intrinsic Matrix: " << camera_matrix << std::endl;
+
+  glm::mat3 rotation_matrix(camera_obj->GetRotation());
+  glm::vec3 translation(camera_obj->GetTranslation());
+  std::cout << "Rotation Matrix: " << rotation_matrix << std::endl;
+  std::cout << "Translation: " << translation << std::endl;
+
+  glm::vec3 vec1(1.0, 0.0, 0.0);
+  glm::vec3 vec2(0.0, 0.0, 1.0);
+  glm::vec3 vec3(4.0, 0.0, 1.0);
+  std::cout << "Rotated Vector " << glm::to_string(vec1) << " back : " << (glm::transpose(rotation_matrix) * vec1) << std::endl;
+  std::cout << "Rotated Vector " << glm::to_string(vec2) << " back : " << (glm::transpose(rotation_matrix) * vec2) << std::endl;
+
+  glm::mat4x3 proj(glm::transpose(rotation_matrix));
+  
+  proj[3] -= glm::transpose(rotation_matrix) * translation;
+  std::cout << "Proj 4x3 test: " << glm::to_string(proj) << std::endl;
+  std::cout << "Proj Vec " << glm::to_string(vec3) << " to camera : " << (proj * glm::vec4(vec3, 1.0)) << std::endl;
+
+  glm::mat4x3 proj_translation(1.0);
+  proj_translation[3] -= translation;
+
+  std::cout << "Proj Vec 2 stage " << glm::to_string(vec3) << " to camera coord : "
+      << (glm::transpose(rotation_matrix) * proj_translation * glm::vec4(vec3, 1.0)) << std::endl;
+
+  std::cout << "Proj Vec to camera " << glm::to_string(vec3) << " : "
+      << (camera_matrix * glm::transpose(rotation_matrix) * proj_translation * glm::vec4(vec3, 1.0)) << std::endl;
+
+
+  float point_dist = 2.0f;
+  glm::vec3 point0(7.0, 0.0, 1.0);
+  glm::vec3 point1(point0[0], point0[1] - point_dist, point0[2] - point_dist); // 1st (1stX + 1stY)
+  glm::vec3 point2(point0[0], point0[1] + point_dist, point0[2] - point_dist); // 2nd (2ndX + 1stY)
+  glm::vec3 point3(point0[0], point0[1] - point_dist, point0[2] + point_dist); // 3rd (1stX + 2ndY)
+  glm::vec3 point4(point0[0], point0[1] + point_dist, point0[2] + point_dist); // 4th (2ndX + 2ndY)
+
+
+  glm::vec3 point0_cam = camera_matrix * glm::transpose(rotation_matrix) * proj_translation * glm::vec4(point0, 1.0);
+  glm::vec3 point1_cam = camera_matrix * glm::transpose(rotation_matrix) * proj_translation * glm::vec4(point1, 1.0);
+  glm::vec3 point2_cam = camera_matrix * glm::transpose(rotation_matrix) * proj_translation * glm::vec4(point2, 1.0);
+  glm::vec3 point3_cam = camera_matrix * glm::transpose(rotation_matrix) * proj_translation * glm::vec4(point3, 1.0);
+  glm::vec3 point4_cam = camera_matrix * glm::transpose(rotation_matrix) * proj_translation * glm::vec4(point4, 1.0);
+
+  point0_cam /= point0_cam[2];
+  point1_cam /= point1_cam[2];
+  point2_cam /= point2_cam[2];
+  point3_cam /= point3_cam[2];
+  point4_cam /= point4_cam[2];
+
+  std::cout << "Proj Point 0 to camera " << glm::to_string(point0) << " : "
+      << (point0_cam) << std::endl;
+  std::cout << "Proj Point 1 to camera " << glm::to_string(point1) << " : "
+      << (point1_cam) << std::endl;
+  std::cout << "Proj Point 2 to camera " << glm::to_string(point2) << " : "
+      << (point2_cam) << std::endl;
+  std::cout << "Proj Point 3 to camera " << glm::to_string(point3) << " : "
+      << (point3_cam) << std::endl;
+  std::cout << "Proj Point 4 to camera " << glm::to_string(point4) << " : "
+      << (point4_cam) << std::endl;
+
+  std::cout << "Point 0 : " << glm::to_string(point0_cam * im_size_vec) << " pixels" << std::endl;
+  std::cout << "Point 1 : " << glm::to_string(point1_cam * im_size_vec) << " pixels" << std::endl;
+  std::cout << "Point 2 : " << glm::to_string(point2_cam * im_size_vec) << " pixels" << std::endl;
+  std::cout << "Point 3 : " << glm::to_string(point3_cam * im_size_vec) << " pixels" << std::endl;
+  std::cout << "Point 4 : " << glm::to_string(point4_cam * im_size_vec) << " pixels" << std::endl;
+
+  cv::circle(img, cv::Point(point0_cam[0] * im_size_vec[0], point0_cam[1] * im_size_vec[1]), 20, cv::Scalar(0, 0, 255), 3);
+  cv::line(img,
+      cv::Point(point0_cam[0] * im_size_vec[0], point0_cam[1] * im_size_vec[1]),
+      cv::Point(point1_cam[0] * im_size_vec[0], point1_cam[1] * im_size_vec[1]),
+      cv::Scalar(255, 0, 255),
+      3);
+  cv::rectangle(img,
+      cv::Point(point0_cam[0] * im_size_vec[0], point0_cam[1] * im_size_vec[1]),
+      cv::Point(point2_cam[0] * im_size_vec[0], point2_cam[1] * im_size_vec[1]),
+      cv::Scalar(0, 255, 255),
+      cv::FILLED);
+  std::stringstream ss;
+  ss << point3_cam[1] * im_size_vec[1];
+  cv::putText(img,
+      ss.str(),
+      cv::Point(point3_cam[0] * im_size_vec[0], point3_cam[1] * im_size_vec[1]),
+      0,
+      2.0,
+      cv::Scalar(255, 255, 255),
+      5);
+  camera_obj->SetImage(img);
 
   std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
   // camera_obj->AddChild(axes_obj);
@@ -117,22 +213,32 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < points.size(); ++i) {
     points[i] += glm::vec3(10.0f, 0.0f, 1.0f);
   }
-
-  // std::vector<glm::vec3> points = {
-  //   glm::vec3(0.0f, 0.0f, 0.0f),
-  //   glm::vec3( - camera_intr.cx * width_ratio, - camera_intr.cy, 0.0f)
-  // };
-  // for (int i = 0; i < points.size(); ++i) {
-  //   points[i] += glm::vec3(0.0f, 0.0f, f);
-  // }
   
-  std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(points));
+  // std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(points));
   // points_obj->SetTranslation(glm::vec3(10.0f, 0.0f, 1.0f));
   // points_obj->AddChild(axes_obj);
-  root->AddChild(points_obj);
-  root->AddChild(axes_obj);
+  // root->AddChild(points_obj);
+  // camera_obj->AddProjectedPoints(points);
 
-  camera_obj->AddProjectedPoints(points);
+  std::vector<glm::vec3> points_cam = { point0, point1, point2, point3, point4 };
+  std::shared_ptr<DObject> points_cam_obj(ObjectFactory::CreatePoints(points_cam));
+  root->AddChild(points_cam_obj);
+
+  std::vector<glm::vec3> points_camp = {
+    point0_cam / point0_cam[2], 
+    point1_cam / point1_cam[2], 
+    point2_cam / point2_cam[2], 
+    point3_cam / point3_cam[2], 
+    point4_cam / point4_cam[2]
+  };
+  for (int i = 0; i < points_camp.size(); ++i) {
+    points_camp[i] = rotation_matrix * (points_camp[i] - glm::vec3(camera_matrix[0][0], camera_matrix[1][1], 0.0f)) + translation;
+  }
+  std::shared_ptr<DObject> points_camp_obj(ObjectFactory::CreatePoints(points_camp));
+  root->AddChild(points_camp_obj);
+
+
+  root->AddChild(axes_obj);
 
 
 

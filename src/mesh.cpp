@@ -2,6 +2,8 @@
 
 #include "cv_gl/mesh.h"
 
+#include <opencv2/opencv.hpp>
+
 #include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -274,6 +276,53 @@ Texture Mesh::TextureFromFile(const std::string& path, const std::string& direct
 
   return texture;
 
+}
+
+Texture Mesh::TextureFromMat(const cv::Mat& mat, const bool flip) {
+  Texture texture;
+
+  // unsigned int texture_id;
+  glGenTextures(1, &texture.id);
+
+
+  int width, height, nrComponents;
+
+  texture.width = mat.size().width;
+  texture.height = mat.size().height;
+  nrComponents = mat.channels();
+
+  GLenum format;
+
+  if (nrComponents == 1) {
+    format = GL_RED;
+  } else if (nrComponents == 3) {
+    format = GL_BGR;
+  } else if (nrComponents == 4) {
+    format = GL_BGRA;
+  }
+
+  std::cout << "TfM: w, h, nrC = " << texture.width << ", " << texture.height << ", " << nrComponents << std::endl;
+
+  glBindTexture(GL_TEXTURE_2D, texture.id);
+
+  // glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
+  //     GL_UNSIGNED_BYTE, data);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.width, texture.height, 0, format,
+      GL_UNSIGNED_BYTE, mat.data);
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+      GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+      GL_LINEAR);
+
+  // glBindTexture(GL_TEXTURE_2D, 0);
+
+  return texture;
 }
 
 std::ostream& operator<<(std::ostream& os, const Vertex& vertex) {

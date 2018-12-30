@@ -7,6 +7,8 @@
 #include "cv_gl/utils.hpp"
 #include "cv_gl/model.h"
 
+#include <opencv2/opencv.hpp>
+
 #include <iostream>
 
 struct DrawableElement {
@@ -195,6 +197,10 @@ class DObject {
     translation_ = translation;
   }
 
+  glm::vec3 GetTranslation() const {
+    return translation_;
+  }
+
   void SetScale(const glm::vec3& scale) {
     scale_ = scale;
   }
@@ -209,6 +215,10 @@ class DObject {
     rotation = glm::rotate(rotation, y_angle, glm::vec3(0.0f, 1.0f, 0.0f));
     rotation = glm::rotate(rotation, x_angle, glm::vec3(1.0f, 0.0f, 0.0f));
     rotation_ = rotation;
+  }
+
+  glm::mat4 GetRotation() const {
+    return rotation_;
   }
 
   void SetMaterial(const Material& material) {
@@ -300,14 +310,23 @@ public:
     mesh_->material.ambient_transparent = transparency; // enable tranparency
   }
 
+  void SetImage(const cv::Mat mat, bool adjust_aspect_ratio = true) {
+    // Set cv::Mat bytes
+    Texture texture = Mesh::TextureFromMat(mat, false);
+    SetImageImp(texture, adjust_aspect_ratio);
+  }
+
   void SetImage(const std::string& image_path, bool adjust_aspect_ratio = true) {
     // load image and set it into material
     // std::cout << "Set image : " << image_path << std::endl;
 
     Texture texture = Mesh::TextureFromFile(image_path, "", false, 0.25); // reduce size of the texture
-    texture.type = TextureType::AMBIENT;
     texture.path = image_path;
 
+    SetImageImp(texture, adjust_aspect_ratio);
+
+    /*
+    texture.type = TextureType::AMBIENT;
     // std::cout << "  width = " << texture.width << std::endl;
     // std::cout << "  height = " << texture.height << std::endl;
 
@@ -321,8 +340,11 @@ public:
       this->AddToCorrectionMatrix(glm::scale(glm::mat4(1.0f),
           glm::vec3(static_cast<float>(texture.width) / texture.height, 1.0f, 1.0f)));
     }
+    */
 
   }
+
+  
 
   void SetImageAlpha(const float alpha) {
     mesh_->material.ambient_color[3] = alpha;
@@ -331,6 +353,29 @@ public:
   void SetImageTransparency(const bool transparency) {
     mesh_->material.ambient_transparent = transparency;
   }
+
+private:
+  void SetImageImp(Texture texture, bool adjust_aspect_ratio = true) {
+    texture.type = TextureType::AMBIENT;
+
+    // std::cout << "  width = " << texture.width << std::endl;
+    // std::cout << "  height = " << texture.height << std::endl;
+
+    if (!mesh_->material.textures.empty()) {
+      // Delete previous texture
+      glDeleteTextures(1, &mesh_->material.textures[0].id);
+
+      mesh_->material.textures[0] = texture;
+    } else {
+      mesh_->material.textures.emplace_back(texture);
+    }
+
+    if (adjust_aspect_ratio) {
+      this->AddToCorrectionMatrix(glm::scale(glm::mat4(1.0f),
+          glm::vec3(static_cast<float>(texture.width) / texture.height, 1.0f, 1.0f)));
+    }
+  }
+
 
 };
 

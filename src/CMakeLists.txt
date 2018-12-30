@@ -7,7 +7,7 @@ set_property(TARGET cv_gl_lib PROPERTY CXX_STANDARD 11)
 target_include_directories(cv_gl_lib PUBLIC ${PROJECT_INCLUDE_DIRS} )
 # message("boost INCLUDE_DIRS = " ${Boost_INCLUDE_DIRS})
 # message("boost LIBRARIES = " ${Boost_LIBRARIES})
-target_link_libraries(cv_gl_lib PUBLIC glad glfw stb_image glm assimp Boost::filesystem)
+target_link_libraries(cv_gl_lib PUBLIC glad glfw stb_image glm assimp Boost::filesystem opencv_imgcodecs)
 set_target_properties(cv_gl_lib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -25,7 +25,7 @@ set(EDIT_SPACE_NAME edit_space)
 add_executable(${EDIT_SPACE_NAME} edit_space.cpp)
 set_property(TARGET ${EDIT_SPACE_NAME} PROPERTY CXX_STANDARD 11)
 message("edit_space_name = " ${EDIT_SPACE_NAME})
-target_link_libraries(${EDIT_SPACE_NAME} PUBLIC cv_gl_lib opencv_imgcodecs)
+target_link_libraries(${EDIT_SPACE_NAME} PUBLIC cv_gl_lib)
 set_target_properties(${EDIT_SPACE_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 

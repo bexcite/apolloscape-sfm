@@ -58,6 +58,24 @@ std::ostream& operator<<(std::ostream& os, const glm::mat4 mat) {
   return os;
 }
 
+// TODO: mat3 and mat4 should be in one function!!!
+std::ostream& operator<<(std::ostream& os, const glm::mat3 mat) {
+  int rows = 3;
+  int cols = 3;
+  os << std::endl;
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      os << std::setprecision(3) << std::setw(6) << mat[j][i];
+      if (j < cols - 1) {
+        os << ", ";
+      }
+    }
+    os << std::endl;
+  }
+  return os;
+}
+
+
 std::ostream& operator<<(std::ostream& os, const glm::vec4 vec) {
   for (int j = 0; j < 4; ++j) {
     os << std::setprecision(3) << std::setw(6) << vec[j];

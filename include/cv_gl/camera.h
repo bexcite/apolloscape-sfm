@@ -26,6 +26,13 @@ struct CameraIntrinsics {
   float cx;
   float cy;
   float wr;
+  glm::mat3 GetCameraMatrix() const {
+    glm::mat3 camera_matrix(1.0);
+    camera_matrix[0] = {fx /* *wr */, 0.0, 0.0};
+    camera_matrix[1] = {0.0, fy, 0.0};
+    camera_matrix[2] = {cx /* *wr*/, cy, 1.0};
+    return camera_matrix;
+  }
 };
 
 // camera constant

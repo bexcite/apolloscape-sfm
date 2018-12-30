@@ -433,6 +433,9 @@ class CameraObject: public DObject {
   CameraObject(const float width_ratio = 1.0f, const CameraIntrinsics intr = CameraIntrinsics())
       : DObject(nullptr, "CameraObject"), intrinsics_(intr), width_ratio_(width_ratio) {
 
+    // TODO: Move to the usage of intr.wr instead of separate width_ration var
+    intrinsics_.wr = width_ratio;
+
     float f = std::max(intrinsics_.fx, intrinsics_.fy);
 
     // Construct complex object
@@ -519,6 +522,12 @@ class CameraObject: public DObject {
     }
   }
 
+  void SetImage(const cv::Mat& image) {
+    if (image_obj_) {
+      image_obj_->SetImage(image, false);
+    }
+  }
+
   void SetImageAlpha(const float alpha) {
     if (image_obj_) {
       image_obj_->SetImageAlpha(alpha);
@@ -529,6 +538,10 @@ class CameraObject: public DObject {
     if (image_obj_) {
       image_obj_->SetImageTransparency(transparency);
     }
+  }
+
+  CameraIntrinsics GetCameraIntrinsics() const {
+    return intrinsics_;
   }
 
   void AddProjectedPoints(const std::vector<glm::vec3>& points) {
