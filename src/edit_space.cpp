@@ -51,10 +51,47 @@ int main(int argc, char* argv[]) {
   std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path);
   std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path);
 
+  std::vector<glm::vec2> camera1_points = {
+    {1630.0, 300.0},
+    {922.0, 386.0},
+    {373.0, 1427.0},
+    {384.0, 1413.0},
+    {972.0, 949.0},
+    {1008.0, 892.0},
+    {382.0, 813.0},
+    {751.0, 1874.0},
+    {718.0, 483.0},
+    {1060.0, 580.0},
+    {1426.0, 587.0},
+    {1722.0, 675.0},
+    {1637.0, 817.0},
+    {1179.0, 368.0}
+  };
 
-  ImageData& im_data = camera1_poses[0];
+  std::vector<glm::vec2> camera2_points = {
+    {2300.0, 315.0},
+    {1519.0, 369.0},
+    {1110.0, 1300.0},
+    {1115.0, 1288.0},
+    {1537.0, 936.0},
+    {1557.0, 884.0},
+    {985.0, 734.0},
+    {1558.0, 1837.0},
+    {1310.0, 455.0},
+    {1606.0, 572.0},
+    {2043.0, 612.0},
+    {2387.0, 749.0},
+    {2280.0, 898.0},
+    {1757.0, 360.0}
+  };
 
-  fs::path image_path = camera1_image_path / fs::path(im_data.filename);
+  PrintVec("Camera 1 points: ", camera1_points);
+  PrintVec("Camera 2 points: ", camera2_points);
+
+
+  ImageData& im_data = camera2_poses[24];
+
+  fs::path image_path = camera2_image_path / fs::path(im_data.filename);
   std::cout << "image_path = " << image_path << std::endl;
 
 
@@ -103,7 +140,7 @@ int main(int argc, char* argv[]) {
   camera_obj->SetImage(image_path.string());
   // camera_obj->SetImage(img);
   camera_obj->SetImageTransparency(true);
-  camera_obj->SetImageAlpha(0.3);
+  camera_obj->SetImageAlpha(0.9);
   // root->AddChild(camera_obj);
 
   // Main Camera pos/rot
@@ -182,6 +219,15 @@ int main(int argc, char* argv[]) {
   std::cout << "Point 3 : " << glm::to_string(point3_cam * im_size_vec) << " pixels" << std::endl;
   std::cout << "Point 4 : " << glm::to_string(point4_cam * im_size_vec) << " pixels" << std::endl;
 
+  for (int i = 0; i < camera2_points.size(); ++i) {
+    int delta = 10;
+    cv::rectangle(img,
+      cv::Point(camera2_points[i][0] - delta, camera2_points[i][1] - delta),
+      cv::Point(camera2_points[i][0] + delta, camera2_points[i][1] + delta),
+      cv::Scalar(0, 0, 255), 5);
+  }
+
+  /*
   cv::circle(img, cv::Point(point0_cam[0] * im_size_vec[0], point0_cam[1] * im_size_vec[1]), 20, cv::Scalar(0, 0, 255), 3);
   cv::line(img,
       cv::Point(point0_cam[0] * im_size_vec[0], point0_cam[1] * im_size_vec[1]),
@@ -202,6 +248,8 @@ int main(int argc, char* argv[]) {
       2.0,
       cv::Scalar(255, 255, 255),
       5);
+  */
+
   camera_obj->SetImage(img);
 
   std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));

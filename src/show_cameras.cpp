@@ -126,6 +126,9 @@ int main(int argc, char* argv[]) {
 
   const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
 
+  std::cout << "Camera pose 1: filename = " << camera1_poses[p_camera_pose].filename << std::endl; 
+  std::cout << "Camera pose 2: filename = " << camera2_poses[p_camera_pose].filename << std::endl; 
+
   camera->SetOrigin(glm::vec3(camera_origin_data.coords[3], camera_origin_data.coords[4], camera_origin_data.coords[5]));
   camera->SetRotation(camera_origin_data.coords[0], camera_origin_data.coords[1], camera_origin_data.coords[2]);
   // camera->SetOrigin(glm::vec3(3.0f, 0.0f, 0.0f));

@@ -22,20 +22,8 @@ struct ImageData {
 
 template <typename T>
 void PrintVec(const std::string& intro, const std::vector<T> vec,
-              std::ostream& os = std::cout) {
-  std::string delim;
-  if (!intro.empty()) {
-    os << intro;
-  }
-  os << "[";
-  for (auto& x : vec) {
-    os << delim << x;
-    if (delim.empty()) {
-      delim = ", ";
-    }
-  }
-  os << "]";
-}
+              std::ostream& os = std::cout);
+
 
 
 std::ostream& operator<<(std::ostream& os, const ImageData image_data) {
@@ -75,7 +63,7 @@ std::ostream& operator<<(std::ostream& os, const glm::mat3 mat) {
   return os;
 }
 
-
+// TODO: This is a bad copy of vec4,3,2 ... 
 std::ostream& operator<<(std::ostream& os, const glm::vec4 vec) {
   for (int j = 0; j < 4; ++j) {
     os << std::setprecision(3) << std::setw(6) << vec[j];
@@ -91,6 +79,16 @@ std::ostream& operator<<(std::ostream& os, const glm::vec3 vec) {
   for (int j = 1; j < 3; ++j) {
     os << ", " << std::setprecision(3) << std::setw(6) << vec[j];
   }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const glm::vec2 vec) {
+  os << "{";
+  os << std::setprecision(5) << std::setw(6) << vec[0];
+  for (int j = 1; j < 2; ++j) {
+    os << ", " << std::setprecision(5) << std::setw(6) << vec[j];
+  }
+  os << "}";
   return os;
 }
 
@@ -158,6 +156,24 @@ std::vector<ImageData> ReadCameraPoses(fs::path file_path) {
   }
   return imgs_data;
 }
+
+template <typename T>
+void PrintVec(const std::string& intro, const std::vector<T> vec,
+              std::ostream& os) {
+  std::string delim;
+  if (!intro.empty()) {
+    os << intro;
+  }
+  os << "[";
+  for (auto& x : vec) {
+    os << delim << x;
+    if (delim.empty()) {
+      delim = ", ";
+    }
+  }
+  os << "]\n";
+}
+
 
 
 

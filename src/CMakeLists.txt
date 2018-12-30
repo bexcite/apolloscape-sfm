@@ -48,6 +48,16 @@ set_target_properties(${SHOW_CAMERAS_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
+set(TWO_CAMERAS_NAME two_cameras)
+add_executable(${TWO_CAMERAS_NAME} two_cameras.cpp)
+set_property(TARGET ${TWO_CAMERAS_NAME} PROPERTY CXX_STANDARD 11)
+message("two_cameras_name = " ${TWO_CAMERAS_NAME})
+target_link_libraries(${TWO_CAMERAS_NAME} PUBLIC cv_gl_lib)
+set_target_properties(${TWO_CAMERAS_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    
+
+
 
 # Add GLAD
 # target_include_directories(${PROJECT_NAME} PRIVATE ${GLAD_DIR}/include)

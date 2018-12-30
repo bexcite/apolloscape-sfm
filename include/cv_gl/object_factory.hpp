@@ -430,6 +430,8 @@ std::map<std::string, std::shared_ptr<Shader> > ObjectFactory::shaders_;
 
 class CameraObject: public DObject {
   public:
+  CameraObject(const CameraIntrinsics intr) : CameraObject(intr.wr, intr) {}
+
   CameraObject(const float width_ratio = 1.0f, const CameraIntrinsics intr = CameraIntrinsics())
       : DObject(nullptr, "CameraObject"), intrinsics_(intr), width_ratio_(width_ratio) {
 
