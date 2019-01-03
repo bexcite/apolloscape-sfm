@@ -7,7 +7,7 @@ set_property(TARGET cv_gl_lib PROPERTY CXX_STANDARD 11)
 target_include_directories(cv_gl_lib PUBLIC ${PROJECT_INCLUDE_DIRS} )
 # message("boost INCLUDE_DIRS = " ${Boost_INCLUDE_DIRS})
 # message("boost LIBRARIES = " ${Boost_LIBRARIES})
-target_link_libraries(cv_gl_lib PUBLIC glad glfw stb_image glm assimp Boost::filesystem opencv_imgcodecs)
+target_link_libraries(cv_gl_lib PUBLIC glad glfw stb_image glm assimp Boost::filesystem opencv_imgcodecs opencv_calib3d)
 set_target_properties(cv_gl_lib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
