@@ -3,7 +3,7 @@
 #include <iomanip>
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <GLFW/glfw3.h> 
 
 #include <opencv2/opencv.hpp>
 
@@ -23,6 +23,13 @@
 // How to create empty Mat in OpenCV?
 //  https://stackoverflow.com/questions/31337397/how-to-create-empty-mat-in-opencv
 
+// Epipolar geometry
+// http://www.cs.unc.edu/~lazebnik/research/spring08/lec11_epipolar.pdf
+
+// https://www.cc.gatech.edu/~hays/compvision/proj3/
+// https://www.cc.gatech.edu/~hays/compvision/
+// https://samarth-robo.github.io/
+
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
 
@@ -33,6 +40,83 @@ const char kRecordId[] = "Record001";
 
 const char kCamera1PoseFile[] = "Camera_1.txt";
 const char kCamera2PoseFile[] = "Camera_2.txt";
+
+const double kImageWidth = 2452.0;
+const double kImageHeight = 2056.0;
+
+glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_angle ) {
+    glm::dmat4 rotation(1.0f);
+    rotation = glm::rotate(rotation, static_cast<double>(z_angle), glm::dvec3(0.0, 0.0, 1.0));
+    rotation = glm::rotate(rotation, static_cast<double>(y_angle), glm::dvec3(0.0, 1.0, 0.0));
+    rotation = glm::rotate(rotation, static_cast<double>(x_angle), glm::dvec3(1.0, 0.0, 0.0));
+    return glm::dmat3(rotation);
+  }
+
+cv::Mat calc_fundamental(const CameraIntrinsics& intr1, const ImageData& img_data1, const CameraIntrinsics& intr2, const ImageData& img_data2) {
+
+  // std::cout << "Calc Fundamental.\n";
+  // std::cout << "intr1: " << intr1 << std::endl;
+  // std::cout << "img_data1: " << img_data1 << std::endl;
+  // std::cout << "intr2: " << intr2 << std::endl;
+  // std::cout << "img_data2: " << img_data2 << std::endl;
+
+  glm::dmat3 r1 = GetRotation(img_data1.coords[0], img_data1.coords[1], img_data1.coords[2]);
+  // std::cout << "r1 = " << glm::to_string(r1) << std::endl;
+
+  glm::dmat3 r2 = GetRotation(img_data2.coords[0], img_data2.coords[1], img_data2.coords[2]);
+  // std::cout << "r2 = " << glm::to_string(r2) << std::endl;
+
+  glm::dmat3 k1 = intr1.GetCameraMatrix();
+  // std::cout << "k1 = " << glm::to_string(k1) << std::endl;
+  glm::dmat3 k2 = intr2.GetCameraMatrix();
+  // std::cout << "k2 = " << glm::to_string(k2) << std::endl;
+
+  glm::dvec3 t1(img_data1.coords[3], img_data1.coords[4], img_data1.coords[5]);
+  // std::cout << "t1 = " << glm::to_string(t1) << std::endl;
+  glm::dvec3 t2(img_data2.coords[3], img_data2.coords[4], img_data2.coords[5]);
+  // std::cout << "t2 = " << glm::to_string(t2) << std::endl;
+  glm::dvec3 b = t2 - t1;
+  glm::dmat3x3 sb;
+  sb[0] = glm::dvec3(0.0, b[2], -b[1]);
+  sb[1] = glm::dvec3(-b[2], 0.0, b[0]);
+  sb[2] = glm::dvec3(b[1], -b[0], 0.0);
+  // std::cout << "sb = " << glm::to_string(sb) << std::endl;
+
+  glm::dmat4x3 t1m(1.0);
+  t1m[3] -= t1;
+  // std::cout << "t1m = " << glm::to_string(t1m) << std::endl;
+
+  glm::dmat4x3 t2m(1.0);
+  t2m[3] -= t2;
+  // std::cout << "t2m = " << glm::to_string(t2m) << std::endl;
+
+  glm::dmat4x3 full1 = k1 * glm::transpose(r1) * t1m;
+  // std::cout << "full1 = " << glm::to_string(full1) << std::endl;
+
+  glm::dvec3 test_point(100.0, 100.0, 1.0);
+  test_point = r1 * test_point + t1;
+  // std::cout << "test_point = " << glm::to_string(test_point) << std::endl;
+
+  // std::cout << "test_point_px = " << glm::to_string(full1 * glm::dvec4(test_point, 1.0)) << std::endl;
+
+  glm::dmat3x3 f = glm::transpose(glm::inverse(k1)) * glm::transpose(r1) * sb * r2 * glm::inverse(k2);
+  // std::cout << "f = " << glm::to_string(f) << std::endl;
+
+  // glm::dvec3 p1(1630.0, 300.0, 1.0);
+  // glm::dvec3 p2(2300.0, 315.0, 1.0);
+  // double res = glm::dot(p1, f * p2);
+  // std::cout << "res = " << res << std::endl;
+  
+  // Transfer to cv::Mat object
+  cv::Mat fm(3, 3, CV_64F);
+  for (int row = 0; row < 3; ++row) {
+    for (int col = 0; col < 3; ++col) {
+      fm.at<double>(row, col) = f[col][row];
+    }
+  }
+
+  return fm;
+}
 
 
 cv::Mat estimate_homography(const std::vector<glm::vec2>& points1,
@@ -68,36 +152,30 @@ cv::Mat estimate_homography(const std::vector<glm::vec2>& points1,
   a.push_back(cv::Mat(1, 9, CV_64F, row3));
   */
 
-  std::cout << "a = " << a << std::endl;
+  // std::cout << "a = " << a << std::endl;
 
   cv::Mat u, w, vt;
   cv::SVD::compute(a, w, u, vt);
-  std::cout << "a.u  = " << u << std::endl;
-  std::cout << "a.w  = " << w << std::endl;
-  std::cout << "s.vt = " << vt << std::endl;
+  // std::cout << "a.u  = " << u << std::endl;
+  // std::cout << "a.w  = " << w << std::endl;
+  // std::cout << "s.vt = " << vt << std::endl;
 
   std::cout << "sol = " << vt.row(8) << std::endl;
 
-  cv::Mat res = a * vt.row(8).t();
-  std::cout << "res = " << res << std::endl;
+  // cv::Mat res = a * vt.row(8).t();
+  // std::cout << "res = " << res << std::endl;
 
-  cv::Mat v1 = vt * vt.row(8).t();
-  std::cout << "v1 = " << v1 << std::endl;
-
-  //vt.row(8).reshape(3, 3);
+  // cv::Mat v1 = vt * vt.row(8).t();
+  // std::cout << "v1 = " << v1 << std::endl;
   
   hom = vt.row(8).reshape(1, 3);
-  std::cout << "hom.type = " << hom.type() << std::endl;
-  // hom = hom.reshape(1, 3);
-  std::cout << "hom = " << hom << std::endl;
-  // hom.convertTo(hom, CV_64FC1);
   // std::cout << "hom.type = " << hom.type() << std::endl;
+  // std::cout << "hom = " << hom << std::endl;
 
-
-  cv::Mat p1 = cv::Mat1d({points1[0][0], points1[0][1], 1.0});
-  cv::Mat p2 = hom * p1;
-  std::cout << "p1 = " << p1 << std::endl;
-  std::cout << "p2 = " << p2 / p2.at<double>(2) << std::endl;
+  // cv::Mat p1 = cv::Mat1d({points1[0][0], points1[0][1], 1.0});
+  // cv::Mat p2 = hom * p1;
+  // std::cout << "p1 = " << p1 << std::endl;
+  // std::cout << "p2 = " << p2 / p2.at<double>(2) << std::endl;
 
   // cv::Mat b(a);
 
@@ -110,6 +188,26 @@ cv::Mat estimate_homography(const std::vector<glm::vec2>& points1,
 
 int main(int argc, char* argv[]) {
   std::cout << "Hello two cameras" << std::endl;
+
+  CameraIntrinsics intr1;
+  intr1.fx = 1450.317230113;
+  intr1.fy = 1451.184836113;
+  intr1.cx = 1244.386581025;
+  intr1.cy = 1013.145997723;
+  intr1.wr = kImageWidth/kImageHeight;
+
+  CameraIntrinsics intr2;
+  intr2.fx = 1448.572928508;
+  intr2.fy = 1449.555907804;
+  intr2.cx = 1250.940749515;
+  intr2.cy = 1013.259732772;
+  intr2.wr = kImageWidth/kImageHeight;
+
+
+
+#ifdef HAVE_OPENCV_XFEATURES2D
+  std::cout << "HAVE! \n";
+#endif
 
   fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
       / fs::path("pose") / fs::path(kRecordId) / fs::path(kCamera1PoseFile);
@@ -241,6 +339,19 @@ int main(int argc, char* argv[]) {
   ImageData& im_data1 = camera1_poses[24];
   ImageData& im_data2 = camera2_poses[24];
 
+  cv::Mat fund;
+  fund = calc_fundamental(intr1, im_data1, intr2, im_data2);
+  std::cout << "Fundamental Matrix: " << fund << std::endl;
+  // check correspondance quality
+  for (int i = 0; i < camera1_points.size(); ++i) {
+    cv::Mat p1 = cv::Mat1d({camera1_points[i][0], camera1_points[i][1], 1.0});
+    cv::Mat p2 = cv::Mat1d({camera2_points[i][0], camera2_points[i][1], 1.0});
+    cv::Mat pres = p1.t() * fund * p2;
+    cv::Mat pres1 = p2.t() * fund.t() * p1;
+    std::cout << i << ": pres = " << pres << std::endl;
+    std::cout << i << ": pres1 = " << pres1 << std::endl;
+  }
+
   fs::path image1_path = camera1_image_path / fs::path(im_data1.filename);
   std::cout << "image1_path = " << image1_path << std::endl;
 
@@ -270,10 +381,6 @@ int main(int argc, char* argv[]) {
   
 
   
-
-  
-
-  
   // =========== Show Points
   for (int i = 0; i < camera1_points.size(); ++i) {
     int delta = 10;
@@ -297,10 +404,11 @@ int main(int argc, char* argv[]) {
   double image_width = img1.size().width;
   double image_height = img1.size().height;
 
+  /*
   cv::Mat img1_resize;
   cv::resize(img1, img1_resize, cv::Size(image_width/4.0, image_height/4.0));
   cv::imshow("img1", img1_resize);
-  // cv::waitKey();
+  cv::waitKey();
 
 
   cv::Mat img2_resize;
@@ -311,7 +419,7 @@ int main(int argc, char* argv[]) {
   }
   cv::resize(hom_img2, img2_resize, cv::Size(image_width/4.0, image_height/4.0));
   cv::imshow("hom_img2", img2_resize);
-  // cv::waitKey();
+  cv::waitKey();
 
   hom_img2 = img2.clone();
   for (int i = 0; i < hom0_points2.size(); ++i) {
@@ -319,20 +427,20 @@ int main(int argc, char* argv[]) {
   }
   cv::resize(hom_img2, img2_resize, cv::Size(image_width/4.0, image_height/4.0));
   cv::imshow("hom0_img2", img2_resize);
-  
+  cv::waitKey();
 
   cv::Mat warp1 = cv::Mat::zeros(img1.size(), img1.type());
   cv::warpPerspective(img1, warp1, hom_res, warp1.size());
   cv::Mat warp1_resize;
   cv::resize(warp1, warp1_resize, cv::Size(image_width/4.0, image_height/4.0));
   cv::imshow("Warp1", warp1_resize);
-  // cv::waitKey();
+  cv::waitKey();
 
   cv::warpPerspective(img1, warp1, hom_res0, warp1.size());
   cv::resize(warp1, warp1_resize, cv::Size(image_width/4.0, image_height/4.0));
   cv::imshow("Warp10", warp1_resize);
   cv::waitKey();
-  
+  */
 
 
   

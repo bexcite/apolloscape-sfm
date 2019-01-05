@@ -240,3 +240,8 @@ CameraIntrinsics Camera::GetCameraIntrinsics() const {
   intr.wr = wr_;
   return intr;
 }
+
+std::ostream& operator<<(std::ostream& os, const CameraIntrinsics& intr) {
+  intr.print(os);
+  return os;
+}

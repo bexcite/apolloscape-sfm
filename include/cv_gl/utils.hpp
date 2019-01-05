@@ -32,6 +32,23 @@ std::ostream& operator<<(std::ostream& os, const ImageData image_data) {
   return os;
 }
 
+// TODO: Copy/Paste - remove ...
+std::ostream& operator<<(std::ostream& os, const glm::mat4x3 mat) {
+  int rows = 3;
+  int cols = 4;
+  os << std::endl;
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      os << std::setprecision(3) << std::setw(6) << mat[j][i];
+      if (j < cols - 1) {
+        os << ", ";
+      }
+    }
+    os << std::endl;
+  }
+  return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const glm::mat4 mat) {
   os << std::endl;
   for (int i = 0; i < 4; ++i) {

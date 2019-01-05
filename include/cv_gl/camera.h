@@ -33,7 +33,16 @@ struct CameraIntrinsics {
     camera_matrix[2] = {cx /* *wr*/, cy, 1.0};
     return camera_matrix;
   }
+  void print(std::ostream& os = std::cout) const {
+    os << "(fx = " << fx << ", ";
+    os << "fy = " << fy << ", ";
+    os << "cx = " << cx << ", ";
+    os << "cy = " << cy << ", ";
+    os << "wr = " << wr << ")";
+  }
 };
+
+std::ostream& operator<<(std::ostream& os, const CameraIntrinsics& intr);
 
 // camera constant
 const float kYaw = 0.0f;
