@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h> 
 
 #include <opencv2/opencv.hpp>
+#include "opencv2/xfeatures2d.hpp"
 
 #include "cv_gl/camera.h"
 #include "cv_gl/mesh.h"
@@ -380,7 +381,89 @@ int main(int argc, char* argv[]) {
       std::make_shared<Camera>(glm::vec3(2.0f, 0.0f, 1.0f));
   
 
+  // Show images
+  double image_width = img1.size().width;
+  double image_height = img1.size().height;
+
+  cv::Size show_im_size(image_width/4.0, image_height/4.0);
+
+  // Create mask for feature extraction
+  cv::Mat mask = cv::Mat::zeros(img1.size(), CV_8UC1);
+  cv::Point mask_points[1][4];
+  mask_points[0][0] = cv::Point(105, 90);
+  mask_points[0][1] = cv::Point(2356, 90);
+  mask_points[0][2] = cv::Point(2356, 1956);
+  mask_points[0][3] = cv::Point(105, 1956);
+
+  const cv::Point* mpt[1] = { mask_points[0] };
+  int npt[] = { 4 };
+  cv::fillPoly(mask, mpt, npt, 1, cv::Scalar(255, 0, 0), cv::LINE_8);
+  // std::cout << "mask = " << mask << std::endl;
+
+  // cv::Mat mask_resize;
+  // cv::resize(img1, mask_resize, show_im_size);
+  // cv::imshow("mask", mask_resize);
+  // cv::waitKey();
+
+  // Step 1:: Detect
+  int minHessian = 600;
+  cv::Ptr<cv::xfeatures2d::SURF> detector = cv::xfeatures2d::SURF::create(minHessian);
+  std::vector<cv::KeyPoint> keypoints1, keypoints2;
+  cv::Mat descriptors1, descriptors2;
+  detector->detectAndCompute(img1, mask, keypoints1, descriptors1);
+  detector->detectAndCompute(img2, mask, keypoints2, descriptors2);
+
+
+  for (auto kp: keypoints1) {
+    std::cout << "Keypoint: " << kp.pt << std::endl;
+  }
+
+  std::cout << "Descriptor1: " << descriptors2.size() << std::endl;
+
+  // Step 2: Match
+  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+  std::vector<std::vector<cv::DMatch> > knnMatches;
+  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2);
+  std::cout << "knnMatches.size = " << knnMatches.size() << std::endl;
+
+  // Filter matches: Lowe's test
+  const float ratio_thresh = 0.55f;
+  std::vector<cv::DMatch> good_matches;
+  for (size_t i = 0; i < knnMatches.size(); ++i) {
+    if (knnMatches[i][0].distance < ratio_thresh * knnMatches[i][1].distance) {
+      good_matches.push_back(knnMatches[i][0]);
+    }
+  }
+
+  std::cout << "keypoints1.size = " << keypoints1.size() << std::endl;
+  std::cout << "keypoints2.size = " << keypoints2.size() << std::endl;
+  std::cout << "good_matches.size = " << good_matches.size() << std::endl;
   
+
+  cv::Mat img1_kp;
+  cv::drawKeypoints(img1, keypoints1, img1_kp);
+
+  cv::Mat img2_kp;
+  cv::drawKeypoints(img2, keypoints2, img2_kp);
+
+  cv::Mat img1_resize;
+  cv::resize(img1_kp, img1_resize, show_im_size);
+  // cv::imshow("img1", img2_kp);
+  // cv::waitKey();
+
+  // Draw matches
+  cv::Mat img_matches;
+  cv::drawMatches(img1, keypoints1, img2, keypoints2, good_matches, img_matches);
+  cv::imshow("matches full", img_matches);
+
+  cv::Mat matches_resize;
+  cv::resize(img_matches, matches_resize, img_matches.size() / 4);
+
+  cv::imshow("img matches", matches_resize);
+  cv::waitKey();
+
+  
+  /*
   // =========== Show Points
   for (int i = 0; i < camera1_points.size(); ++i) {
     int delta = 10;
@@ -399,10 +482,9 @@ int main(int argc, char* argv[]) {
       cv::Scalar(0, 0, 255),
       5);
   }
+  */
 
-  // Show images
-  double image_width = img1.size().width;
-  double image_height = img1.size().height;
+  
 
   /*
   cv::Mat img1_resize;
