@@ -31,6 +31,11 @@
 // https://www.cc.gatech.edu/~hays/compvision/
 // https://samarth-robo.github.io/
 
+// How to correctly use cv::triangulatePoints()
+// https://stackoverflow.com/questions/16295551/how-to-correctly-use-cvtriangulatepoints
+
+
+
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
 
@@ -45,15 +50,17 @@ const char kCamera2PoseFile[] = "Camera_2.txt";
 const double kImageWidth = 2452.0;
 const double kImageHeight = 2056.0;
 
+const float kGlobalScale = 100.0f;
+
 glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_angle ) {
     glm::dmat4 rotation(1.0f);
     rotation = glm::rotate(rotation, static_cast<double>(z_angle), glm::dvec3(0.0, 0.0, 1.0));
     rotation = glm::rotate(rotation, static_cast<double>(y_angle), glm::dvec3(0.0, 1.0, 0.0));
     rotation = glm::rotate(rotation, static_cast<double>(x_angle), glm::dvec3(1.0, 0.0, 0.0));
     return glm::dmat3(rotation);
-  }
+}
 
-cv::Mat calc_fundamental(const CameraIntrinsics& intr1, const ImageData& img_data1, const CameraIntrinsics& intr2, const ImageData& img_data2) {
+cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data1, const CameraIntrinsics& intr2, const ImageData& img_data2) {
 
   // std::cout << "Calc Fundamental.\n";
   // std::cout << "intr1: " << intr1 << std::endl;
@@ -117,6 +124,202 @@ cv::Mat calc_fundamental(const CameraIntrinsics& intr1, const ImageData& img_dat
   }
 
   return fm;
+}
+
+void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keypoints1,
+    const cv::Mat img2, std::vector<cv::KeyPoint>& keypoints2, const cv::Mat fund = cv::Mat()) {
+
+  // Create mask of ROI for feature extraction
+  cv::Mat mask = cv::Mat::zeros(img1.size(), CV_8UC1);
+  cv::Point mask_points[1][4];
+  int xmin = (105.0 / 2452.0) * img1.size().width;
+  int ymin = (90.0 / 2056.0) * img1.size().height;
+  int xmax = (2356.0 / 2452.0) * img1.size().width;
+  int ymax = (1956.0 / 2056.0) * img1.size().height;
+  // mask_points[0][0] = cv::Point(105, 90);
+  // mask_points[0][1] = cv::Point(2356, 90);
+  // mask_points[0][2] = cv::Point(2356, 1956);
+  // mask_points[0][3] = cv::Point(105, 1956);
+  mask_points[0][0] = cv::Point(xmin, ymin);
+  mask_points[0][1] = cv::Point(xmax, ymin);
+  mask_points[0][2] = cv::Point(xmax, ymax);
+  mask_points[0][3] = cv::Point(xmin, ymax);
+
+  std::cout << "p0 = " << mask_points[0][0] << std::endl;
+  std::cout << "p1 = " << mask_points[0][1] << std::endl;
+  std::cout << "p2 = " << mask_points[0][2] << std::endl;
+  std::cout << "p3 = " << mask_points[0][3] << std::endl;
+
+  const cv::Point* mpt[1] = { mask_points[0] };
+  int npt[] = { 4 };
+  cv::fillPoly(mask, mpt, npt, 1, cv::Scalar(255, 0, 0), cv::LINE_8);
+
+
+  // Step 1:: Detect
+  int minHessian = 600;
+  cv::Ptr<cv::xfeatures2d::SURF> detector = cv::xfeatures2d::SURF::create(minHessian);
+  std::vector<cv::KeyPoint> points1, points2;
+  cv::Mat descriptors1, descriptors2;
+  detector->detectAndCompute(img1, mask, points1, descriptors1);
+  detector->detectAndCompute(img2, mask, points2, descriptors2);
+
+
+  // for (auto kp: keypoints1) {
+  //   std::cout << "Keypoint: " << kp.pt << std::endl;
+  // }
+
+  std::cout << "Descriptor1: " << descriptors1.size() << std::endl;
+  std::cout << "Descriptor2: " << descriptors2.size() << std::endl;
+
+  // Step 2: Match
+  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+  std::vector<std::vector<cv::DMatch> > knnMatches;
+  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2);
+  std::cout << "knnMatches.size = " << knnMatches.size() << std::endl;
+
+  // Filter matches: Lowe's test
+  const float ratio_thresh = 0.6f;
+  std::vector<cv::DMatch> good_matches;
+  for (size_t i = 0; i < knnMatches.size(); ++i) {
+    // std::cout << "match 0 = " << knnMatches[i][0].distance << ", " << knnMatches[i][0].queryIdx << " = " << knnMatches[i][0].trainIdx << std::endl;
+    // std::cout << "match 1 = " << knnMatches[i][1].distance << ", " << knnMatches[i][1].queryIdx << " = " << knnMatches[i][1].trainIdx << std::endl;
+    // std::cout << "match.size = " << knnMatches[i].size() << std::endl;
+    if (knnMatches[i][0].distance < ratio_thresh * knnMatches[i][1].distance) {
+      good_matches.push_back(knnMatches[i][0]);
+
+      // Add keypoints to output
+      // keypoints1.push_back(points1[knnMatches[i][0].queryIdx]);
+      // keypoints2.push_back(points2[knnMatches[i][0].trainIdx]);
+    }
+  }
+
+  std::vector<cv::DMatch> best_matches;
+  if (!fund.empty()) {
+    // Check fund matrix constraint
+    std::cout << "CHECK FUND MATRIX CONSTRAINT!!!\n";
+    // Fundamental Matrix Constraint
+    for (size_t i = 0; i < good_matches.size(); ++i) {
+      cv::DMatch match = good_matches[i];
+      cv::Mat p1 = cv::Mat1d({points1[match.queryIdx].pt.x, points1[match.queryIdx].pt.y, 1.0});
+      cv::Mat p2 = cv::Mat1d({points2[match.trainIdx].pt.x, points2[match.trainIdx].pt.y, 1.0});
+      cv::Mat pres = p1.t() * fund * p2;
+      if (pres.at<double>() < 0.01) {
+        // For visualization only
+        best_matches.push_back(match);
+        keypoints1.push_back(points1[match.queryIdx]);
+        keypoints2.push_back(points2[match.trainIdx]);
+      } else {
+        std::cout << i << ": good_match res (SKIP) = " << pres << std::endl;
+      }
+    }
+
+  } else {
+    for (size_t i = 0; i < good_matches.size(); ++i) {
+      // Add keypoints to output
+      keypoints1.push_back(points1[good_matches[i].queryIdx]);
+      keypoints2.push_back(points2[good_matches[i].trainIdx]);
+    }
+  }
+  
+
+  /*
+  // DEBUG
+  // Draw matches
+  cv::Mat img_matches;
+  if (!fund.empty()) {
+    std::cout << "Show BEST matches\n";
+    cv::drawMatches(img1, points1, img2, points2, best_matches, img_matches);
+  } else {
+    std::cout << "Show GOOD matches\n";
+    cv::drawMatches(img1, points1, img2, points2, good_matches, img_matches);
+  }
+  cv::Mat matches_resize;
+  cv::resize(img_matches, matches_resize, img_matches.size() / 2);
+  cv::imshow("img matches", matches_resize);
+  cv::waitKey();
+  */
+
+
+}
+
+void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1, const std::vector<cv::Point2f>& points1,
+    const CameraIntrinsics& intr2, const ImageData& img_data2, const std::vector<cv::Point2f>& points2, cv::Mat& points4d) {
+  std::cout << "Triangulate Points\n";
+
+  // Find Proj Matrices
+  glm::dmat3 r1 = GetRotation(img_data1.coords[0], img_data1.coords[1], img_data1.coords[2]);
+  // std::cout << "r1 = " << glm::to_string(r1) << std::endl;
+
+  glm::dmat3 r2 = GetRotation(img_data2.coords[0], img_data2.coords[1], img_data2.coords[2]);
+  // std::cout << "r2 = " << glm::to_string(r2) << std::endl;
+
+  glm::dmat3 k1 = intr1.GetCameraMatrix();
+  // std::cout << "k1 = " << glm::to_string(k1) << std::endl;
+  glm::dmat3 k2 = intr2.GetCameraMatrix();
+  // std::cout << "k2 = " << glm::to_string(k2) << std::endl;
+
+  glm::dvec3 t1(img_data1.coords[3], img_data1.coords[4], img_data1.coords[5]);
+  // std::cout << "t1 = " << glm::to_string(t1) << std::endl;
+  glm::dvec3 t2(img_data2.coords[3], img_data2.coords[4], img_data2.coords[5]);
+  // std::cout << "t2 = " << glm::to_string(t2) << std::endl;
+
+  glm::dmat4x3 proj1(1.0);
+  proj1[3] -= t1;
+  proj1 = k1 * glm::transpose(r1) * proj1;
+  std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
+
+  glm::dmat4x3 proj2(1.0);
+  proj2[3] -= t2;
+  proj2 = k2 * glm::transpose(r2) * proj2;
+  std::cout << "proj2 = " << glm::to_string(proj2) << std::endl;
+
+  cv::Mat mat_proj1(3, 4, CV_64F);
+  cv::Mat mat_proj2(3, 4, CV_64F);
+  for (size_t col = 0; col < 4; ++col) {
+    for (size_t row = 0; row < 3; ++row) {
+      mat_proj1.at<double>(row, col) = proj1[col][row];
+      mat_proj2.at<double>(row, col) = proj2[col][row];
+    }
+  }
+
+  std::cout << "mat_proj1 = " << mat_proj1 << std::endl;
+  std::cout << "mat_proj2 = " << mat_proj2 << std::endl;
+
+  cv::triangulatePoints(mat_proj1, mat_proj2, points1, points2, points4d);
+
+  std::cout << "points4d.sizr = " << points4d.size() << std::endl;
+
+  // Normalize projective
+  points4d.row(0) = points4d.row(0) / points4d.row(3);
+  points4d.row(1) = points4d.row(1) / points4d.row(3);
+  points4d.row(2) = points4d.row(2) / points4d.row(3);
+  points4d.row(3) = points4d.row(3) / points4d.row(3);
+
+  std::cout << "points4d[0] = " << points4d.col(0) << std::endl;
+  std::cout << "points4d[10] = " << points4d.col(10) << std::endl;
+  std::cout << "points4d[100] = " << points4d.col(100) << std::endl;
+  std::cout << "points4d[200] = " << points4d.col(200) << std::endl;
+
+  /*
+  glm::dvec3 b = t2 - t1;
+  glm::dmat3x3 sb;
+  sb[0] = glm::dvec3(0.0, b[2], -b[1]);
+  sb[1] = glm::dvec3(-b[2], 0.0, b[0]);
+  sb[2] = glm::dvec3(b[1], -b[0], 0.0);
+  // std::cout << "sb = " << glm::to_string(sb) << std::endl;
+
+  glm::dmat4x3 t1m(1.0);
+  t1m[3] -= t1;
+  // std::cout << "t1m = " << glm::to_string(t1m) << std::endl;
+
+  glm::dmat4x3 t2m(1.0);
+  t2m[3] -= t2;
+  // std::cout << "t2m = " << glm::to_string(t2m) << std::endl;
+
+  glm::dmat4x3 full1 = k1 * glm::transpose(r1) * t1m;
+  // std::cout << "full1 = " << glm::to_string(full1) << std::endl;
+  */
+
 }
 
 
@@ -341,8 +544,10 @@ int main(int argc, char* argv[]) {
   ImageData& im_data2 = camera2_poses[24];
 
   cv::Mat fund;
-  fund = calc_fundamental(intr1, im_data1, intr2, im_data2);
+  fund = CalcFundamental(intr1, im_data1, intr2, im_data2);
   std::cout << "Fundamental Matrix: " << fund << std::endl;
+
+  /*
   // check correspondance quality
   for (int i = 0; i < camera1_points.size(); ++i) {
     cv::Mat p1 = cv::Mat1d({camera1_points[i][0], camera1_points[i][1], 1.0});
@@ -352,33 +557,33 @@ int main(int argc, char* argv[]) {
     std::cout << i << ": pres = " << pres << std::endl;
     std::cout << i << ": pres1 = " << pres1 << std::endl;
   }
+  */
 
-  fs::path image1_path = camera1_image_path / fs::path(im_data1.filename);
+  fs::path image1_path = camera1_image_path / fs::path(im_data1.filename); // 
   std::cout << "image1_path = " << image1_path << std::endl;
 
-  fs::path image2_path = camera2_image_path / fs::path(im_data2.filename);
+  fs::path image2_path = camera2_image_path / fs::path(im_data2.filename); // camera2_poses[0].filename
   std::cout << "image2_path = " << image2_path << std::endl;
 
   cv::Mat img1 = cv::imread(image1_path.string().c_str());
-  std::cout << "img1 = " << img1.size << std::endl;
-  std::cout << "img1.step = " << img1.step << std::endl;
-  std::cout << "img1.step[0] = " << img1.step[0] << std::endl;
-  std::cout << "img1.step[1] = " << img1.step[1] << std::endl;
-  std::cout << "img1.elemSize = " << img1.elemSize() << std::endl;
-  glm::vec3 img1_size_vec = glm::vec3(img1.size().width, img1.size().height, 1.0f);
-  std::cout << "img1_size_vec = " << glm::to_string(img1_size_vec) << std::endl;
+  // std::cout << "img1 = " << img1.size << std::endl;
+  // std::cout << "img1.step = " << img1.step << std::endl;
+  // std::cout << "img1.step[0] = " << img1.step[0] << std::endl;
+  // std::cout << "img1.step[1] = " << img1.step[1] << std::endl;
+  // std::cout << "img1.elemSize = " << img1.elemSize() << std::endl;
+  // glm::vec3 img1_size_vec = glm::vec3(img1.size().width, img1.size().height, 1.0f);
+  // std::cout << "img1_size_vec = " << glm::to_string(img1_size_vec) << std::endl;
 
   cv::Mat img2 = cv::imread(image2_path.string().c_str());
-  std::cout << "img2 = " << img2.size << std::endl;
-  std::cout << "img2.step = " << img2.step << std::endl;
-  std::cout << "img2.step[0] = " << img2.step[0] << std::endl;
-  std::cout << "img2.step[1] = " << img2.step[1] << std::endl;
-  std::cout << "img2.elemSize = " << img2.elemSize() << std::endl;
-  glm::vec3 img2_size_vec = glm::vec3(img2.size().width, img2.size().height, 1.0f);
-  std::cout << "img2_size_vec = " << glm::to_string(img2_size_vec) << std::endl;
+  // std::cout << "img2 = " << img2.size << std::endl;
+  // std::cout << "img2.step = " << img2.step << std::endl;
+  // std::cout << "img2.step[0] = " << img2.step[0] << std::endl;
+  // std::cout << "img2.step[1] = " << img2.step[1] << std::endl;
+  // std::cout << "img2.elemSize = " << img2.elemSize() << std::endl;
+  // glm::vec3 img2_size_vec = glm::vec3(img2.size().width, img2.size().height, 1.0f);
+  // std::cout << "img2_size_vec = " << glm::to_string(img2_size_vec) << std::endl;
 
-  std::shared_ptr<Camera> camera =
-      std::make_shared<Camera>(glm::vec3(2.0f, 0.0f, 1.0f));
+  
   
 
   // Show images
@@ -386,6 +591,49 @@ int main(int argc, char* argv[]) {
   double image_height = img1.size().height;
 
   cv::Size show_im_size(image_width/4.0, image_height/4.0);
+
+  cv::Mat img1_small;
+  cv::resize(img1, img1_small, img1.size() / 2);
+  cv::Mat img2_small;
+  cv::resize(img2, img2_small, img2.size() / 2);
+
+  std::vector<cv::KeyPoint> kpoints1, kpoints2;
+  GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2, fund);
+  // GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2);
+  std::cout << "kpoints1.size = " << kpoints1.size() << std::endl;
+  std::cout << "kpoints2.size = " << kpoints2.size() << std::endl;
+
+  cv::Mat img1_points;
+  cv::drawKeypoints(img1, kpoints1, img1_points);
+  // cv::Mat img1_points_small;
+  // cv::resize(img1_points, img1_points_small, img1_points.size() / 2);
+  // cv::imshow("img points 1", img1_points);
+  // cv::waitKey();
+
+  cv::Mat points4d;
+  std::vector<cv::Point2f> points1f;
+  std::vector<cv::Point2f> points2f;
+  for (size_t i = 0; i < kpoints1.size(); ++i) {
+    points1f.push_back(kpoints1[i].pt);
+    points2f.push_back(kpoints2[i].pt);
+  }
+  TriangulatePoints(intr1, im_data1, points1f, intr2, im_data2, points2f, points4d);
+
+  // std::cout << "points4d (out) = " << points4d << std::endl;
+  // std::cout << "points4d.col 0 = " << points4d.col(0) << std::endl;
+  // std::cout << "points4d.at 0 float = " << points4d.at<float>(0, 0) << std::endl;
+  // std::cout << "points4d.at 0 double = " << points4d.at<double>(0, 0) << std::endl;
+
+  // glm::vec3 v(
+  //     points4d.at<float>(0, 0),
+  //     points4d.at<float>(1, 0),
+  //     points4d.at<float>(2, 0)
+  //   );
+  // std::cout << "v = " << v << std::endl;
+
+  
+
+  /*
 
   // Create mask for feature extraction
   cv::Mat mask = cv::Mat::zeros(img1.size(), CV_8UC1);
@@ -414,11 +662,12 @@ int main(int argc, char* argv[]) {
   detector->detectAndCompute(img2, mask, keypoints2, descriptors2);
 
 
-  for (auto kp: keypoints1) {
-    std::cout << "Keypoint: " << kp.pt << std::endl;
-  }
+  // for (auto kp: keypoints1) {
+  //   std::cout << "Keypoint: " << kp.pt << std::endl;
+  // }
 
-  std::cout << "Descriptor1: " << descriptors2.size() << std::endl;
+  std::cout << "Descriptor1: " << descriptors1.size() << std::endl;
+  std::cout << "Descriptor2: " << descriptors2.size() << std::endl;
 
   // Step 2: Match
   cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
@@ -427,17 +676,42 @@ int main(int argc, char* argv[]) {
   std::cout << "knnMatches.size = " << knnMatches.size() << std::endl;
 
   // Filter matches: Lowe's test
-  const float ratio_thresh = 0.55f;
+  const float ratio_thresh = 0.6f;
   std::vector<cv::DMatch> good_matches;
   for (size_t i = 0; i < knnMatches.size(); ++i) {
+    // std::cout << "match 0 = " << knnMatches[i][0].distance << ", " << knnMatches[i][0].queryIdx << " = " << knnMatches[i][0].trainIdx << std::endl;
+    // std::cout << "match 1 = " << knnMatches[i][1].distance << ", " << knnMatches[i][1].queryIdx << " = " << knnMatches[i][1].trainIdx << std::endl;
+    // std::cout << "match.size = " << knnMatches[i].size() << std::endl;
     if (knnMatches[i][0].distance < ratio_thresh * knnMatches[i][1].distance) {
       good_matches.push_back(knnMatches[i][0]);
+    }
+  }
+
+  */
+
+
+   /*
+
+  // Fundamental Matrix Constraint
+  std::vector<cv::DMatch> best_matches;
+  for (size_t i = 0; i < good_matches.size(); ++i) {
+    cv::DMatch match = good_matches[i];
+    cv::Mat p1 = cv::Mat1d({keypoints1[match.queryIdx].pt.x, keypoints1[match.queryIdx].pt.y, 1.0});
+    cv::Mat p2 = cv::Mat1d({keypoints2[match.trainIdx].pt.x, keypoints2[match.trainIdx].pt.y, 1.0});
+    cv::Mat pres = p1.t() * fund * p2;
+    
+    if (pres.at<double>() < 0.01) {
+      // std::cout << "good\n";
+      best_matches.push_back(match);
+    } else {
+      std::cout << i << ": good_match res (SKIP) = " << pres << std::endl;
     }
   }
 
   std::cout << "keypoints1.size = " << keypoints1.size() << std::endl;
   std::cout << "keypoints2.size = " << keypoints2.size() << std::endl;
   std::cout << "good_matches.size = " << good_matches.size() << std::endl;
+  std::cout << "best_matches.size = " << best_matches.size() << std::endl;
   
 
   cv::Mat img1_kp;
@@ -453,14 +727,15 @@ int main(int argc, char* argv[]) {
 
   // Draw matches
   cv::Mat img_matches;
-  cv::drawMatches(img1, keypoints1, img2, keypoints2, good_matches, img_matches);
-  cv::imshow("matches full", img_matches);
+  cv::drawMatches(img1, keypoints1, img2, keypoints2, best_matches, img_matches);
+  // cv::imshow("matches full", img_matches);
 
   cv::Mat matches_resize;
-  cv::resize(img_matches, matches_resize, img_matches.size() / 4);
+  cv::resize(img_matches, matches_resize, img_matches.size() / 2);
 
   cv::imshow("img matches", matches_resize);
   cv::waitKey();
+  */
 
   
   /*
@@ -525,27 +800,34 @@ int main(int argc, char* argv[]) {
   */
 
 
-  
 
-/*
+  std::shared_ptr<Camera> camera =
+      std::make_shared<Camera>(glm::vec3(2.0f, 0.0f, 1.0f)); 
+  camera->SetScale(kGlobalScale);
+
+
   GLWindow gl_window("OpenGL: Two Cameras", kWindowWidth, kWindowHeight);
   gl_window.SetCamera(camera);
 
   // Renderer
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
   std::shared_ptr<DObject> root = std::make_shared<DObject>();
-  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(1.0, 50));
-  std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(1.0f));
+  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(kGlobalScale, 50));
+  std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(kGlobalScale));
   root->AddChild(axes_obj);
 
   std::shared_ptr<ModelObject> debug_cube_obj(
       ObjectFactory::CreateModelObject(
           "../data/objects/debug_cube/debug_cube.obj"));
-  debug_cube_obj->SetScale(glm::vec3(1.0f));
-  debug_cube_obj->SetTranslation(glm::vec3(3.0f, 3.0f, 3.0f));
+  debug_cube_obj->SetScale(glm::vec3(kGlobalScale));
+  debug_cube_obj->SetTranslation(glm::vec3(3.0f * kGlobalScale, 3.0f * kGlobalScale, 3.0f * kGlobalScale));
   root->AddChild(debug_cube_obj);
 
 
+
+  // Set Camera Params
+  camera->SetOrigin(glm::vec3(im_data1.coords[3], im_data1.coords[4], im_data1.coords[5]));
+  camera->SetRotation(im_data1.coords[0], im_data1.coords[1], im_data1.coords[2]);
 
 
 
@@ -554,22 +836,47 @@ int main(int argc, char* argv[]) {
   CameraIntrinsics camera_intr = camera->GetCameraIntrinsics();
 
   std::shared_ptr<CameraObject> camera1_obj(new CameraObject(camera_intr));
-  camera1_obj->SetTranslation(glm::vec3(3.0f, 0.7f, 1.0f));
-  camera1_obj->SetRotation(static_cast<float>(-M_PI_2), 0.0f, static_cast<float>(-M_PI_2));
-  // camera1_obj->SetImage(image1_path.string());
-  camera1_obj->SetImage(img1);
+  // camera1_obj->SetTranslation(glm::vec3(3.0f, 0.7f, 1.0f));
+  // camera1_obj->SetRotation(static_cast<float>(-M_PI_2), 0.0f, static_cast<float>(-M_PI_2));
+  camera1_obj->SetTranslation(glm::vec3(im_data1.coords[3], im_data1.coords[4], im_data1.coords[5]));
+  camera1_obj->SetRotation(im_data1.coords[0], im_data1.coords[1], im_data1.coords[2]);
+  camera1_obj->SetImage(img1_points);
   camera1_obj->SetImageTransparency(true);
   camera1_obj->SetImageAlpha(0.9);
   root->AddChild(camera1_obj);
 
   std::shared_ptr<CameraObject> camera2_obj(new CameraObject(camera_intr));
-  camera2_obj->SetTranslation(glm::vec3(3.0f, -0.7f, 1.0f));
-  camera2_obj->SetRotation(static_cast<float>(-M_PI_2), 0.0f, static_cast<float>(-M_PI_2));
+  // camera2_obj->SetTranslation(glm::vec3(3.0f, -0.7f, 1.0f));
+  // camera2_obj->SetRotation(static_cast<float>(-M_PI_2), 0.0f, static_cast<float>(-M_PI_2));
+  camera2_obj->SetTranslation(glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5]));
+  camera2_obj->SetRotation(im_data2.coords[0], im_data2.coords[1], im_data2.coords[2]);
   // camera2_obj->SetImage(image2_path.string());
   camera2_obj->SetImage(img2);
   camera2_obj->SetImageTransparency(true);
-  camera2_obj->SetImageAlpha(0.9);
+  camera2_obj->SetImageAlpha(0.3);
   root->AddChild(camera2_obj);
+
+  // Create points in glm::vec3
+  std::cout << "points4d.cols = " << points4d.cols << std::endl;
+  std::vector<glm::vec3> glm_points(points4d.cols);
+  for (int i = 0; i < points4d.cols; ++i) {
+    glm::vec3 v(
+      points4d.at<float>(0, i),
+      points4d.at<float>(1, i),
+      points4d.at<float>(2, i)
+    );
+    std::cout << "v = " << v << std::endl;
+    glm_points.push_back(v);
+  }
+  std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(glm_points));
+  // PrintVec("glm_points = ", glm_points);
+  // std::cout << "glm_points = " << glm_points << std::endl;
+  root->AddChild(points_obj);
+  // std::cout << "points_obj = " << points_obj << std::endl;
+
+
+  camera1_obj->AddProjectedPoints(glm_points);
+  camera2_obj->AddProjectedPoints(glm_points);
 
 
   while(gl_window.IsRunning()) {
@@ -585,7 +892,7 @@ int main(int argc, char* argv[]) {
     gl_window.RunLoop();
   }
 
-  */
+  
 
   return EXIT_SUCCESS;
 
