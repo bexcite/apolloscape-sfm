@@ -33,6 +33,7 @@ const char kCamera1PoseFile[] = "Camera_1.txt";
 const char kCamera2PoseFile[] = "Camera_2.txt";
 
 
+namespace fs = boost::filesystem;
 
 int main(int argc, char* argv[]) {
 

@@ -2,7 +2,7 @@ message("my INCLUDE DIRS = " ${PROJECT_INCLUDE_DIRS})
 
 # ==================================
 # cv_gl_lib - library with all shared code
-add_library(cv_gl_lib shader.cpp camera.cpp mesh.cpp gl_window.cpp)
+add_library(cv_gl_lib shader.cpp camera.cpp mesh.cpp gl_window.cpp utils.cpp sfm.cpp)
 set_property(TARGET cv_gl_lib PROPERTY CXX_STANDARD 11)
 target_include_directories(cv_gl_lib PUBLIC ${PROJECT_INCLUDE_DIRS} )
 # message("boost INCLUDE_DIRS = " ${Boost_INCLUDE_DIRS})

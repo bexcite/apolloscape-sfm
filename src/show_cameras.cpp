@@ -37,6 +37,8 @@ const float kGlobalScale = 100.0f;
 #define TAG_CAMERA_OBJECT 10
 
 
+namespace fs = boost::filesystem;
+
 int main(int argc, char* argv[]) {
 
   fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
