@@ -308,8 +308,17 @@ Texture Mesh::TextureFromMat(const cv::Mat& mat, const bool flip) {
   // glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format,
   //     GL_UNSIGNED_BYTE, data);
 
+  // TODO(FIX ME): quick fix! 
+  double scale_f = 1.0;
+  int new_width = static_cast<int>((texture.width * scale_f) / 4) * 4;  // sizes not aligned to a word (4 bytes) are not correctlyrendered in opengl
+  int new_height = static_cast<int>((texture.height * scale_f) / 4) * 4;
+  texture.width = new_width;
+  texture.height = new_height;
+  cv::Mat mat_resized;
+  cv::resize(mat, mat_resized, cv::Size(new_width, new_height));
+
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture.width, texture.height, 0, format,
-      GL_UNSIGNED_BYTE, mat.data);
+      GL_UNSIGNED_BYTE, mat_resized.data);
 
   glGenerateMipmap(GL_TEXTURE_2D);
 

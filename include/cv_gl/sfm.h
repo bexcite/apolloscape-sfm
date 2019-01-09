@@ -14,7 +14,7 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
     const cv::Mat img2, std::vector<cv::KeyPoint>& keypoints2, const cv::Mat fund = cv::Mat());
 
 void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1, const std::vector<cv::Point2f>& points1,
-    const CameraIntrinsics& intr2, const ImageData& img_data2, const std::vector<cv::Point2f>& points2, cv::Mat& points4d);
+    const CameraIntrinsics& intr2, const ImageData& img_data2, const std::vector<cv::Point2f>& points2, cv::Mat& points3d);
 
 
 #endif  // CV_GL_SFM_H_

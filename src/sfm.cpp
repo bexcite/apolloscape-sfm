@@ -195,7 +195,7 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
 
 
 void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1, const std::vector<cv::Point2f>& points1,
-    const CameraIntrinsics& intr2, const ImageData& img_data2, const std::vector<cv::Point2f>& points2, cv::Mat& points4d) {
+    const CameraIntrinsics& intr2, const ImageData& img_data2, const std::vector<cv::Point2f>& points2, cv::Mat& points3d) {
   std::cout << "Triangulate Points\n";
 
   // Find Proj Matrices
@@ -249,12 +249,12 @@ void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1
   // points4d.row(3) = points4d.row(3) / points4d.row(3);
 
 
-  cv::convertPointsFromHomogeneous(points4dh.t(), points4d);
+  cv::convertPointsFromHomogeneous(points4dh.t(), points3d);
 
-  std::cout << "points4d[0] = " << points4d.row(0) << std::endl;
-  std::cout << "points4d[10] = " << points4d.row(10) << std::endl;
-  std::cout << "points4d[100] = " << points4d.row(100) << std::endl;
-  std::cout << "points4d[200] = " << points4d.row(200) << std::endl;
+  // std::cout << "points3d[0] = " << points3d.row(0) << std::endl;
+  // std::cout << "points3d[10] = " << points3d.row(10) << std::endl;
+  // std::cout << "points3d[100] = " << points3d.row(100) << std::endl;
+  // std::cout << "points3d[200] = " << points3d.row(200) << std::endl;
 
   /*
   glm::dvec3 b = t2 - t1;

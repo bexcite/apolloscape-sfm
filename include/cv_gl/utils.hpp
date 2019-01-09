@@ -51,19 +51,9 @@ std::vector<double> StringSplitD(const std::string& s, const char c);
 
 std::vector<ImageData> ReadCameraPoses(boost::filesystem::path file_path);
 
-template <typename T>
-void PrintVec(const std::string& intro, const std::vector<T> vec,
-              std::ostream& os);
-
-
-// ======================================================
-// ================== SfM Methods =======================
-// ======================================================
-
-void KeyPointToPointVec(const std::vector<cv::KeyPoint>& kpoints, std::vector<cv::Point2f>& points);
-
-glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_angle);
-
+// template <typename T>
+// void PrintVec(const std::string& intro, const std::vector<T> vec,
+//               std::ostream& os);
 
 template <typename T>
 void PrintVec(const std::string& intro, const std::vector<T> vec,
@@ -81,6 +71,30 @@ void PrintVec(const std::string& intro, const std::vector<T> vec,
   }
   os << "]\n";
 }
+
+
+
+// ======================================================
+// ================== SfM Methods =======================
+// ======================================================
+
+void KeyPointToPointVec(const std::vector<cv::KeyPoint>& kpoints, std::vector<cv::Point2f>& points);
+
+glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_angle);
+
+
+// ======================================================
+// ========== OpenCV Helpers ============================
+// ======================================================
+
+void ImShow(const std::string& window_name, const cv::Mat& img, const double scale = 1.0);
+void DrawKeypointsWithResize(const cv::Mat& input_img, const std::vector<cv::KeyPoint>& kpoints, cv::Mat& out_img, const double scale = 1.0);
+void DrawMatchesWithResize(const cv::Mat& img1,
+                           const std::vector<cv::KeyPoint>& kpoints1, 
+                           const cv::Mat& img2, 
+                           const std::vector<cv::KeyPoint>& kpoints2, 
+                           cv::Mat& img_matches, 
+                           const double scale = 1.0);
 
 
 

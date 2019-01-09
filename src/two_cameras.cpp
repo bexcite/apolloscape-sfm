@@ -54,7 +54,6 @@ const double kImageHeight = 2056.0;
 const float kGlobalScale = 100.0f;
 
 
-
 cv::Mat estimate_homography(const std::vector<glm::vec2>& points1,
     const std::vector<glm::vec2>& points2 ) {
   cv::Mat hom;
@@ -88,35 +87,10 @@ cv::Mat estimate_homography(const std::vector<glm::vec2>& points1,
   a.push_back(cv::Mat(1, 9, CV_64F, row3));
   */
 
-  // std::cout << "a = " << a << std::endl;
-
   cv::Mat u, w, vt;
   cv::SVD::compute(a, w, u, vt);
-  // std::cout << "a.u  = " << u << std::endl;
-  // std::cout << "a.w  = " << w << std::endl;
-  // std::cout << "s.vt = " << vt << std::endl;
-
-  std::cout << "sol = " << vt.row(8) << std::endl;
-
-  // cv::Mat res = a * vt.row(8).t();
-  // std::cout << "res = " << res << std::endl;
-
-  // cv::Mat v1 = vt * vt.row(8).t();
-  // std::cout << "v1 = " << v1 << std::endl;
   
   hom = vt.row(8).reshape(1, 3);
-  // std::cout << "hom.type = " << hom.type() << std::endl;
-  // std::cout << "hom = " << hom << std::endl;
-
-  // cv::Mat p1 = cv::Mat1d({points1[0][0], points1[0][1], 1.0});
-  // cv::Mat p2 = hom * p1;
-  // std::cout << "p1 = " << p1 << std::endl;
-  // std::cout << "p2 = " << p2 / p2.at<double>(2) << std::endl;
-
-  // cv::Mat b(a);
-
-  
-  // Create Mat
 
   return hom;
 }
@@ -144,7 +118,7 @@ int main(int argc, char* argv[]) {
 
 
 #ifdef HAVE_OPENCV_XFEATURES2D
-  std::cout << "HAVE! \n";
+  std::cout << "HAVE XFEATURES2D! \n";
 #endif
 
   fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
@@ -161,6 +135,10 @@ int main(int argc, char* argv[]) {
 
   std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path);
   std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path);
+
+  // =============================================
+  // ============== Test Homography ==============
+  // =============================================
 
   std::vector<glm::vec2> camera1_points = {
     {1630.0, 300.0},
@@ -199,31 +177,31 @@ int main(int argc, char* argv[]) {
   PrintVec("Camera 1 points: ", camera1_points);
   PrintVec("Camera 2 points: ", camera2_points);
 
-  cv::Mat ones = 2 * cv::Mat::eye(3, 3, CV_32F);
-  std::cout << "ones = " << ones << std::endl;
-  std::cout << "ones.type = " << ones.type() << std::endl;
+  // cv::Mat ones = 2 * cv::Mat::eye(3, 3, CV_32F);
+  // std::cout << "ones = " << ones << std::endl;
+  // std::cout << "ones.type = " << ones.type() << std::endl;
 
-  cv::Mat a23 = cv::Mat::zeros(2, 3, CV_32F);
-  std::cout << "a23 = " << a23 << std::endl;
+  // cv::Mat a23 = cv::Mat::zeros(2, 3, CV_32F);
+  // std::cout << "a23 = " << a23 << std::endl;
 
   
 
-  std::vector<double> vv = {1.1, 0.2, 2.4};
-  cv::Mat ac = cv::Mat(vv).reshape(1, 1);
-  std::vector<double> vv1 = {3.0, 3.0, 3.0};
-  std::vector<double> vv2 = {5.0, 3.0, 7.0};
+  // std::vector<double> vv = {1.1, 0.2, 2.4};
+  // cv::Mat ac = cv::Mat(vv).reshape(1, 1);
+  // std::vector<double> vv1 = {3.0, 3.0, 3.0};
+  // std::vector<double> vv2 = {5.0, 3.0, 7.0};
 
-  // ac.push_back(vv);
-  ac.push_back(cv::Mat(vv1).reshape(1, 1));
-  ac.push_back(cv::Mat(vv2).reshape(1, 1));
-  std::cout << "ac = " << ac << std::endl;
-  std::cout << "ac.type = " << ac.type() << std::endl;
+  // // ac.push_back(vv);
+  // ac.push_back(cv::Mat(vv1).reshape(1, 1));
+  // ac.push_back(cv::Mat(vv2).reshape(1, 1));
+  // std::cout << "ac = " << ac << std::endl;
+  // std::cout << "ac.type = " << ac.type() << std::endl;
 
-  cv::SVD svd(ac);
-  std::cout << "SVD: \n";
-  std::cout << "u = " << svd.u << std::endl;
-  std::cout << "w = " << svd.w << std::endl;
-  std::cout << "vt = " << svd.vt << std::endl;
+  // cv::SVD svd(ac);
+  // std::cout << "SVD: \n";
+  // std::cout << "u = " << svd.u << std::endl;
+  // std::cout << "w = " << svd.w << std::endl;
+  // std::cout << "vt = " << svd.vt << std::endl;
 
   cv::Mat hom_res = estimate_homography(camera1_points, camera2_points);
   std::cout << "hom_res = " << hom_res << std::endl;
@@ -236,8 +214,6 @@ int main(int argc, char* argv[]) {
     points1.push_back(cv::Point2f(camera1_points[i][0], camera1_points[i][1]));
     points2.push_back(cv::Point2f(camera2_points[i][0], camera2_points[i][1]));
   }
-
-
 
   cv::Mat hom_res0 = cv::findHomography(points1, points2, cv::RANSAC, 5);
   std::cout << "hom_res0 = " << hom_res0 << std::endl;
@@ -272,8 +248,13 @@ int main(int argc, char* argv[]) {
   std::cout << "rmse1 = " << sqrt(rmse1) << "\n";
   std::cout << "rmse2 = " << sqrt(rmse2) << "\n";
 
-  int p_camera_img = 24;
 
+  // ==============================================================
+  // ========== Fundamental Matrix and Triangulation ==============
+  // ==============================================================
+
+
+  int p_camera_img = 24;
   ImageData& im_data1 = camera1_poses[24];
   ImageData& im_data2 = camera2_poses[24];
 
@@ -294,28 +275,13 @@ int main(int argc, char* argv[]) {
   */
 
   fs::path image1_path = camera1_image_path / fs::path(im_data1.filename); // 
-  std::cout << "image1_path = " << image1_path << std::endl;
-
   fs::path image2_path = camera2_image_path / fs::path(im_data2.filename); // camera2_poses[0].filename
+
+  std::cout << "image1_path = " << image1_path << std::endl;
   std::cout << "image2_path = " << image2_path << std::endl;
 
   cv::Mat img1 = cv::imread(image1_path.string().c_str());
-  // std::cout << "img1 = " << img1.size << std::endl;
-  // std::cout << "img1.step = " << img1.step << std::endl;
-  // std::cout << "img1.step[0] = " << img1.step[0] << std::endl;
-  // std::cout << "img1.step[1] = " << img1.step[1] << std::endl;
-  // std::cout << "img1.elemSize = " << img1.elemSize() << std::endl;
-  // glm::vec3 img1_size_vec = glm::vec3(img1.size().width, img1.size().height, 1.0f);
-  // std::cout << "img1_size_vec = " << glm::to_string(img1_size_vec) << std::endl;
-
   cv::Mat img2 = cv::imread(image2_path.string().c_str());
-  // std::cout << "img2 = " << img2.size << std::endl;
-  // std::cout << "img2.step = " << img2.step << std::endl;
-  // std::cout << "img2.step[0] = " << img2.step[0] << std::endl;
-  // std::cout << "img2.step[1] = " << img2.step[1] << std::endl;
-  // std::cout << "img2.elemSize = " << img2.elemSize() << std::endl;
-  // glm::vec3 img2_size_vec = glm::vec3(img2.size().width, img2.size().height, 1.0f);
-  // std::cout << "img2_size_vec = " << glm::to_string(img2_size_vec) << std::endl;
 
   
   
@@ -353,147 +319,9 @@ int main(int argc, char* argv[]) {
   cv::Mat points4d;
   TriangulatePoints(intr1, im_data1, points1f, intr2, im_data2, points2f, points4d);
 
-  // std::cout << "points4d (out) = " << points4d << std::endl;
-  // std::cout << "points4d.col 0 = " << points4d.col(0) << std::endl;
-  // std::cout << "points4d.at 0 float = " << points4d.at<float>(0, 0) << std::endl;
-  // std::cout << "points4d.at 0 double = " << points4d.at<double>(0, 0) << std::endl;
-
-  // glm::vec3 v(
-  //     points4d.at<float>(0, 0),
-  //     points4d.at<float>(1, 0),
-  //     points4d.at<float>(2, 0)
-  //   );
-  // std::cout << "v = " << v << std::endl;
 
   
 
-  /*
-
-  // Create mask for feature extraction
-  cv::Mat mask = cv::Mat::zeros(img1.size(), CV_8UC1);
-  cv::Point mask_points[1][4];
-  mask_points[0][0] = cv::Point(105, 90);
-  mask_points[0][1] = cv::Point(2356, 90);
-  mask_points[0][2] = cv::Point(2356, 1956);
-  mask_points[0][3] = cv::Point(105, 1956);
-
-  const cv::Point* mpt[1] = { mask_points[0] };
-  int npt[] = { 4 };
-  cv::fillPoly(mask, mpt, npt, 1, cv::Scalar(255, 0, 0), cv::LINE_8);
-  // std::cout << "mask = " << mask << std::endl;
-
-  // cv::Mat mask_resize;
-  // cv::resize(img1, mask_resize, show_im_size);
-  // cv::imshow("mask", mask_resize);
-  // cv::waitKey();
-
-  // Step 1:: Detect
-  int minHessian = 600;
-  cv::Ptr<cv::xfeatures2d::SURF> detector = cv::xfeatures2d::SURF::create(minHessian);
-  std::vector<cv::KeyPoint> keypoints1, keypoints2;
-  cv::Mat descriptors1, descriptors2;
-  detector->detectAndCompute(img1, mask, keypoints1, descriptors1);
-  detector->detectAndCompute(img2, mask, keypoints2, descriptors2);
-
-
-  // for (auto kp: keypoints1) {
-  //   std::cout << "Keypoint: " << kp.pt << std::endl;
-  // }
-
-  std::cout << "Descriptor1: " << descriptors1.size() << std::endl;
-  std::cout << "Descriptor2: " << descriptors2.size() << std::endl;
-
-  // Step 2: Match
-  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-  std::vector<std::vector<cv::DMatch> > knnMatches;
-  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2);
-  std::cout << "knnMatches.size = " << knnMatches.size() << std::endl;
-
-  // Filter matches: Lowe's test
-  const float ratio_thresh = 0.6f;
-  std::vector<cv::DMatch> good_matches;
-  for (size_t i = 0; i < knnMatches.size(); ++i) {
-    // std::cout << "match 0 = " << knnMatches[i][0].distance << ", " << knnMatches[i][0].queryIdx << " = " << knnMatches[i][0].trainIdx << std::endl;
-    // std::cout << "match 1 = " << knnMatches[i][1].distance << ", " << knnMatches[i][1].queryIdx << " = " << knnMatches[i][1].trainIdx << std::endl;
-    // std::cout << "match.size = " << knnMatches[i].size() << std::endl;
-    if (knnMatches[i][0].distance < ratio_thresh * knnMatches[i][1].distance) {
-      good_matches.push_back(knnMatches[i][0]);
-    }
-  }
-
-  */
-
-
-   /*
-
-  // Fundamental Matrix Constraint
-  std::vector<cv::DMatch> best_matches;
-  for (size_t i = 0; i < good_matches.size(); ++i) {
-    cv::DMatch match = good_matches[i];
-    cv::Mat p1 = cv::Mat1d({keypoints1[match.queryIdx].pt.x, keypoints1[match.queryIdx].pt.y, 1.0});
-    cv::Mat p2 = cv::Mat1d({keypoints2[match.trainIdx].pt.x, keypoints2[match.trainIdx].pt.y, 1.0});
-    cv::Mat pres = p1.t() * fund * p2;
-    
-    if (pres.at<double>() < 0.01) {
-      // std::cout << "good\n";
-      best_matches.push_back(match);
-    } else {
-      std::cout << i << ": good_match res (SKIP) = " << pres << std::endl;
-    }
-  }
-
-  std::cout << "keypoints1.size = " << keypoints1.size() << std::endl;
-  std::cout << "keypoints2.size = " << keypoints2.size() << std::endl;
-  std::cout << "good_matches.size = " << good_matches.size() << std::endl;
-  std::cout << "best_matches.size = " << best_matches.size() << std::endl;
-  
-
-  cv::Mat img1_kp;
-  cv::drawKeypoints(img1, keypoints1, img1_kp);
-
-  cv::Mat img2_kp;
-  cv::drawKeypoints(img2, keypoints2, img2_kp);
-
-  cv::Mat img1_resize;
-  cv::resize(img1_kp, img1_resize, show_im_size);
-  // cv::imshow("img1", img2_kp);
-  // cv::waitKey();
-
-  // Draw matches
-  cv::Mat img_matches;
-  cv::drawMatches(img1, keypoints1, img2, keypoints2, best_matches, img_matches);
-  // cv::imshow("matches full", img_matches);
-
-  cv::Mat matches_resize;
-  cv::resize(img_matches, matches_resize, img_matches.size() / 2);
-
-  cv::imshow("img matches", matches_resize);
-  cv::waitKey();
-  */
-
-  
-  /*
-  // =========== Show Points
-  for (int i = 0; i < camera1_points.size(); ++i) {
-    int delta = 10;
-    cv::rectangle(img1,
-      cv::Point(camera1_points[i][0] - delta, camera1_points[i][1] - delta),
-      cv::Point(camera1_points[i][0] + delta, camera1_points[i][1] + delta),
-      cv::Scalar(0, 0, 255),
-      5);
-  }
-
-  for (int i = 0; i < camera2_points.size(); ++i) {
-    int delta = 10;
-    cv::rectangle(img2,
-      cv::Point(camera2_points[i][0] - delta, camera2_points[i][1] - delta),
-      cv::Point(camera2_points[i][0] + delta, camera2_points[i][1] + delta),
-      cv::Scalar(0, 0, 255),
-      5);
-  }
-  */
-
-  
 
   /*
   cv::Mat img1_resize;

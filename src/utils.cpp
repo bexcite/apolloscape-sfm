@@ -180,5 +180,52 @@ glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_a
     return glm::dmat3(rotation);
 }
 
+void ImShow(const std::string& window_name, const cv::Mat& img, const double scale) {
+  cv::Mat resized_img;
+  cv::resize(img, resized_img, cv::Size(), scale, scale, cv::INTER_AREA);
+  cv::imshow(window_name, resized_img);
+}
+
+void DrawKeypointsWithResize(const cv::Mat& input_img,
+                             const std::vector<cv::KeyPoint>& kpoints,
+                             cv::Mat& out_img,
+                             const double scale) {
+  std::vector<cv::KeyPoint> kpoints_scaled(kpoints);
+  for (size_t k = 0; k < kpoints_scaled.size(); ++k) {
+    kpoints_scaled[k].pt.x = static_cast<int>(kpoints_scaled[k].pt.x * scale);
+    kpoints_scaled[k].pt.y = static_cast<int>(kpoints_scaled[k].pt.y * scale);
+  }
+  cv::Mat img_resized;
+  cv::resize(input_img, img_resized, cv::Size(), scale, scale, cv::INTER_AREA);
+  cv::drawKeypoints(img_resized, kpoints_scaled, out_img);
+}
+
+void DrawMatchesWithResize(const cv::Mat& img1,
+                           const std::vector<cv::KeyPoint>& kpoints1, 
+                           const cv::Mat& img2, 
+                           const std::vector<cv::KeyPoint>& kpoints2, 
+                           cv::Mat& img_matches, 
+                           const double scale) {
+  assert(kpoints1.size() == kpoints2.size());
+  std::vector<cv::KeyPoint> kpoints1_scaled(kpoints1);
+  std::vector<cv::KeyPoint> kpoints2_scaled(kpoints2);
+  for (size_t k = 0; k < kpoints1_scaled.size(); ++k) {
+    kpoints1_scaled[k].pt.x = static_cast<int>(kpoints1_scaled[k].pt.x * scale);
+    kpoints1_scaled[k].pt.y = static_cast<int>(kpoints1_scaled[k].pt.y * scale);
+    kpoints2_scaled[k].pt.x = static_cast<int>(kpoints2_scaled[k].pt.x * scale);
+    kpoints2_scaled[k].pt.y = static_cast<int>(kpoints2_scaled[k].pt.y * scale);
+  }
+  std::vector<cv::DMatch> matches(kpoints1.size());
+  for (size_t i = 0; i < kpoints1.size(); ++i) {
+    matches[i].queryIdx = i;
+    matches[i].trainIdx = i;
+  }
+  cv::Mat img1_resized, img2_resized;
+  cv::resize(img1, img1_resized, cv::Size(), scale, scale);
+  cv::resize(img2, img2_resized, cv::Size(), scale, scale);
+  cv::drawMatches(img1_resized, kpoints1_scaled, img2_resized, kpoints2_scaled, matches, img_matches);
+}
+
+
 
 
