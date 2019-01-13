@@ -301,7 +301,7 @@ Texture Mesh::TextureFromMat(const cv::Mat& mat, const bool flip) {
     format = GL_BGRA;
   }
 
-  std::cout << "TfM: w, h, nrC = " << texture.width << ", " << texture.height << ", " << nrComponents << std::endl;
+  // std::cout << "TfM: w, h, nrC = " << texture.width << ", " << texture.height << ", " << nrComponents << std::endl;
 
   glBindTexture(GL_TEXTURE_2D, texture.id);
 

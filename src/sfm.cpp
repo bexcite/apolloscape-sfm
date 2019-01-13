@@ -38,19 +38,19 @@ cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data
   sb[2] = glm::dvec3(b[1], -b[0], 0.0);
   // std::cout << "sb = " << glm::to_string(sb) << std::endl;
 
-  glm::dmat4x3 t1m(1.0);
-  t1m[3] -= t1;
+  // glm::dmat4x3 t1m(1.0);
+  // t1m[3] -= t1;
   // std::cout << "t1m = " << glm::to_string(t1m) << std::endl;
 
-  glm::dmat4x3 t2m(1.0);
-  t2m[3] -= t2;
+  // glm::dmat4x3 t2m(1.0);
+  // t2m[3] -= t2;
   // std::cout << "t2m = " << glm::to_string(t2m) << std::endl;
 
-  glm::dmat4x3 full1 = k1 * glm::transpose(r1) * t1m;
+  // glm::dmat4x3 full1 = k1 * glm::transpose(r1) * t1m;
   // std::cout << "full1 = " << glm::to_string(full1) << std::endl;
 
-  glm::dvec3 test_point(100.0, 100.0, 1.0);
-  test_point = r1 * test_point + t1;
+  // glm::dvec3 test_point(100.0, 100.0, 1.0);
+  // test_point = r1 * test_point + t1;
   // std::cout << "test_point = " << glm::to_string(test_point) << std::endl;
 
   // std::cout << "test_point_px = " << glm::to_string(full1 * glm::dvec4(test_point, 1.0)) << std::endl;
@@ -74,11 +74,41 @@ cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data
   return fm;
 }
 
+void GetFeatureExtractionRegion(const cv::Mat& img, cv::Mat& mask) {
+  // cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC1);
+  mask.create(img.size(), CV_8UC1);
+  cv::Point mask_points[1][4];
+  int xmin = (105.0 / 2452.0) * img.size().width;
+  int ymin = (90.0 / 2056.0) * img.size().height;
+  int xmax = (2356.0 / 2452.0) * img.size().width;
+  int ymax = (1956.0 / 2056.0) * img.size().height;
+  // mask_points[0][0] = cv::Point(105, 90);
+  // mask_points[0][1] = cv::Point(2356, 90);
+  // mask_points[0][2] = cv::Point(2356, 1956);
+  // mask_points[0][3] = cv::Point(105, 1956);
+  mask_points[0][0] = cv::Point(xmin, ymin);
+  mask_points[0][1] = cv::Point(xmax, ymin);
+  mask_points[0][2] = cv::Point(xmax, ymax);
+  mask_points[0][3] = cv::Point(xmin, ymax);
+
+  // std::cout << "p0 = " << mask_points[0][0] << std::endl;
+  // std::cout << "p1 = " << mask_points[0][1] << std::endl;
+  // std::cout << "p2 = " << mask_points[0][2] << std::endl;
+  // std::cout << "p3 = " << mask_points[0][3] << std::endl;
+
+  const cv::Point* mpt[1] = { mask_points[0] };
+  int npt[] = { 4 };
+  cv::fillPoly(mask, mpt, npt, 1, cv::Scalar(255, 0, 0), cv::LINE_8);
+}
 
 
 void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keypoints1,
     const cv::Mat img2, std::vector<cv::KeyPoint>& keypoints2, const cv::Mat fund) {
 
+  cv::Mat mask;
+  GetFeatureExtractionRegion(img1, mask);
+
+  /*
   // Create mask of ROI for feature extraction
   cv::Mat mask = cv::Mat::zeros(img1.size(), CV_8UC1);
   cv::Point mask_points[1][4];
@@ -95,31 +125,31 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
   mask_points[0][2] = cv::Point(xmax, ymax);
   mask_points[0][3] = cv::Point(xmin, ymax);
 
-  std::cout << "p0 = " << mask_points[0][0] << std::endl;
-  std::cout << "p1 = " << mask_points[0][1] << std::endl;
-  std::cout << "p2 = " << mask_points[0][2] << std::endl;
-  std::cout << "p3 = " << mask_points[0][3] << std::endl;
+  // std::cout << "p0 = " << mask_points[0][0] << std::endl;
+  // std::cout << "p1 = " << mask_points[0][1] << std::endl;
+  // std::cout << "p2 = " << mask_points[0][2] << std::endl;
+  // std::cout << "p3 = " << mask_points[0][3] << std::endl;
 
   const cv::Point* mpt[1] = { mask_points[0] };
   int npt[] = { 4 };
   cv::fillPoly(mask, mpt, npt, 1, cv::Scalar(255, 0, 0), cv::LINE_8);
+  */
 
 
   // Step 1:: Detect
-  int minHessian = 600;
+  int minHessian = 400;
   cv::Ptr<cv::xfeatures2d::SURF> detector = cv::xfeatures2d::SURF::create(minHessian);
   std::vector<cv::KeyPoint> points1, points2;
   cv::Mat descriptors1, descriptors2;
   detector->detectAndCompute(img1, mask, points1, descriptors1);
   detector->detectAndCompute(img2, mask, points2, descriptors2);
 
+  std::cout << "points1: " << points1.size() << std::endl;
+  std::cout << "points2: " << points2.size() << std::endl;
 
-  // for (auto kp: keypoints1) {
-  //   std::cout << "Keypoint: " << kp.pt << std::endl;
-  // }
 
-  std::cout << "Descriptor1: " << descriptors1.size() << std::endl;
-  std::cout << "Descriptor2: " << descriptors2.size() << std::endl;
+  // std::cout << "Descriptor1: " << descriptors1.size() << std::endl;
+  // std::cout << "Descriptor2: " << descriptors2.size() << std::endl;
 
   // Step 2: Match
   cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
@@ -128,7 +158,7 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
   std::cout << "knnMatches.size = " << knnMatches.size() << std::endl;
 
   // Filter matches: Lowe's test
-  const float ratio_thresh = 0.6f;
+  const float ratio_thresh = 0.9f; //0.6
   std::vector<cv::DMatch> good_matches;
   for (size_t i = 0; i < knnMatches.size(); ++i) {
     // std::cout << "match 0 = " << knnMatches[i][0].distance << ", " << knnMatches[i][0].queryIdx << " = " << knnMatches[i][0].trainIdx << std::endl;
@@ -142,6 +172,7 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
       // keypoints2.push_back(points2[knnMatches[i][0].trainIdx]);
     }
   }
+  std::cout << "good_matches.size = " << good_matches.size() << std::endl;
 
   std::vector<cv::DMatch> best_matches;
   if (!fund.empty()) {
@@ -159,7 +190,7 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
         keypoints1.push_back(points1[match.queryIdx]);
         keypoints2.push_back(points2[match.trainIdx]);
       } else {
-        std::cout << i << ": good_match res (SKIP) = " << pres << std::endl;
+        // std::cout << i << ": good_match res (SKIP) = " << pres << std::endl;
       }
     }
 
@@ -218,12 +249,12 @@ void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1
   glm::dmat4x3 proj1(1.0);
   proj1[3] -= t1;
   proj1 = k1 * glm::transpose(r1) * proj1;
-  std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
+  // std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
 
   glm::dmat4x3 proj2(1.0);
   proj2[3] -= t2;
   proj2 = k2 * glm::transpose(r2) * proj2;
-  std::cout << "proj2 = " << glm::to_string(proj2) << std::endl;
+  // std::cout << "proj2 = " << glm::to_string(proj2) << std::endl;
 
   cv::Mat mat_proj1(3, 4, CV_64F);
   cv::Mat mat_proj2(3, 4, CV_64F);
@@ -234,8 +265,8 @@ void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1
     }
   }
 
-  std::cout << "mat_proj1 = " << mat_proj1 << std::endl;
-  std::cout << "mat_proj2 = " << mat_proj2 << std::endl;
+  // std::cout << "mat_proj1 = " << mat_proj1 << std::endl;
+  // std::cout << "mat_proj2 = " << mat_proj2 << std::endl;
 
   cv::Mat points4dh;
   cv::triangulatePoints(mat_proj1, mat_proj2, points1, points2, points4dh);

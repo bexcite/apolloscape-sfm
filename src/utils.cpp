@@ -182,7 +182,7 @@ glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_a
 
 void ImShow(const std::string& window_name, const cv::Mat& img, const double scale) {
   cv::Mat resized_img;
-  cv::resize(img, resized_img, cv::Size(), scale, scale, cv::INTER_AREA);
+  cv::resize(img, resized_img, cv::Size(), scale, scale /*, cv::INTER_AREA*/);
   cv::imshow(window_name, resized_img);
 }
 
