@@ -26,7 +26,8 @@
       "string": "cpp",
       "iostream": "cpp",
       "iosfwd": "cpp",
-      "ios": "cpp"
+      "ios": "cpp",
+      "tuple": "cpp"
     }
   }
 }

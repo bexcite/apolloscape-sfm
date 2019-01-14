@@ -154,12 +154,13 @@ int main(int argc, char* argv[]) {
 
     // == Extract Keypoints ==
     std::vector<cv::KeyPoint> kpoints1, kpoints2;
-    GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2 /*, fund*/);
+    GetLineMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2, fund);
+    // GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2 /*, fund*/);
     // GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2);
     std::cout << "kpoints1.size = " << kpoints1.size() << std::endl;
     std::cout << "kpoints2.size = " << kpoints2.size() << std::endl;
 
-
+    /*
     // == Find Epipoles
     cv::Mat u, w, vt;
     cv::SVD::compute(fund, w, u, vt);
@@ -179,7 +180,7 @@ int main(int argc, char* argv[]) {
     std::cout << "kp1_1 = " << kp1_1 << std::endl;
 
     cv::Mat kp1_1line = fund.t() * cv::Mat(kp1_1);
-    
+
     std::cout << "kp1_1line = " << kp1_1line  << std::endl;
     std::vector<cv::Point2f> line_pts;
 
@@ -227,16 +228,16 @@ int main(int argc, char* argv[]) {
     // cv::Mat img1l;
     cv::drawMarker(img1, cv::Point2f(kpoints1[0].pt.x, kpoints1[0].pt.y), cv::Scalar(255.0, 0.0, 0.0), cv::MARKER_CROSS, 20, 4);
     cv::line(img2, line_pts[0], line_pts[1], cv::Scalar(255.0, 0.0, 0.0), 2);
-
+    */
   
 
     
     // == Show Camera Images (Keypoints) ==
     cv::Mat img1_points, img2_points, img_matches;
     DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
-    DrawKeypointsWithResize(img2, kpoints1, img2_points, win_scale);
+    DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
     // DrawMatchesWithResize(img1, kpoints1, img2, kpoints2, img_matches, win_scale);
-
+    
     
 
     
@@ -290,6 +291,7 @@ int main(int argc, char* argv[]) {
     */
 
 
+    /*
     // Debug: Show points
     ImShow("img1", img1_points);
     cv::moveWindow("img1", win_x, win_y);
@@ -298,7 +300,7 @@ int main(int argc, char* argv[]) {
     // ImShow("img matches", img_matches);
     // cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
     cv::waitKey();
-
+    */
 
     // === Visualize Cameras and Points
     std::shared_ptr<CameraObject> co1(new CameraObject(camera_intr));
