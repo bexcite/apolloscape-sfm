@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
   std::cout << "Camera Poses 2: " << camera2_poses[1];
 
   int p_camera_pose = 24; // 24
-  int p_camera_start = 20; //22
+  int p_camera_start = 22; //22
   int p_camera_finish = 25; //25
 
   const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
@@ -236,12 +236,12 @@ int main(int argc, char* argv[]) {
     cv::Mat img1_points, img2_points, img_matches;
     DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
     DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
-    // DrawMatchesWithResize(img1, kpoints1, img2, kpoints2, img_matches, win_scale);
+    DrawMatchesWithResize(img1, kpoints1, img2, kpoints2, img_matches, win_scale);
     
     
 
     
-    /*
+    
     // == Triangulate Points =====
     std::vector<cv::Point2f> points1f;
     std::vector<cv::Point2f> points2f;
@@ -288,7 +288,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "rep_err1 = " << rep_err1 << std::endl;
     std::cout << "rep_err2 = " << rep_err2 << std::endl;
-    */
+    
 
 
     /*
@@ -297,10 +297,11 @@ int main(int argc, char* argv[]) {
     cv::moveWindow("img1", win_x, win_y);
     ImShow("img2", img2_points);
     cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
-    // ImShow("img matches", img_matches);
-    // cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
+    ImShow("img matches", img_matches);
+    cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
     cv::waitKey();
     */
+    
 
     // === Visualize Cameras and Points
     std::shared_ptr<CameraObject> co1(new CameraObject(camera_intr));
@@ -323,7 +324,7 @@ int main(int argc, char* argv[]) {
     co2->SetImageAlpha(0.99);
     cameras1->AddChild(co2);
 
-    /*
+    
     // Create points in glm::vec3
     std::cout << "points3d.rows = " << points3d.rows << std::endl;
     std::vector<glm::vec3> glm_points(points3d.rows);
@@ -344,7 +345,7 @@ int main(int argc, char* argv[]) {
 
     co1->AddProjectedPoints(glm_points);
     co2->AddProjectedPoints(glm_points);
-    */
+    
 
   }
 

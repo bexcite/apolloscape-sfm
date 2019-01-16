@@ -169,47 +169,54 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
 
   // == Look for One point correcpondance
   std::vector<cv::DMatch> good_matches;
+  std::cout << "Create mask ...." << std::endl;
+  cv::Mat mask = cv::Mat::zeros(points1.size(), points2.size(), CV_8UC1);
   for (int k = 0; k < points1.size(); ++k) {
 
-    std::vector<cv::KeyPoint> points1i;
-    points1i.push_back(points1[k]);
+    // std::vector<cv::KeyPoint> points1i;
+    // points1i.push_back(points1[k]);
 
-    cv::Matx31d kp1_1(points1i[0].pt.x, points1i[0].pt.y, 1.0);
+    cv::Matx31d kp1_1(points1[k].pt.x, points1[k].pt.y, 1.0);
     // std::cout << "kp1_1 = " << kp1_1 << std::endl;
 
     cv::Mat kp1_1line = fund.t() * cv::Mat(kp1_1);
 
     // std::cout << "kp1_1line = " << kp1_1line  << std::endl;
+
     std::vector<cv::Point2f> line_pts;
     GetLineImagePoints(kp1_1line, line_pts, img1.size().width, img1.size().height);
 
     // Create mask for one points match
-    cv::Mat mask = cv::Mat::zeros(1, points2.size(), CV_8UC1);
+    // cv::Mat mask = cv::Mat::zeros(1, points2.size(), CV_8UC1);
     // cv::Mat::zeros
 
     // == Debug drawing INIT
-    cv::Mat img1d, img2d;
-    img1d = img1.clone();
-    img2d = img2.clone();
+    // cv::Mat img1d, img2d;
+    // img1d = img1.clone();
+    // img2d = img2.clone();
 
     // == Distance to the points2
-    std::vector<double> dists;
+    // std::vector<double> dists;
     int cnt = 0;
     // std::cout << "vec = ";
+    double d2 = sqrt(pow(kp1_1line.at<double>(0), 2) + pow(kp1_1line.at<double>(1), 2));
+    // std::cout << "d2 = " << d2  << std::endl;
     for (size_t j = 0; j < points2.size(); ++j) {
       double d1 = abs(kp1_1line.at<double>(0) * points2[j].pt.x + kp1_1line.at<double>(1) * points2[j].pt.y + kp1_1line.at<double>(2));
-      double d2 = sqrt(pow(kp1_1line.at<double>(0), 2) + pow(kp1_1line.at<double>(1), 2));
-      double d = d1/d2;
+      double d = d1; ///d2;
       // std::cout << "d = " << d << std::endl;
-      dists.push_back(d);
-      if (d < 20) {
-        mask.at<uchar>(0, j) = 1;
+      
+      // dists.push_back(d);
+      if (d < 0.01 /* 20 */) {
+        mask.at<uchar>(k, j) = 1;
         ++cnt;
         // cv::drawMarker(img2d, cv::Point2f(points2[j].pt.x, points2[j].pt.y), cv::Scalar(255.0, 100.0, 100.0), cv::MARKER_CROSS, 40, 8);
         // std::cout << j << " ";
       }
     }
-    if (cnt == 0) continue;
+    // if (cnt == 0) {
+    //   std::cout << "k = " << k << " is zero\n";
+    // }
 
     // std::cout << std::endl;
     // std::sort(dists.begin(), dists.end());
@@ -232,7 +239,7 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
     // cv::line(img2d, line_pts[0], line_pts[1], cv::Scalar(255.0, 0.0, 0.0), 2);
 
 
-    cv::Mat descriptors1i = descriptors1.row(k);
+    // cv::Mat descriptors1i = descriptors1.row(k);
     // std::cout << "descriptors1i = " << descriptors1i.size() << std::endl;
 
 
@@ -241,9 +248,9 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
 
     // Step 2: Match
     // cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
-    std::vector<std::vector<cv::DMatch> > knnMatches;
+    // std::vector<std::vector<cv::DMatch> > knnMatches;
     
-    matcher->knnMatch(descriptors1i, descriptors2, knnMatches, cnt, mask);
+    // matcher->knnMatch(descriptors1i, descriptors2, knnMatches, cnt, mask);
     // std::cout << "lknnMatches.size = " << knnMatches.size() << std::endl;
 
     
@@ -267,6 +274,7 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
     }
     */
 
+    /*
     // Filter matches: Lowe's test
     const float ratio_thresh = 0.5f; //0.6
     bool good_match = false;
@@ -280,6 +288,7 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
       //               cv::Scalar(255.0, 100.0, 255.0),
       //               cv::MARKER_SQUARE, 35, 8);
       }
+    */
 
 
     /*
@@ -307,10 +316,37 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
 
   }
 
+
+  // Step 2: Match
+  // cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
+  std::vector<std::vector<cv::DMatch> > knnMatches;
+  std::cout << "knnMatch ..." << std::endl;
+  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2, mask);
+
+  // Filter matches: Lowe's test
+  const float ratio_thresh = 0.4f; //0.6
+  bool good_match = false;
+  for (int m = 0; m < knnMatches.size(); ++m) {
+    if (knnMatches[m].size() < 2) continue;
+    if (knnMatches[m][0].distance < ratio_thresh * knnMatches[m][1].distance) {
+      good_match = true;
+      good_matches.push_back(knnMatches[m][0]);
+      // good_matches.push_back(cv::DMatch(k, knnMatches[0][0].trainIdx, knnMatches[0][0].distance));
+      // std::cout << m << " SQUARE !!!! " << (knnMatches[m][0].distance / knnMatches[m][1].distance)
+      // << " (" << knnMatches[m][0].queryIdx << " : " << knnMatches[m][0].trainIdx << ")" << std::endl;
+      // cv::drawMarker(img2d,
+      //               cv::Point2f(points2[knnMatches[0][0].trainIdx].pt.x,
+      //                           points2[knnMatches[0][0].trainIdx].pt.y),
+      //               cv::Scalar(255.0, 100.0, 255.0),
+      //               cv::MARKER_SQUARE, 35, 8);
+    }
+  }
+
   std::cout << "lgood_matches.size = " << good_matches.size() << std::endl;
 
 
   for (size_t i = 0; i < good_matches.size(); ++i) {
+    // std::cout << i << " = " << good_matches[i].queryIdx << " : " << good_matches[i].trainIdx << std::endl;
     // Add keypoints to output
     keypoints1.push_back(points1[good_matches[i].queryIdx]);
     keypoints2.push_back(points2[good_matches[i].trainIdx]);
