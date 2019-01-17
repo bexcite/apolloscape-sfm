@@ -122,6 +122,7 @@ int main(int argc, char* argv[]) {
   int win_x = 0;
   int win_y = 100;
   double win_scale = 0.3;
+  int kpts_count = 0;
   for (size_t i = p_camera_start; i < camera1_poses.size(); ++i) {
     if (i == p_camera_finish) break;
 
@@ -159,6 +160,7 @@ int main(int argc, char* argv[]) {
     // GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2);
     std::cout << "kpoints1.size = " << kpoints1.size() << std::endl;
     std::cout << "kpoints2.size = " << kpoints2.size() << std::endl;
+    kpts_count += kpoints1.size();
 
     /*
     // == Find Epipoles
@@ -289,6 +291,7 @@ int main(int argc, char* argv[]) {
     std::cout << "rep_err1 = " << rep_err1 << std::endl;
     std::cout << "rep_err2 = " << rep_err2 << std::endl;
     
+    
 
 
     /*
@@ -351,6 +354,8 @@ int main(int argc, char* argv[]) {
 
   root->AddChild(cameras1);
   root->AddChild(cameras2);
+
+  std::cout << "kpts_count = " << kpts_count << std::endl;
 
 
   // cv windows are not working well with glfw windows

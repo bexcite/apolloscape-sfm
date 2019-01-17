@@ -78,7 +78,9 @@ cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data
 
 void GetFeatureExtractionRegion(const cv::Mat& img, cv::Mat& mask) {
   // cv::Mat mask = cv::Mat::zeros(img.size(), CV_8UC1);
-  mask.create(img.size(), CV_8UC1);
+  // mask.create(img.size(), CV_8UC1);
+  mask = cv::Mat::zeros(img.size(), CV_8UC1);
+  //mask.zeros
   cv::Point mask_points[1][4];
   int xmin = (105.0 / 2452.0) * img.size().width;
   int ymin = (90.0 / 2056.0) * img.size().height;
@@ -136,7 +138,11 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
 
   // Step 1:: Detect
   int minHessian = 600;
-  cv::Ptr<cv::xfeatures2d::SURF> detector = cv::xfeatures2d::SURF::create(minHessian);
+  // cv::Ptr<cv::xfeatures2d::SURF> detector = cv::xfeatures2d::SURF::create(minHessian);
+  // cv::Ptr<cv::xfeatures2d::SIFT> detector = cv::xfeatures2d::SIFT::create();
+  // cv::Ptr<cv::ORB> detector = cv::ORB::create(10000);
+  cv::Ptr<cv::AKAZE> detector = cv::AKAZE::create();
+
   std::vector<cv::KeyPoint> points1, points2;
   cv::Mat descriptors1, descriptors2;
   detector->detectAndCompute(img1, feature_mask, points1, descriptors1);
@@ -165,16 +171,70 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
   */
 
 
-   cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
+  // cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
+  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
 
   // == Look for One point correcpondance
   std::vector<cv::DMatch> good_matches;
   std::cout << "Create mask ...." << std::endl;
   cv::Mat mask = cv::Mat::zeros(points1.size(), points2.size(), CV_8UC1);
+
+  // cv::Mat mask1 = cv::Mat::zeros(points1.size(), points2.size(), CV_8UC1);
+
+  cv::Mat points1v(points1.size(), 3, CV_64F);
+  cv::Mat points2v(3, points2.size(), CV_64F);
+  for (int i = 0; i < points1.size(); ++i) {
+    points1v.at<double>(i, 0) = points1[i].pt.x;
+    points1v.at<double>(i, 1) = points1[i].pt.y;
+    points1v.at<double>(i, 2) = 1.0;
+  }
+  for (int i = 0; i < points2.size(); ++i) {
+    points2v.at<double>(0, i) = points2[i].pt.x;
+    points2v.at<double>(1, i) = points2[i].pt.y;
+    points2v.at<double>(2, i) = 1.0;
+  }
+
+  cv::Mat kp_lines21 = fund * points2v;
+  std::cout << "points1v = " << points1v.rows << ", " << points1v.cols << std::endl;
+  std::cout << "points2v = " << points2v.rows << ", " << points2v.cols << std::endl;
+  std::cout << "kp_lines21 = " << kp_lines21.size() << std::endl;
+
+  // TODO: Divide by sqrt(a^2 + b^2) - ?
+  cv::Mat mask1 = cv::abs(points1v * kp_lines21);
+  cv::threshold(mask1, mask1, 0.01, 1, cv::THRESH_BINARY_INV);
+  std::cout << "mask1 = " << mask1.rows << ", " << mask1.cols << std::endl;
+
+
+  /*  
+  int win_x = 0;
+  int win_y = 100;
+  double win_scale = 0.3;
+  // == Show Camera Images (Keypoints) ==
+  cv::Mat img1_points, img2_points, img_matches;
+  DrawKeypointsWithResize(img1, points1, img1_points, win_scale);
+  DrawKeypointsWithResize(img2, points2, img2_points, win_scale);
+
+  // Debug: Show points
+  ImShow("img1", img1_points);
+  cv::moveWindow("img1", win_x, win_y);
+  ImShow("img2", img2_points);
+  cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+  // ImShow("mask", feature_mask, win_scale);
+  // ImShow("img matches", img_matches);
+  // cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
+  cv::waitKey();
+  */
+
+
+
+  /*
   for (int k = 0; k < points1.size(); ++k) {
 
     // std::vector<cv::KeyPoint> points1i;
     // points1i.push_back(points1[k]);
+
+
+
 
     cv::Matx31d kp1_1(points1[k].pt.x, points1[k].pt.y, 1.0);
     // std::cout << "kp1_1 = " << kp1_1 << std::endl;
@@ -207,7 +267,7 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
       // std::cout << "d = " << d << std::endl;
       
       // dists.push_back(d);
-      if (d < 0.01 /* 20 */) {
+      if (d < 0.01 ) { // 20
         mask.at<uchar>(k, j) = 1;
         ++cnt;
         // cv::drawMarker(img2d, cv::Point2f(points2[j].pt.x, points2[j].pt.y), cv::Scalar(255.0, 100.0, 100.0), cv::MARKER_CROSS, 40, 8);
@@ -254,6 +314,8 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
     // std::cout << "lknnMatches.size = " << knnMatches.size() << std::endl;
 
     
+
+
     /*
     for (size_t i = 0; i < std::min(static_cast<int>(knnMatches[0].size()), 5); ++i) {
       // std::cout << "match 0 = " << knnMatches[i][0].distance << ", " << knnMatches[i][0].queryIdx << " = " << knnMatches[i][0].trainIdx << std::endl;
@@ -314,17 +376,20 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
     }
     */
 
-  }
+  //}
 
 
   // Step 2: Match
   // cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
   std::vector<std::vector<cv::DMatch> > knnMatches;
   std::cout << "knnMatch ..." << std::endl;
-  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2, mask);
+  // cv::Mat mask3 = cv::Mat::zeros(points1.size(), points2.size(), CV_8UC1);
+  cv::Mat mask2;
+  mask1.convertTo(mask2, CV_8UC1);
+  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2, mask2);
 
   // Filter matches: Lowe's test
-  const float ratio_thresh = 0.4f; //0.6
+  const float ratio_thresh = 0.5f; //0.6
   bool good_match = false;
   for (int m = 0; m < knnMatches.size(); ++m) {
     if (knnMatches[m].size() < 2) continue;
