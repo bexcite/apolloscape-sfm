@@ -11,6 +11,8 @@
 #include "cv_gl/utils.hpp"
 #include "cv_gl/sfm.h"
 
+#include "cv_gl/ccomp.hpp"
+
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
 
@@ -71,8 +73,8 @@ int main(int argc, char* argv[]) {
   std::cout << "Camera Poses 2: " << camera2_poses[1];
 
   int p_camera_pose = 24; // 24
-  int p_camera_start = 22; //22
-  int p_camera_finish = 25; //25
+  int p_camera_start = 20; //22
+  int p_camera_finish = 23; //25
 
   const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
 
@@ -116,7 +118,365 @@ int main(int argc, char* argv[]) {
   std::shared_ptr<DObject> cameras1(new DObject());
   std::shared_ptr<DObject> cameras2(new DObject());
 
+  
+  
 
+  // Expect only paired images
+  assert(camera1_poses.size() == camera2_poses.size());
+
+  // === Extract features from images ===
+  std::vector<Features> image_features;
+  std::vector<CameraInfo> cameras;
+  std::vector<cv::Mat> images;
+
+  std::cout << "Extract Features: \n";
+  for (size_t i = p_camera_start; i < camera1_poses.size(); ++i) {
+    if (p_camera_finish == i) break;
+    std::cout << "Camera 1: image " << i << std::endl;
+    const ImageData& im_data = camera1_poses[i];
+    cv::Mat img;
+    Features features;
+    CameraInfo camera_info;
+    ExtractFeaturesAndCameraInfo(camera1_image_path.string(), im_data, intr1, img, features, camera_info);
+    images.emplace_back(img);
+    image_features.emplace_back(features);
+    cameras.emplace_back(camera_info);
+  }
+  for (size_t i = p_camera_start; i < camera2_poses.size(); ++i) {
+    if (p_camera_finish == i) break;
+    std::cout << "Camera 2: image " << i << std::endl;
+    const ImageData& im_data = camera2_poses[i];
+    cv::Mat img;
+    Features features;
+    CameraInfo camera_info;
+    ExtractFeaturesAndCameraInfo(camera2_image_path.string(), im_data, intr2, img, features, camera_info);
+    images.emplace_back(img);
+    image_features.emplace_back(features);
+    cameras.emplace_back(camera_info);
+  }
+
+  std::cout << "image_features.size = " << image_features.size() << std::endl;
+  std::cout << "cameras.size = " << cameras.size() << std::endl;
+  std::cout << "images.size = " << images.size() << std::endl;
+
+
+  // === Image Pairs to match ===
+  std::vector<ImagePair> pairs;
+  int look_back = 5;
+  int cam_size = images.size() / 2;
+  for (int i = 0; i < images.size() / 2; ++i ) {
+    pairs.push_back({ i, i + cam_size });
+    for (int j = i - 1; j >= std::max(0, i - look_back); --j) {
+      pairs.push_back({ i, j });
+      pairs.push_back({ i, j + cam_size });
+    }
+  }
+  for (const ImagePair& ip : pairs) {
+    std::cout << "pair: " << ip.first << " - " << ip.second << std::endl;
+  }
+
+  
+  CComponents<std::pair<int, int> > ccomp;
+
+  // Match Features Between Image Pairs
+  std::vector<Matches> image_matches;
+  int total_matched_points = 0;
+  int cl = 0;
+  int longest = 0;
+  int most_match = 0;
+  int most_match_id = -1;
+  for (const ImagePair& ip : pairs) {
+    Features& features1 = image_features[ip.first];
+    Features& features2 = image_features[ip.second];
+    CameraInfo& camera_info1 = cameras[ip.first];
+    CameraInfo& camera_info2 = cameras[ip.second];
+
+    Matches matches;
+    matches.image_index.first = ip.first;
+    matches.image_index.second = ip.second;
+    ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
+    image_matches.emplace_back(matches);
+
+    if (matches.match.size() > most_match) {
+      most_match = matches.match.size();
+      most_match_id = image_matches.size() - 1;
+    }
+
+    std::cout << "Match: " << ip.first << " - " << ip.second << " : matches.size = " << matches.match.size() << std::endl;
+    total_matched_points += matches.match.size();
+    std::cout << "total_matched_points = " << total_matched_points << std::endl;
+
+    for (int i = 0; i < matches.match.size(); ++i) {
+      std::pair<int, int> p1 = std::make_pair(matches.image_index.first, matches.match[i].queryIdx);
+      std::pair<int, int> p2 = std::make_pair(matches.image_index.second, matches.match[i].trainIdx);
+      // std::cout << "union: " << p1 << ", " << p2 << std::endl;
+      ccomp.Union(p1, p2);
+    }
+
+    std::cout << "ccomp.count = " << ccomp.Count() << std::endl;
+    std::vector<int> comp_ids = ccomp.GetComponentIds();
+    cl = 0;
+    longest = 0;
+    for (auto c : comp_ids) {
+      auto elems = ccomp.GetComponentsById(c);
+      if (elems.size() > longest) {
+        longest = elems.size();
+        cl = c;
+      }
+    }
+    std::cout << "longest = " << longest << ", id = " << cl << std::endl;
+
+    /*
+    // ======== Show Match =========
+    int win_x = 0;
+    int win_y = 20;
+    double win_scale = 0.25;
+    // == Show Camera Images (Keypoints) ==
+    cv::Mat img1 = images[ip.first].clone();
+    cv::Mat img2 = images[ip.second].clone();
+    cv::Mat img1_points, img2_points, img_matches;
+    DrawKeypointsWithResize(img1, features1.keypoints, img1_points, win_scale);
+    DrawKeypointsWithResize(img2, features2.keypoints, img2_points, win_scale);
+    std::vector<cv::KeyPoint> keypoints1, keypoints2;
+    for (size_t i = 0; i < matches.match.size(); ++i) {
+    // std::cout << i << " = " << good_matches[i].queryIdx << " : " << good_matches[i].trainIdx << std::endl;
+    // Add keypoints to output
+      keypoints1.push_back(features1.keypoints[matches.match[i].queryIdx]);
+      keypoints2.push_back(features2.keypoints[matches.match[i].trainIdx]);
+    }
+    DrawMatchesWithResize(img1, keypoints1, img2, keypoints2, img_matches, win_scale);
+    // Debug: Show points
+    ImShow("img1", img1_points);
+    cv::moveWindow("img1", win_x, win_y);
+    ImShow("img2", img2_points);
+    cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+    // ImShow("mask", feature_mask, win_scale);
+    ImShow("img matches", img_matches);
+    cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
+    cv::waitKey();
+    */
+
+  }
+  std::cout << "total_matched_points = " << total_matched_points << std::endl;
+  std::cout << "most_match = " << most_match 
+            << ", " << image_matches[most_match_id].image_index.first 
+            << " - " << image_matches[most_match_id].image_index.second
+            << std::endl;
+
+  // == Show Image Pair with matches ==
+  int img1_id = image_matches[most_match_id].image_index.first;
+  int img2_id = image_matches[most_match_id].image_index.second;
+  double win_scale = 0.25;
+  int win_x = 0;
+  int win_y = 10;
+  cv::Mat img1 = images[img1_id].clone();
+  cv::Mat img2 = images[img2_id].clone();
+
+  std::vector<cv::KeyPoint> kpoints1, kpoints2;
+  for (size_t i = 0; i < image_matches[most_match_id].match.size(); ++i) {
+    kpoints1.push_back(image_features[img1_id].keypoints[image_matches[most_match_id].match[i].queryIdx]);
+    kpoints2.push_back(image_features[img2_id].keypoints[image_matches[most_match_id].match[i].trainIdx]);
+  }
+
+  cv::Mat img1_points, img2_points, img_matches;
+  DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
+  DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
+  // DrawMatchesWithResize(img1, image_features[img1_id].keypoints, 
+  //                       img2, image_features[img2_id].keypoints, 
+  //                       img_matches, 
+  //                       win_scale, image_matches[most_match_id].match);
+  ImShow("img1", img1_points);
+  cv::moveWindow("img1", win_x, win_y);
+  ImShow("img2", img2_points);
+  cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+  // ImShow("img_matches", img_matches);
+  // cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 20);
+  cv::waitKey();
+
+
+  // == Triangulate Points =====
+  std::vector<cv::Point2f> points1f, points2f;
+  KeyPointsToPointVec(image_features[img1_id].keypoints, image_features[img2_id].keypoints,
+                      image_matches[most_match_id].match, points1f, points2f);
+
+  cv::Mat points3d;
+  TriangulatePoints(cameras[img1_id], points1f, cameras[img2_id], points2f, points3d);
+  std::cout << "points3d.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
+  std::cout << "points3d.c = " << points3d.channels() << std::endl << std::flush;
+  std::cout << "points3d.type = " << points3d.type() << std::endl << std::flush;
+  std::cout << "points3d.row(1) = " << points3d.row(1) << std::endl << std::flush;
+
+  // Backprojection error
+  cv::Mat proj1 = GetProjMatrix(cameras[img1_id]);
+  cv::Mat proj2 = GetProjMatrix(cameras[img2_id]);
+  double rep_err1 = 0.0;
+  double rep_err2 = 0.0;
+  // cv::Mat points3dh(points3d);
+  points3d.convertTo(points3d, CV_64F);
+  cv::convertPointsToHomogeneous(points3d, points3d);
+  std::cout << "points3dh.row(1) = " << points3d.row(1) << std::endl << std::flush;
+  std::cout << "points3dh.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
+  std::cout << "points3dh.c = " << points3d.channels() << std::endl << std::flush;
+  std::cout << "points3dh.type = " << points3d.type() << std::endl << std::flush;
+  std::cout << "proj1.type = " << proj1.type() << std::endl << std::flush;
+
+
+  // cv::Mat points3dhc(points3dh.rows, 4, CV_64F);
+  // cv::Mat points3dhc(points3dh);
+  // points3dh.convertTo(points3dhc, CV_64F);
+  points3d = points3d.reshape(1);
+  //cv::Mat points3dhc = points3dh.reshape(1); // (points3dh.rows, 4, CV_64F, points3dh.data);
+  // points3dh.convertTo(points3dhc, CV_64F);
+  std::cout << "points3dhc.row(1) = " << points3d.row(1) << std::endl << std::flush;
+  std::cout << "points3dhc.type = " << points3d.type() << std::endl << std::flush;
+  std::cout << "proj1.size = " << proj1.rows << ", " << proj1.cols << std::endl << std::flush;
+  std::cout << "points3dhc.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
+  std::cout << "points3dhc.c = " << points3d.channels() << std::endl << std::flush;
+  cv::Mat p1h = proj1 * points3d.t();
+  cv::Mat p2h = proj2 * points3d.t();
+  cv::convertPointsFromHomogeneous(p1h.t(), p1h);
+  cv::convertPointsFromHomogeneous(p2h.t(), p2h);
+  std::cout << "p1h.size = " << p1h.rows << ", " << p1h.cols << std::endl << std::flush;
+  std::cout << "p1h.c = " << p1h.channels() << std::endl << std::flush;
+  // std::cout << "p2h.size = " << p2h.size() << std::endl << std::flush;
+  // cv::Mat p1, p2;
+  // cv::convertPointsFromHomogeneous(p1h, p1);
+  // cv::convertPointsFromHomogeneous(p2h, p2);
+  // std::cout << "p1.size = " << p1.size() << std::endl;
+  std::cout << "p2h.size = " << p2h.size() << std::endl;
+  std::cout << "p1h.row(0) = " << p1h.row(0) << std::endl;
+  std::cout << "p2h.row(0) = " << p2h.row(0) << std::endl;
+
+
+  std::vector<cv::Point3d> points3d_good;
+  for (size_t i = 0; i < points1f.size(); ++i) {
+    double dx, dy;
+    double err1, err2;
+    dx = abs(p1h.at<double>(i, 0) - points1f[i].x);
+    dy = abs(p1h.at<double>(i, 1) - points1f[i].y);
+    err1 = sqrt(dx * dx + dy * dy);
+    rep_err1 += err1;
+    dx = abs(p2h.at<double>(i, 0) - points2f[i].x);
+    dy = abs(p2h.at<double>(i, 1) - points2f[i].y);
+    err2 = sqrt(dx * dx + dy * dy);
+    rep_err2 += err2;
+    std::cout << "errs = " << std::fixed << std::setprecision(6) << err1 << ", " << err2 << std::endl;
+    if (err1 < 10.0 && err2 < 10.0) {
+      points3d_good.push_back(
+        cv::Point3d(
+          points3d.at<double>(i, 0),
+          points3d.at<double>(i, 1),
+          points3d.at<double>(i, 2)
+        ));
+    }
+    // p1h.at<double>(i, 0) = abs(p1h.at<double>(i, 0) - points1f[i].x);
+    // p1h.at<double>(i, 1) = abs(p1h.at<double>(i, 1) - points1f[i].y);
+    // p2h.at<double>(i, 0) = abs(p2h.at<double>(i, 0) - points2f[i].x);
+    // p2h.at<double>(i, 1) = abs(p2h.at<double>(i, 1) - points2f[i].y);
+  }
+
+  std::cout << "rep_err1 = " << rep_err1 << std::endl;
+  std::cout << "rep_err2 = " << rep_err2 << std::endl;
+  std::cout << "points3d_good.size = " << points3d_good.size() << std::endl;
+
+  // std::cout << "p2h.row(0) = " << p1h.row(0) << std::endl;
+
+  /*
+  for (size_t j = 0; j < points3dh.rows; ++j) {
+    cv::Mat p = points3dh.row(j);
+    // p.at<double>(0) = points3d.at<float>(j, 0);
+    // p.at<double>(1) = points3d.at<float>(j, 1);
+    // p.at<double>(2) = points3d.at<float>(j, 2);
+    // p.at<double>(2) = points3d.at<float>(j, 2);
+    // cv::convertPointsToHomogeneous();
+
+    cv::Mat p1 = proj1.mul(p);
+    cv::Mat p2 = proj2.mul(p);
+
+    std::cout << "p1 = " << p1 << std::endl;
+    std::cout << "p2 = " << p2 << std::endl;
+    cv::convertPointsFromHomogeneous();
+
+    // glm::dvec3 x(
+    //   points3d.at<float>(j, 0),
+    //   points3d.at<float>(j, 1),
+    //   points3d.at<float>(j, 2)
+    // );
+    // std::cout << "xd = " << glm::to_string(x) << std::endl;
+    // glm::dvec3 p1 = k1 * glm::transpose(r1) * (x - t1);
+    // p1 = p1 / p1[2];
+    // glm::dvec3 p2 = k2 * glm::transpose(r2) * (x - t2);
+    // p2 = p2 / p2[2];
+    // std::cout << "p1 = " << glm::to_string(p1) << std::endl;
+    // std::cout << "p2 = " << glm::to_string(p2) << std::endl;
+    glm::dvec2 dp1(points1f[j].x - p1[0], points1f[j].y - p1[1]);
+    glm::dvec2 dp2(points2f[j].x - p2[0], points2f[j].y - p2[1]);
+    // std::cout << "dp1 = " << glm::dot(dp1, dp1) << std::endl;
+    // std::cout << "dp2 = " << glm::dot(dp2, dp2) << std::endl;
+    rep_err1 += glm::dot(dp1, dp1);
+    rep_err2 += glm::dot(dp2, dp2);
+
+    // Debug Draw
+    cv::drawMarker(img1_points, cv::Point2f(p1[0], p1[1]) * win_scale, cv::Scalar(255.0, 0.0, 0.0), cv::MARKER_CROSS, 5, 1);
+    cv::drawMarker(img2_points, cv::Point2f(p2[0], p2[1]) * win_scale, cv::Scalar(255.0, 0.0, 0.0), cv::MARKER_CROSS, 5, 1);
+    // cv::drawMarker(img2_points, points2f[j] * win_scale, cv::Scalar(255.0, 0.0, 0.0), cv::MARKER_CROSS, 5, 1);
+  }
+  std::cout << "rep_err1 = " << rep_err1 << std::endl;
+  std::cout << "rep_err2 = " << rep_err2 << std::endl;
+  */
+
+  /*
+  // === Show All Tracks From Longest ==
+  std::vector<int> comp_ids = ccomp.GetComponentIds();
+  std::vector<std::pair<int, int> > comp_counts;
+  for (auto c : comp_ids) {
+    auto elems = ccomp.GetComponentsById(c);
+    comp_counts.push_back({c, elems.size()});
+  }
+  std::sort(comp_counts.begin(), comp_counts.end(), 
+      [](std::pair<int, int>& a, std::pair<int, int>& b) {
+          return a.second < b.second; 
+      });
+  std::cout << "top: " << comp_counts[0].first << ", " << comp_counts[0].second << std::endl;
+
+  for (auto it = comp_counts.rbegin(); it != comp_counts.rend(); ++it) {
+    auto elems = ccomp.GetComponentsById((*it).first);
+    std::sort(elems.begin(), elems.end());
+    std::cout << "elems (" << (*it).first << " - " << elems.size() << ") = ";
+    double win_scale = 0.3;
+    for (auto el : elems) {
+      std::cout << el << ", " << std::flush;
+      cv::Mat img = images[el.first].clone();
+      std::vector<cv::KeyPoint> kpts = {image_features[el.first].keypoints[el.second]};
+      cv::Mat img_points;
+      DrawKeypointsWithResize(img, kpts, img_points, win_scale);
+      ImShow("img", img_points);
+      cv::waitKey();
+    }
+    std::cout << std::endl;
+  }
+  */
+
+
+
+
+  //std::cout << "longest = " << longest << ", id = " << cl << std::endl;
+  // auto elems = ccomp.GetComponentsById(cl);
+  // std::sort(elems.begin(), elems.end());
+  // std::cout << "elems (" << cl << ") = ";
+  // double win_scale = 0.3;
+  // for (auto el : elems) {
+  //   std::cout << el << ", ";
+  //   cv::Mat img = images[el.first].clone();
+  //   std::vector<cv::KeyPoint> kpts = {image_features[el.first].keypoints[el.second]};
+  //   cv::Mat img_points;
+  //   DrawKeypointsWithResize(img, kpts, img_points, win_scale);
+  //   ImShow("img", img_points);
+  //   cv::waitKey();
+  // }
+
+
+  /*
   // ===== Extract features and Triangulate ================= 
   bool first_window = true;
   int win_x = 0;
@@ -156,93 +516,17 @@ int main(int argc, char* argv[]) {
     // == Extract Keypoints ==
     std::vector<cv::KeyPoint> kpoints1, kpoints2;
     GetLineMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2, fund);
-    // GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2 /*, fund*/);
+    // GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2 ); // fund
     // GetMatchedSURFKeypoints(img1, kpoints1, img2, kpoints2);
     std::cout << "kpoints1.size = " << kpoints1.size() << std::endl;
     std::cout << "kpoints2.size = " << kpoints2.size() << std::endl;
     kpts_count += kpoints1.size();
 
-    /*
-    // == Find Epipoles
-    cv::Mat u, w, vt;
-    cv::SVD::compute(fund, w, u, vt);
-    std::cout << "Fund Matrix Components:\n";
-    std::cout << "w = " << w << std::endl;
-    std::cout << "u = " << u << std::endl;
-    std::cout << "vt = " << vt << std::endl;
-    cv::Mat ep2 = vt.row(2).t();
-    cv::Mat ep1 = u.col(2);
-    std::cout << "ep1 = " << ep1 / ep1.at<double>(2) << std::endl;
-    std::cout << "ep1.t() * F = " << ep1.t() * fund << std::endl;
-    std::cout << "ep2 = " << ep2 / ep2.at<double>(2) << std::endl;
-    std::cout << "F*ep2 = " << fund * ep2 << std::endl;
-
-    kpoints1.erase(kpoints1.begin() + 1, kpoints1.end());
-    cv::Matx31d kp1_1(kpoints1[0].pt.x, kpoints1[0].pt.y, 1.0);
-    std::cout << "kp1_1 = " << kp1_1 << std::endl;
-
-    cv::Mat kp1_1line = fund.t() * cv::Mat(kp1_1);
-
-    std::cout << "kp1_1line = " << kp1_1line  << std::endl;
-    std::vector<cv::Point2f> line_pts;
-
-    if (abs(kp1_1line.at<double>(1)) > 10e-9) {
-      cv::Point2f p1(0.0, - kp1_1line.at<double>(2) / kp1_1line.at<double>(1));
-      if (p1.y >= 0.0 && p1.y <= kImageHeight && line_pts.size() < 2) {
-        line_pts.push_back(p1);
-      }
-      cv::Point2f p2(kImageWidth, - (kp1_1line.at<double>(2) + kp1_1line.at<double>(0) * kImageWidth) / kp1_1line.at<double>(1));
-      if (p2.y >= 0.0 && p2.y <= kImageHeight && line_pts.size() < 2) {
-        line_pts.push_back(p2);
-      }
-    }
-    if (abs(kp1_1line.at<double>(0)) > 10e-9 && line_pts.size() < 2) {
-      cv::Point2f p3(- kp1_1line.at<double>(2) / kp1_1line.at<double>(0), 0.0);
-      if (p3.x >= 0.0 && p3.x <= kImageWidth && line_pts.size() < 2) {
-        line_pts.push_back(p3);
-      }
-      cv::Point2f p4(- (kp1_1line.at<double>(2) + kp1_1line.at<double>(1) * kImageHeight) / kp1_1line.at<double>(0), kImageHeight);
-      if (p4.x >= 0.0 && p4.x <= kImageWidth && line_pts.size() < 2) {
-        line_pts.push_back(p4);
-      }
-    }
-    std::cout << "line_pts.size() = " << line_pts.size() << std::endl;    
-    std::cout << "line_pts[0] = " << line_pts[0] << std::endl;
-    std::cout << "line_pts[1] = " << line_pts[1] << std::endl;
-
-    // == Distance to the kpoints2
-    std::vector<double> dists;
-    for (size_t j = 0; j < kpoints2.size(); ++j) {
-      double d1 = abs(kp1_1line.at<double>(0) * kpoints2[j].pt.x + kp1_1line.at<double>(1) * kpoints2[j].pt.y + kp1_1line.at<double>(2));
-      double d2 = sqrt(pow(kp1_1line.at<double>(0), 2) + pow(kp1_1line.at<double>(1), 2));
-      double d = d1/d2;
-      // std::cout << "d = " << d << std::endl;
-      dists.push_back(d);
-    }
-    // std::sort(dists.begin(), dists.end());
-    for (size_t j = 0; j < dists.size(); ++j) {
-      if (dists[j] < 20) {
-        std::cout << "dists[" << j << "] = " << dists[j] << std::endl;
-        cv::drawMarker(img2, cv::Point2f(kpoints2[j].pt.x, kpoints2[j].pt.y), cv::Scalar(255.0, 100.0, 100.0), cv::MARKER_CROSS, 40, 8);
-      }
-    }
-
-    // cv::Mat img1l;
-    cv::drawMarker(img1, cv::Point2f(kpoints1[0].pt.x, kpoints1[0].pt.y), cv::Scalar(255.0, 0.0, 0.0), cv::MARKER_CROSS, 20, 4);
-    cv::line(img2, line_pts[0], line_pts[1], cv::Scalar(255.0, 0.0, 0.0), 2);
-    */
-  
-
-    
     // == Show Camera Images (Keypoints) ==
     cv::Mat img1_points, img2_points, img_matches;
     DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
     DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
     DrawMatchesWithResize(img1, kpoints1, img2, kpoints2, img_matches, win_scale);
-    
-    
-
-    
     
     // == Triangulate Points =====
     std::vector<cv::Point2f> points1f;
@@ -291,27 +575,27 @@ int main(int argc, char* argv[]) {
     std::cout << "rep_err1 = " << rep_err1 << std::endl;
     std::cout << "rep_err2 = " << rep_err2 << std::endl;
     
+
     
-
-
-    /*
     // Debug: Show points
-    ImShow("img1", img1_points);
-    cv::moveWindow("img1", win_x, win_y);
-    ImShow("img2", img2_points);
-    cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
-    ImShow("img matches", img_matches);
-    cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
-    cv::waitKey();
-    */
+    // ImShow("img1", img1_points);
+    // cv::moveWindow("img1", win_x, win_y);
+    // ImShow("img2", img2_points);
+    // cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+    // ImShow("img matches", img_matches);
+    // cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
+    // cv::waitKey();
     
+    */
 
     // === Visualize Cameras and Points
     std::shared_ptr<CameraObject> co1(new CameraObject(camera_intr));
     co1->SetTag(TAG_CAMERA_OBJECT);
     co1->SetImageTransparency(true);
-    co1->SetTranslation(glm::vec3(im_data1.coords[3], im_data1.coords[4], im_data1.coords[5]));
-    co1->SetRotation(im_data1.coords[0], im_data1.coords[1], im_data1.coords[2]);
+    // co1->SetTranslation(glm::vec3(im_data1.coords[3], im_data1.coords[4], im_data1.coords[5]));
+    co1->SetTranslation(cameras[img1_id].translation);
+    // co1->SetRotation(im_data1.coords[0], im_data1.coords[1], im_data1.coords[2]);
+    co1->SetRotation(cameras[img1_id].rotation_angles[0], cameras[img1_id].rotation_angles[1], cameras[img1_id].rotation_angles[2]);
     // co1->SetImage(img1);
     co1->SetImage(img1_points);
     co1->SetImageAlpha(0.99);
@@ -320,8 +604,10 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<CameraObject> co2(new CameraObject(camera_intr));
     co2->SetTag(TAG_CAMERA_OBJECT);
     co2->SetImageTransparency(true);
-    co2->SetTranslation(glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5]));
-    co2->SetRotation(im_data2.coords[0], im_data2.coords[1], im_data2.coords[2]);
+    // co2->SetTranslation(glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5]));
+    co2->SetTranslation(cameras[img2_id].translation);
+    // co2->SetRotation(im_data2.coords[0], im_data2.coords[1], im_data2.coords[2]);
+    co2->SetRotation(cameras[img2_id].rotation_angles[0], cameras[img2_id].rotation_angles[1], cameras[img2_id].rotation_angles[2]);
     // co2->SetImage(img2);
     co2->SetImage(img2_points);
     co2->SetImageAlpha(0.99);
@@ -329,14 +615,11 @@ int main(int argc, char* argv[]) {
 
     
     // Create points in glm::vec3
-    std::cout << "points3d.rows = " << points3d.rows << std::endl;
-    std::vector<glm::vec3> glm_points(points3d.rows);
-    for (int j = 0; j < points3d.rows; ++j) {
-      glm::vec3 v(
-        points3d.at<float>(j, 0),
-        points3d.at<float>(j, 1),
-        points3d.at<float>(j, 2)
-      );
+    // std::cout << "points3d.rows = " << points3d.rows << std::endl;
+    // std::vector<glm::vec3> glm_points(points3d.rows);
+    std::vector<glm::vec3> glm_points(points3d_good.size());
+    for (int j = 0; j < points3d_good.size(); ++j) {
+      glm::vec3 v(points3d_good[j].x, points3d_good[j].y, points3d_good[j].z);
       // std::cout << "v = " << v << std::endl;
       glm_points.push_back(v);
     }
@@ -347,15 +630,15 @@ int main(int argc, char* argv[]) {
     // std::cout << "points_obj = " << points_obj << std::endl;
 
     co1->AddProjectedPoints(glm_points);
-    co2->AddProjectedPoints(glm_points);
-    
+    co2->AddProjectedPoints(glm_points);    
 
-  }
+  
+  
 
   root->AddChild(cameras1);
   root->AddChild(cameras2);
 
-  std::cout << "kpts_count = " << kpts_count << std::endl;
+  // std::cout << "kpts_count = " << kpts_count << std::endl;
 
 
   // cv windows are not working well with glfw windows

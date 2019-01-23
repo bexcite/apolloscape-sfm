@@ -1,12 +1,15 @@
 {
 	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "/Users/pavlo/code/opencv"
-		}
-	],
+    {
+      "path": "."
+    },
+    {
+      "path": "/Users/pavlo/code/opencv"
+    },
+    {
+      "path": "/Users/pavlo/code/tech-problems/connected2"
+    }
+  ],
   "settings": {
     "files.associations": {
       "__config": "cpp",

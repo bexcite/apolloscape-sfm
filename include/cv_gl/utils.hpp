@@ -79,6 +79,11 @@ void PrintVec(const std::string& intro, const std::vector<T> vec,
 // ======================================================
 
 void KeyPointToPointVec(const std::vector<cv::KeyPoint>& kpoints, std::vector<cv::Point2f>& points);
+void KeyPointsToPointVec(const std::vector<cv::KeyPoint>& kpoints1,
+                         const std::vector<cv::KeyPoint>& kpoints2,
+                         const std::vector<cv::DMatch>& match,
+                         std::vector<cv::Point2f>& points1,
+                         std::vector<cv::Point2f>& points2);
 
 glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_angle);
 
@@ -94,7 +99,9 @@ void DrawMatchesWithResize(const cv::Mat& img1,
                            const cv::Mat& img2, 
                            const std::vector<cv::KeyPoint>& kpoints2, 
                            cv::Mat& img_matches, 
-                           const double scale = 1.0);
+                           const double scale = 1.0,
+                           const std::vector<cv::DMatch>& match = std::vector<cv::DMatch>());
+
 
 
 

@@ -172,6 +172,18 @@ void KeyPointToPointVec(const std::vector<cv::KeyPoint>& kpoints, std::vector<cv
   }
 }
 
+void KeyPointsToPointVec(const std::vector<cv::KeyPoint>& kpoints1,
+                         const std::vector<cv::KeyPoint>& kpoints2,
+                         const std::vector<cv::DMatch>& match,
+                         std::vector<cv::Point2f>& points1,
+                         std::vector<cv::Point2f>& points2) {
+  for (size_t i = 0; i < match.size(); ++i) {
+    points1.push_back(kpoints1[match[i].queryIdx].pt);
+    points2.push_back(kpoints2[match[i].trainIdx].pt);
+  }
+}
+
+
 glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_angle ) {
     glm::dmat4 rotation(1.0f);
     rotation = glm::rotate(rotation, static_cast<double>(z_angle), glm::dvec3(0.0, 0.0, 1.0));
@@ -179,6 +191,7 @@ glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_a
     rotation = glm::rotate(rotation, static_cast<double>(x_angle), glm::dvec3(1.0, 0.0, 0.0));
     return glm::dmat3(rotation);
 }
+
 
 void ImShow(const std::string& window_name, const cv::Mat& img, const double scale) {
   cv::Mat resized_img;
@@ -196,6 +209,7 @@ void DrawKeypointsWithResize(const cv::Mat& input_img,
     kpoints_scaled[k].pt.y = static_cast<int>(kpoints_scaled[k].pt.y * scale);
   }
   cv::Mat img_resized;
+  std::cout << "resize1 = " << scale << std::endl << std::flush;
   cv::resize(input_img, img_resized, cv::Size(), scale, scale, cv::INTER_AREA);
   cv::drawKeypoints(img_resized, kpoints_scaled, out_img);
 }
@@ -205,25 +219,33 @@ void DrawMatchesWithResize(const cv::Mat& img1,
                            const cv::Mat& img2, 
                            const std::vector<cv::KeyPoint>& kpoints2, 
                            cv::Mat& img_matches, 
-                           const double scale) {
-  assert(kpoints1.size() == kpoints2.size());
+                           const double scale,
+                           const std::vector<cv::DMatch>& match) {
+  // assert(kpoints1.size() == kpoints2.size());
   std::vector<cv::KeyPoint> kpoints1_scaled(kpoints1);
   std::vector<cv::KeyPoint> kpoints2_scaled(kpoints2);
   for (size_t k = 0; k < kpoints1_scaled.size(); ++k) {
     kpoints1_scaled[k].pt.x = static_cast<int>(kpoints1_scaled[k].pt.x * scale);
     kpoints1_scaled[k].pt.y = static_cast<int>(kpoints1_scaled[k].pt.y * scale);
+  }
+  for (size_t k = 0; k < kpoints2_scaled.size(); ++k) {
     kpoints2_scaled[k].pt.x = static_cast<int>(kpoints2_scaled[k].pt.x * scale);
     kpoints2_scaled[k].pt.y = static_cast<int>(kpoints2_scaled[k].pt.y * scale);
-  }
-  std::vector<cv::DMatch> matches(kpoints1.size());
-  for (size_t i = 0; i < kpoints1.size(); ++i) {
-    matches[i].queryIdx = i;
-    matches[i].trainIdx = i;
   }
   cv::Mat img1_resized, img2_resized;
   cv::resize(img1, img1_resized, cv::Size(), scale, scale);
   cv::resize(img2, img2_resized, cv::Size(), scale, scale);
-  cv::drawMatches(img1_resized, kpoints1_scaled, img2_resized, kpoints2_scaled, matches, img_matches);
+  if (match.size() == 0 && kpoints1.size() == kpoints2.size()) {
+    std::vector<cv::DMatch> matches(kpoints1.size());
+    for (size_t i = 0; i < kpoints1.size(); ++i) {
+      matches[i].queryIdx = i;
+      matches[i].trainIdx = i;
+    }
+    cv::drawMatches(img1_resized, kpoints1_scaled, img2_resized, kpoints2_scaled, matches, img_matches);
+  } else {
+    cv::drawMatches(img1_resized, kpoints1_scaled, img2_resized, kpoints2_scaled, match, img_matches);
+  }
+  
 }
 
 

@@ -4,14 +4,74 @@
 #include "cv_gl/utils.hpp"
 #include "cv_gl/sfm.h"
 
+#include <boost/filesystem.hpp>
+
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+void CalcFundamental(const CameraInfo& camera_info1, const CameraInfo& camera_info2, cv::Mat& fund) {
+  glm::dmat3 r1 = GetRotation(camera_info1.rotation_angles[0], camera_info1.rotation_angles[1], camera_info1.rotation_angles[2]);
+  // std::cout << "r1 = " << glm::to_string(r1) << std::endl;
 
+  glm::dmat3 r2 = GetRotation(camera_info2.rotation_angles[0], camera_info2.rotation_angles[1], camera_info2.rotation_angles[2]);
+  // std::cout << "r2 = " << glm::to_string(r2) << std::endl;
+
+  glm::dmat3 k1 = camera_info1.intr.GetCameraMatrix();
+  // std::cout << "k1 = " << glm::to_string(k1) << std::endl;
+  glm::dmat3 k2 = camera_info2.intr.GetCameraMatrix();
+  // std::cout << "k2 = " << glm::to_string(k2) << std::endl;
+
+  glm::dvec3 t1 = camera_info1.translation;
+  // std::cout << "t1 = " << glm::to_string(t1) << std::endl;
+  glm::dvec3 t2 = camera_info2.translation;
+  // std::cout << "t2 = " << glm::to_string(t2) << std::endl;
+  glm::dvec3 b = t2 - t1;
+  glm::dmat3x3 sb;
+  sb[0] = glm::dvec3(0.0, b[2], -b[1]);
+  sb[1] = glm::dvec3(-b[2], 0.0, b[0]);
+  sb[2] = glm::dvec3(b[1], -b[0], 0.0);
+
+  glm::dmat3x3 f = glm::transpose(glm::inverse(k1)) * glm::transpose(r1) * sb * r2 * glm::inverse(k2);
+
+  // Transfer to cv::Mat object
+  fund.create(3, 3, CV_64F);
+  for (int row = 0; row < 3; ++row) {
+    for (int col = 0; col < 3; ++col) {
+      fund.at<double>(row, col) = f[col][row];
+    }
+  }
+
+
+}
 
 cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data1, const CameraIntrinsics& intr2, const ImageData& img_data2) {
 
+  CameraInfo camera_info1, camera_info2;
+
+  camera_info1.intr = intr1;
+  camera_info1.rotation_angles[0] = img_data1.coords[0];
+  camera_info1.rotation_angles[1] = img_data1.coords[1];
+  camera_info1.rotation_angles[2] = img_data1.coords[2];
+  camera_info1.translation[0] = img_data1.coords[3];
+  camera_info1.translation[1] = img_data1.coords[4];
+  camera_info1.translation[2] = img_data1.coords[5];
+
+  camera_info2.intr = intr2;
+  camera_info2.rotation_angles[0] = img_data2.coords[0];
+  camera_info2.rotation_angles[1] = img_data2.coords[1];
+  camera_info2.rotation_angles[2] = img_data2.coords[2];
+  camera_info2.translation[0] = img_data2.coords[3];
+  camera_info2.translation[1] = img_data2.coords[4];
+  camera_info2.translation[2] = img_data2.coords[5];
+
+  cv::Mat fund;
+  CalcFundamental(camera_info1, camera_info2, fund);
+
+  return fund;
+
+
+  /*
   // std::cout << "Calc Fundamental.\n";
   // std::cout << "intr1: " << intr1 << std::endl;
   // std::cout << "img_data1: " << img_data1 << std::endl;
@@ -74,6 +134,7 @@ cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data
   }
 
   return fm;
+  */
 }
 
 void GetFeatureExtractionRegion(const cv::Mat& img, cv::Mat& mask) {
@@ -130,6 +191,113 @@ void GetLineImagePoints(const cv::Mat& line, std::vector<cv::Point2f>& line_pts,
   // std::cout << "line_pts[0] = " << line_pts[0] << std::endl;
   // std::cout << "line_pts[1] = " << line_pts[1] << std::endl;
 }
+
+void ExtractFeatures(cv::Mat img, Features& features) {
+  cv::Mat feature_mask;
+  GetFeatureExtractionRegion(img, feature_mask);
+  cv::Ptr<cv::AKAZE> detector = cv::AKAZE::create();
+  detector->detectAndCompute(img, feature_mask, features.keypoints, features.descriptors);
+  std::cout << "features.keypoints: " << features.keypoints.size() << std::endl;
+  std::cout << "features.descriptors: " << features.descriptors.size() << std::endl;
+}
+
+void ExtractFeaturesAndCameraInfo(const std::string& image_path,
+                                  const ImageData& im_data,
+                                  const CameraIntrinsics& intr, 
+                                  cv::Mat& img,
+                                  Features& features,
+                                  CameraInfo& camera_info) {
+  boost::filesystem::path full_image_path = image_path / boost::filesystem::path(im_data.filename);
+  img = cv::imread(full_image_path.string().c_str());
+  ExtractFeatures(img, features);
+  camera_info.intr = intr;
+  camera_info.rotation_angles[0] = im_data.coords[0];
+  camera_info.rotation_angles[1] = im_data.coords[1];
+  camera_info.rotation_angles[2] = im_data.coords[2];
+  camera_info.translation[0] = im_data.coords[3];
+  camera_info.translation[1] = im_data.coords[4];
+  camera_info.translation[2] = im_data.coords[5];
+}
+
+void ComputeLineKeyPointsMatch(const Features& features1, 
+                               const CameraInfo camera_info1, 
+                               const Features& features2, 
+                               const CameraInfo& camera_info2, 
+                               Matches& matches) {
+
+  // == Compute Fundamental Matrix ==
+  cv::Mat fund;
+  CalcFundamental(camera_info1, camera_info2, fund);
+  // std::cout << "Fundamental Matrix: " << fund << std::endl;
+
+  
+
+  // == Look for One point correcpondance
+  
+  // std::cout << "Create mask ...." << std::endl;
+  // cv::Mat mask = cv::Mat::zeros(features1.keypoints.size(), features2.keypoints.size(), CV_8UC1);
+
+  // cv::Mat mask1 = cv::Mat::zeros(points1.size(), points2.size(), CV_8UC1);
+
+  const std::vector<cv::KeyPoint>& points1 = features1.keypoints;
+  const std::vector<cv::KeyPoint>& points2 = features2.keypoints;
+
+  const cv::Mat& descriptors1 = features1.descriptors;
+  const cv::Mat& descriptors2 = features2.descriptors;
+
+  cv::Mat points1v(points1.size(), 3, CV_64F);
+  cv::Mat points2v(3, points2.size(), CV_64F);
+  for (int i = 0; i < points1.size(); ++i) {
+    points1v.at<double>(i, 0) = points1[i].pt.x;
+    points1v.at<double>(i, 1) = points1[i].pt.y;
+    points1v.at<double>(i, 2) = 1.0;
+  }
+  for (int i = 0; i < points2.size(); ++i) {
+    points2v.at<double>(0, i) = points2[i].pt.x;
+    points2v.at<double>(1, i) = points2[i].pt.y;
+    points2v.at<double>(2, i) = 1.0;
+  }
+
+  cv::Mat kp_lines21 = fund * points2v;
+  // std::cout << "points1v = " << points1v.rows << ", " << points1v.cols << std::endl;
+  // std::cout << "points2v = " << points2v.rows << ", " << points2v.cols << std::endl;
+  // std::cout << "kp_lines21 = " << kp_lines21.size() << std::endl;
+
+  // TODO: Divide by sqrt(a^2 + b^2) - ?
+  cv::Mat mask = cv::abs(points1v * kp_lines21);
+  cv::threshold(mask, mask, 0.01, 1, cv::THRESH_BINARY_INV);
+  // std::cout << "mask = " << mask.rows << ", " << mask.cols << std::endl;
+
+
+  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
+  std::vector<std::vector<cv::DMatch> > knnMatches;
+  // std::cout << "knnMatch ..." << std::endl;
+  cv::Mat mask_int;
+  mask.convertTo(mask_int, CV_8UC1);
+  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2, mask_int);
+
+  // std::vector<cv::DMatch> good_matches;
+  // Filter matches: Lowe's test
+  const float ratio_thresh = 0.5f; //0.6
+  for (int m = 0; m < knnMatches.size(); ++m) {
+    if (knnMatches[m].size() < 2) continue; // no match for the points
+    if (knnMatches[m][0].distance < ratio_thresh * knnMatches[m][1].distance) {
+      matches.match.push_back(knnMatches[m][0]);
+      // good_matches.push_back(cv::DMatch(k, knnMatches[0][0].trainIdx, knnMatches[0][0].distance));
+      // std::cout << m << " SQUARE !!!! " << (knnMatches[m][0].distance / knnMatches[m][1].distance)
+      // << " (" << knnMatches[m][0].queryIdx << " : " << knnMatches[m][0].trainIdx << ")" << std::endl;
+      // cv::drawMarker(img2d,
+      //               cv::Point2f(points2[knnMatches[0][0].trainIdx].pt.x,
+      //                           points2[knnMatches[0][0].trainIdx].pt.y),
+      //               cv::Scalar(255.0, 100.0, 255.0),
+      //               cv::MARKER_SQUARE, 35, 8);
+    }
+  }
+
+  std::cout << "lgood_matches.size = " << matches.match.size() << std::endl;
+}
+
+
 
 void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keypoints1,
     const cv::Mat img2, std::vector<cv::KeyPoint>& keypoints2, const cv::Mat fund) {
@@ -389,7 +557,7 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
   matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2, mask2);
 
   // Filter matches: Lowe's test
-  const float ratio_thresh = 0.5f; //0.6
+  const float ratio_thresh = 0.4f; //0.6
   bool good_match = false;
   for (int m = 0; m < knnMatches.size(); ++m) {
     if (knnMatches[m].size() < 2) continue;
@@ -518,6 +686,28 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
 
 void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1, const std::vector<cv::Point2f>& points1,
     const CameraIntrinsics& intr2, const ImageData& img_data2, const std::vector<cv::Point2f>& points2, cv::Mat& points3d) {
+
+  CameraInfo camera_info1, camera_info2;
+
+  camera_info1.intr = intr1;
+  camera_info1.rotation_angles[0] = img_data1.coords[0];
+  camera_info1.rotation_angles[1] = img_data1.coords[1];
+  camera_info1.rotation_angles[2] = img_data1.coords[2];
+  camera_info1.translation[0] = img_data1.coords[3];
+  camera_info1.translation[1] = img_data1.coords[4];
+  camera_info1.translation[2] = img_data1.coords[5];
+
+  camera_info2.intr = intr2;
+  camera_info2.rotation_angles[0] = img_data2.coords[0];
+  camera_info2.rotation_angles[1] = img_data2.coords[1];
+  camera_info2.rotation_angles[2] = img_data2.coords[2];
+  camera_info2.translation[0] = img_data2.coords[3];
+  camera_info2.translation[1] = img_data2.coords[4];
+  camera_info2.translation[2] = img_data2.coords[5];
+
+  TriangulatePoints(camera_info1, points1, camera_info2, points2, points3d);
+
+  /*
   std::cout << "Triangulate Points\n";
 
   // Find Proj Matrices
@@ -573,6 +763,8 @@ void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1
 
   cv::convertPointsFromHomogeneous(points4dh.t(), points3d);
 
+  */
+
   // std::cout << "points3d[0] = " << points3d.row(0) << std::endl;
   // std::cout << "points3d[10] = " << points3d.row(10) << std::endl;
   // std::cout << "points3d[100] = " << points3d.row(100) << std::endl;
@@ -597,5 +789,84 @@ void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1
   glm::dmat4x3 full1 = k1 * glm::transpose(r1) * t1m;
   // std::cout << "full1 = " << glm::to_string(full1) << std::endl;
   */
+}
+
+cv::Mat GetProjMatrix(const CameraInfo& camera_info) {
+  glm::dmat3 r = GetRotation(camera_info.rotation_angles[0], camera_info.rotation_angles[1], camera_info.rotation_angles[2]);
+  // std::cout << "r1 = " << glm::to_string(r1) << std::endl;
+
+  glm::dmat3 k = camera_info.intr.GetCameraMatrix();
+  // std::cout << "k1 = " << glm::to_string(k1) << std::endl;
+
+  glm::dvec3 t = camera_info.translation;
+  // std::cout << "t1 = " << glm::to_string(t1) << std::endl;
+  
+  glm::dmat4x3 proj(1.0);
+  proj[3] -= t;
+  proj = k * glm::transpose(r) * proj;
+  // std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
+
+  cv::Mat mat_proj(3, 4, CV_64F);
+  for (size_t col = 0; col < 4; ++col) {
+    for (size_t row = 0; row < 3; ++row) {
+      mat_proj.at<double>(row, col) = proj[col][row];
+    }
+  }
+  return mat_proj;
+}
+
+
+void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Point2f>& points1,
+                       const CameraInfo& camera_info2, const std::vector<cv::Point2f>& points2,
+                       cv::Mat& points3d) {
+  /*
+  glm::dmat3 r1 = GetRotation(camera_info1.rotation_angles[0], camera_info1.rotation_angles[1], camera_info1.rotation_angles[2]);
+  // std::cout << "r1 = " << glm::to_string(r1) << std::endl;
+
+  glm::dmat3 r2 = GetRotation(camera_info2.rotation_angles[0], camera_info2.rotation_angles[1], camera_info2.rotation_angles[2]);
+  // std::cout << "r2 = " << glm::to_string(r2) << std::endl;
+
+  glm::dmat3 k1 = camera_info1.intr.GetCameraMatrix();
+  // std::cout << "k1 = " << glm::to_string(k1) << std::endl;
+  glm::dmat3 k2 = camera_info2.intr.GetCameraMatrix();
+  // std::cout << "k2 = " << glm::to_string(k2) << std::endl;
+
+  glm::dvec3 t1 = camera_info1.translation;
+  // std::cout << "t1 = " << glm::to_string(t1) << std::endl;
+  glm::dvec3 t2 = camera_info2.translation;
+  
+  glm::dmat4x3 proj1(1.0);
+  proj1[3] -= t1;
+  proj1 = k1 * glm::transpose(r1) * proj1;
+  // std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
+
+  glm::dmat4x3 proj2(1.0);
+  proj2[3] -= t2;
+  proj2 = k2 * glm::transpose(r2) * proj2;
+  // std::cout << "proj2 = " << glm::to_string(proj2) << std::endl;
+
+  cv::Mat mat_proj1(3, 4, CV_64F);
+  cv::Mat mat_proj2(3, 4, CV_64F);
+  for (size_t col = 0; col < 4; ++col) {
+    for (size_t row = 0; row < 3; ++row) {
+      mat_proj1.at<double>(row, col) = proj1[col][row];
+      mat_proj2.at<double>(row, col) = proj2[col][row];
+    }
+  }
+  */
+
+  cv::Mat mat_proj1 = GetProjMatrix(camera_info1);
+  cv::Mat mat_proj2 = GetProjMatrix(camera_info2);
+
+  // std::cout << "mat_proj1 = " << mat_proj1 << std::endl;
+  // std::cout << "mat_proj2 = " << mat_proj2 << std::endl;
+
+  cv::Mat points4dh;
+  cv::triangulatePoints(mat_proj1, mat_proj2, points1, points2, points4dh);
+
+  std::cout << "points4dh.size = " << points4dh.size() << std::endl;
+
+  cv::convertPointsFromHomogeneous(points4dh.t(), points3d);
 
 }
+
