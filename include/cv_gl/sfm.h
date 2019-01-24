@@ -30,6 +30,13 @@ struct CameraInfo {
   glm::dvec3 rotation_angles;
 };
 
+struct WorldPoint3D {
+  cv::Point3f pt;
+  std::map<int, int> views;
+};
+
+typedef std::vector<WorldPoint3D> Map3D;
+
 void CalcFundamental(const CameraInfo& camera_info1, const CameraInfo& camera_info2, cv::Mat& fund);
 cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data1, const CameraIntrinsics& intr2, const ImageData& img_data2);
 
@@ -60,6 +67,10 @@ void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1
 void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Point2f>& points1,
                        const CameraInfo& camera_info2, const std::vector<cv::Point2f>& points2,
                        cv::Mat& points3d);
+
+std::vector<double> GetReprojectionErrors(const std::vector<cv::Point2f>& points, const cv::Mat& proj, const cv::Mat& points3d);
+
+std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp);
 
 
 

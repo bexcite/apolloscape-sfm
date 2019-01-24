@@ -192,6 +192,10 @@ glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_a
     return glm::dmat3(rotation);
 }
 
+std::vector<cv::DMatch> EmptyMatch() {
+  return std::vector<cv::DMatch>();
+}
+
 
 void ImShow(const std::string& window_name, const cv::Mat& img, const double scale) {
   cv::Mat resized_img;
@@ -247,6 +251,46 @@ void DrawMatchesWithResize(const cv::Mat& img1,
   }
   
 }
+
+void ImShowMatchesWithResize(const cv::Mat& img1,
+                             const std::vector<cv::KeyPoint>& kpoints1, 
+                             const cv::Mat& img2, 
+                             const std::vector<cv::KeyPoint>& kpoints2,
+                             const std::vector<cv::DMatch>& match,
+                             const double scale,
+                             const int win_x,
+                             const int win_y) {
+
+  std::vector<cv::KeyPoint> kpoints1m, kpoints2m;
+  if (!match.empty()) {
+    for (size_t i = 0; i < match.size(); ++i) {
+      kpoints1m.push_back(kpoints1[match[i].queryIdx]);
+      kpoints2m.push_back(kpoints2[match[i].trainIdx]);
+    }
+  } else {
+    kpoints1m = kpoints1;
+    kpoints2m = kpoints2;
+  }
+
+  cv::Mat img1_points, img2_points, img_matches;
+  DrawKeypointsWithResize(img1, kpoints1m, img1_points, scale);
+  DrawKeypointsWithResize(img2, kpoints2m, img2_points, scale);
+  ImShow("img1", img1_points);
+  cv::moveWindow("img1", win_x, win_y);
+  ImShow("img2", img2_points);
+  cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+
+  if (!match.empty()) {
+    DrawMatchesWithResize(img1, kpoints1,
+                          img2, kpoints2,
+                          img_matches, 
+                          scale, match);
+    ImShow("img_matches", img_matches);
+    cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 20);
+  }
+
+}
+
 
 
 

@@ -102,6 +102,18 @@ void DrawMatchesWithResize(const cv::Mat& img1,
                            const double scale = 1.0,
                            const std::vector<cv::DMatch>& match = std::vector<cv::DMatch>());
 
+void ImShowMatchesWithResize(const cv::Mat& img1,
+                             const std::vector<cv::KeyPoint>& kpoints1, 
+                             const cv::Mat& img2, 
+                             const std::vector<cv::KeyPoint>& kpoints2,
+                             const std::vector<cv::DMatch>& match,
+                             const double scale = 1.0,
+                             const int win_x = 0,
+                             const int win_y = 10);
+
+std::vector<cv::DMatch> EmptyMatch();
+
+
 
 
 

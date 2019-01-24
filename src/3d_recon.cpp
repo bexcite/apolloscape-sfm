@@ -263,15 +263,35 @@ int main(int argc, char* argv[]) {
             << " - " << image_matches[most_match_id].image_index.second
             << std::endl;
 
-  // == Show Image Pair with matches ==
+
+  
+  // == Show Image Pair with best matches ==
   int img1_id = image_matches[most_match_id].image_index.first;
   int img2_id = image_matches[most_match_id].image_index.second;
+  cv::Mat img1 = images[img1_id].clone();
+  cv::Mat img2 = images[img2_id].clone();
   double win_scale = 0.25;
   int win_x = 0;
   int win_y = 10;
-  cv::Mat img1 = images[img1_id].clone();
-  cv::Mat img2 = images[img2_id].clone();
+  // ImShowMatchesWithResize(img1, image_features[img1_id].keypoints,
+  //                         img2, image_features[img2_id].keypoints,
+  //                         //image_matches[most_match_id].match,
+  //                         EmptyMatch(),
+  //                         win_scale, win_x, win_y);
+  // cv::waitKey();
 
+
+  // == Camera images pics ==
+  std::vector<cv::KeyPoint> kpoints1, kpoints2;
+  for (size_t i = 0; i < image_matches[most_match_id].match.size(); ++i) {
+    kpoints1.push_back(image_features[img1_id].keypoints[image_matches[most_match_id].match[i].queryIdx]);
+    kpoints2.push_back(image_features[img2_id].keypoints[image_matches[most_match_id].match[i].trainIdx]);
+  }
+  cv::Mat img1_points, img2_points;
+  DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
+  DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
+  
+  /*
   std::vector<cv::KeyPoint> kpoints1, kpoints2;
   for (size_t i = 0; i < image_matches[most_match_id].match.size(); ++i) {
     kpoints1.push_back(image_features[img1_id].keypoints[image_matches[most_match_id].match[i].queryIdx]);
@@ -281,17 +301,19 @@ int main(int argc, char* argv[]) {
   cv::Mat img1_points, img2_points, img_matches;
   DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
   DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
-  // DrawMatchesWithResize(img1, image_features[img1_id].keypoints, 
-  //                       img2, image_features[img2_id].keypoints, 
-  //                       img_matches, 
-  //                       win_scale, image_matches[most_match_id].match);
+  DrawMatchesWithResize(img1, image_features[img1_id].keypoints, 
+                        img2, image_features[img2_id].keypoints, 
+                        img_matches, 
+                        win_scale, image_matches[most_match_id].match);
   ImShow("img1", img1_points);
   cv::moveWindow("img1", win_x, win_y);
   ImShow("img2", img2_points);
   cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
   // ImShow("img_matches", img_matches);
   // cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 20);
-  cv::waitKey();
+  */
+  // cv::waitKey();
+  
 
 
   // == Triangulate Points =====
@@ -301,6 +323,10 @@ int main(int argc, char* argv[]) {
 
   cv::Mat points3d;
   TriangulatePoints(cameras[img1_id], points1f, cameras[img2_id], points2f, points3d);
+
+  
+
+
   std::cout << "points3d.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
   std::cout << "points3d.c = " << points3d.channels() << std::endl << std::flush;
   std::cout << "points3d.type = " << points3d.type() << std::endl << std::flush;
@@ -309,75 +335,59 @@ int main(int argc, char* argv[]) {
   // Backprojection error
   cv::Mat proj1 = GetProjMatrix(cameras[img1_id]);
   cv::Mat proj2 = GetProjMatrix(cameras[img2_id]);
+
+  std::vector<double> errs1 = GetReprojectionErrors(points1f, proj1, points3d);
+  std::vector<double> errs2 = GetReprojectionErrors(points2f, proj2, points3d);
+
+  std::cout << "AFTER points3d.row(0) = " << points3d.row(0) << std::endl << std::flush;
+  std::cout << "AFTER points3d.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
+
   double rep_err1 = 0.0;
   double rep_err2 = 0.0;
-  // cv::Mat points3dh(points3d);
-  points3d.convertTo(points3d, CV_64F);
-  cv::convertPointsToHomogeneous(points3d, points3d);
-  std::cout << "points3dh.row(1) = " << points3d.row(1) << std::endl << std::flush;
-  std::cout << "points3dh.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
-  std::cout << "points3dh.c = " << points3d.channels() << std::endl << std::flush;
-  std::cout << "points3dh.type = " << points3d.type() << std::endl << std::flush;
-  std::cout << "proj1.type = " << proj1.type() << std::endl << std::flush;
+
+  Map3D map;
 
 
-  // cv::Mat points3dhc(points3dh.rows, 4, CV_64F);
-  // cv::Mat points3dhc(points3dh);
-  // points3dh.convertTo(points3dhc, CV_64F);
-  points3d = points3d.reshape(1);
-  //cv::Mat points3dhc = points3dh.reshape(1); // (points3dh.rows, 4, CV_64F, points3dh.data);
-  // points3dh.convertTo(points3dhc, CV_64F);
-  std::cout << "points3dhc.row(1) = " << points3d.row(1) << std::endl << std::flush;
-  std::cout << "points3dhc.type = " << points3d.type() << std::endl << std::flush;
-  std::cout << "proj1.size = " << proj1.rows << ", " << proj1.cols << std::endl << std::flush;
-  std::cout << "points3dhc.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
-  std::cout << "points3dhc.c = " << points3d.channels() << std::endl << std::flush;
-  cv::Mat p1h = proj1 * points3d.t();
-  cv::Mat p2h = proj2 * points3d.t();
-  cv::convertPointsFromHomogeneous(p1h.t(), p1h);
-  cv::convertPointsFromHomogeneous(p2h.t(), p2h);
-  std::cout << "p1h.size = " << p1h.rows << ", " << p1h.cols << std::endl << std::flush;
-  std::cout << "p1h.c = " << p1h.channels() << std::endl << std::flush;
-  // std::cout << "p2h.size = " << p2h.size() << std::endl << std::flush;
-  // cv::Mat p1, p2;
-  // cv::convertPointsFromHomogeneous(p1h, p1);
-  // cv::convertPointsFromHomogeneous(p2h, p2);
-  // std::cout << "p1.size = " << p1.size() << std::endl;
-  std::cout << "p2h.size = " << p2h.size() << std::endl;
-  std::cout << "p1h.row(0) = " << p1h.row(0) << std::endl;
-  std::cout << "p2h.row(0) = " << p2h.row(0) << std::endl;
+  // std::vector<cv::Point3d> points3d_good;
+  for (size_t i = 0; i < errs1.size(); ++i) {
+    rep_err1 += errs1[i];
+    rep_err2 += errs2[i];
+    if (errs1[i] < 10.0 && errs2[i] < 10.0) {
+      // points3d_good.push_back(
+      //   cv::Point3d(
+      //     points3d.at<float>(i, 0),
+      //     points3d.at<float>(i, 1),
+      //     points3d.at<float>(i, 2)
+      //   ));
 
-
-  std::vector<cv::Point3d> points3d_good;
-  for (size_t i = 0; i < points1f.size(); ++i) {
-    double dx, dy;
-    double err1, err2;
-    dx = abs(p1h.at<double>(i, 0) - points1f[i].x);
-    dy = abs(p1h.at<double>(i, 1) - points1f[i].y);
-    err1 = sqrt(dx * dx + dy * dy);
-    rep_err1 += err1;
-    dx = abs(p2h.at<double>(i, 0) - points2f[i].x);
-    dy = abs(p2h.at<double>(i, 1) - points2f[i].y);
-    err2 = sqrt(dx * dx + dy * dy);
-    rep_err2 += err2;
-    std::cout << "errs = " << std::fixed << std::setprecision(6) << err1 << ", " << err2 << std::endl;
-    if (err1 < 10.0 && err2 < 10.0) {
-      points3d_good.push_back(
-        cv::Point3d(
-          points3d.at<double>(i, 0),
-          points3d.at<double>(i, 1),
-          points3d.at<double>(i, 2)
-        ));
+      // Add point to the map
+      WorldPoint3D wp;
+      wp.pt = cv::Point3d(
+          points3d.at<float>(i, 0),
+          points3d.at<float>(i, 1),
+          points3d.at<float>(i, 2));
+      wp.views[image_matches[most_match_id].image_index.first] 
+          = image_matches[most_match_id].match[i].queryIdx;
+      wp.views[image_matches[most_match_id].image_index.second] 
+          = image_matches[most_match_id].match[i].trainIdx;
+      map.push_back(wp);
+      
     }
-    // p1h.at<double>(i, 0) = abs(p1h.at<double>(i, 0) - points1f[i].x);
-    // p1h.at<double>(i, 1) = abs(p1h.at<double>(i, 1) - points1f[i].y);
-    // p2h.at<double>(i, 0) = abs(p2h.at<double>(i, 0) - points2f[i].x);
-    // p2h.at<double>(i, 1) = abs(p2h.at<double>(i, 1) - points2f[i].y);
   }
+
+  // for (auto& wp : map) {
+  //   std::cout << "mp: " << wp << std::endl;
+  // }
+
 
   std::cout << "rep_err1 = " << rep_err1 << std::endl;
   std::cout << "rep_err2 = " << rep_err2 << std::endl;
-  std::cout << "points3d_good.size = " << points3d_good.size() << std::endl;
+  std::cout << "map.size = " << map.size() << std::endl;
+
+  // == Optimize Bundle ==
+  // TODO!!!!!!!!!!!!!
+
+
 
   // std::cout << "p2h.row(0) = " << p1h.row(0) << std::endl;
 
@@ -588,8 +598,11 @@ int main(int argc, char* argv[]) {
     
     */
 
+    /*
     // === Visualize Cameras and Points
-    std::shared_ptr<CameraObject> co1(new CameraObject(camera_intr));
+    // std::shared_ptr<CameraObject> co1(new CameraObject(camera_intr));
+    std::shared_ptr<CameraObject> co1(
+        new CameraObject(intr1, kImageWidth, kImageHeight));
     co1->SetTag(TAG_CAMERA_OBJECT);
     co1->SetImageTransparency(true);
     // co1->SetTranslation(glm::vec3(im_data1.coords[3], im_data1.coords[4], im_data1.coords[5]));
@@ -601,7 +614,10 @@ int main(int argc, char* argv[]) {
     co1->SetImageAlpha(0.99);
     cameras1->AddChild(co1);
 
-    std::shared_ptr<CameraObject> co2(new CameraObject(camera_intr));
+    // std::cout << "co1 = " << co1 << std::endl;
+
+    std::shared_ptr<CameraObject> co2(
+        new CameraObject(intr2, kImageWidth, kImageHeight));
     co2->SetTag(TAG_CAMERA_OBJECT);
     co2->SetImageTransparency(true);
     // co2->SetTranslation(glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5]));
@@ -612,8 +628,12 @@ int main(int argc, char* argv[]) {
     co2->SetImage(img2_points);
     co2->SetImageAlpha(0.99);
     cameras1->AddChild(co2);
+    */
 
-    
+    // std::cout << "co2 = " << co2 << std::endl;
+
+
+    /*()  
     // Create points in glm::vec3
     // std::cout << "points3d.rows = " << points3d.rows << std::endl;
     // std::vector<glm::vec3> glm_points(points3d.rows);
@@ -628,15 +648,73 @@ int main(int argc, char* argv[]) {
     // std::cout << "glm_points = " << glm_points << std::endl;
     root->AddChild(points_obj);
     // std::cout << "points_obj = " << points_obj << std::endl;
+    */
 
-    co1->AddProjectedPoints(glm_points);
-    co2->AddProjectedPoints(glm_points);    
+    // co1->AddProjectedPoints(glm_points);
+    // co2->AddProjectedPoints(glm_points);    
 
+
+  std::map<int, std::vector<int> > map_cameras;
+  
+  // === Draw Map3D ===
+  std::vector<glm::vec3> glm_points;
+  for (auto& wp: map) {
+    glm::vec3 v(wp.pt.x, wp.pt.y, wp.pt.z);
+    glm_points.push_back(v);
+    for (auto& v: wp.views) {
+      const int& cam_id = v.first;
+      const int& point_id = v.second;
+      auto it = map_cameras.find(cam_id);
+      if (it != map_cameras.end()) {
+        it->second.push_back(point_id);
+      } else {
+        map_cameras[cam_id] = { point_id };
+      }
+    }
+  }
+  std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(glm_points));
+  root->AddChild(points_obj);
+
+  
+  // === Draw Cameras ===
+  for (auto& c: map_cameras) {
+    
+    std::cout << "Camera: " << c.first << ": points = " << c.second.size() << std::endl;
+    // PrintVec(" => ", c.second);
+
+    const int& cam_id = c.first;
+    cv::Mat co_img = images[cam_id].clone();
+
+
+    std::vector<cv::KeyPoint> kpoints;
+    for (size_t i = 0; i < c.second.size(); ++i) {
+      kpoints.push_back(image_features[cam_id].keypoints[c.second[i]]);
+    }
+    cv::Mat img_points;
+    DrawKeypointsWithResize(co_img, kpoints, img_points, 0.3);
+
+    
+    std::shared_ptr<CameraObject> co(
+        new CameraObject(cameras[cam_id].intr, kImageWidth, kImageHeight));
+    co->SetTag(TAG_CAMERA_OBJECT);
+    co->SetImageTransparency(true);
+    // co->SetTranslation(glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5]));
+    co->SetTranslation(cameras[cam_id].translation);
+    // co->SetRotation(im_data2.coords[0], im_data2.coords[1], im_data2.coords[2]);
+    co->SetRotation(cameras[cam_id].rotation_angles[0], cameras[cam_id].rotation_angles[1], cameras[cam_id].rotation_angles[2]);
+    // co->SetImage(img2);
+    // co->SetImage(img2_points);
+    co->SetImage(img_points);
+    co->SetImageAlpha(0.99);
+    cameras1->AddChild(co);
+
+    co->AddProjectedPoints(glm_points);
+  }
   
   
 
   root->AddChild(cameras1);
-  root->AddChild(cameras2);
+  // root->AddChild(cameras2);
 
   // std::cout << "kpts_count = " << kpts_count << std::endl;
 

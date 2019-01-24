@@ -430,10 +430,42 @@ std::map<std::string, std::shared_ptr<Shader> > ObjectFactory::shaders_;
 
 class CameraObject: public DObject {
   public:
-  CameraObject(const CameraIntrinsics intr) : CameraObject(intr.wr, intr) {}
+  CameraObject(const CameraIntrinsics intr) : CameraObject(intr.wr, intr) {
+    // std::cout << "CameraObject:con1 = ";
+    // intr.print();
+    // std::cout << std::endl;
+  }
+
+  CameraObject(const CameraIntrinsics intr, const int width, const int height)
+      : CameraObject(intr.wr, {
+          .fx = intr.fx / static_cast<float>(width),
+          .fy = intr.fy / static_cast<float>(height),
+          .cx = intr.cx / static_cast<float>(width),
+          .cy = intr.cy / static_cast<float>(height)}) {}
+/*
+    std::cout << "CameraObject:con2 = ";
+    intr.print();
+    std::cout << std::endl;
+
+    CameraIntrinsics cintr(intr);
+    cintr.fx = cintr.fx / static_cast<double>(width);
+    cintr.fy = cintr.fy / static_cast<double>(height);
+    cintr.cx = cintr.cx / static_cast<double>(width);
+    cintr.cy = cintr.cy / static_cast<double>(height);
+    CameraObject(cintr.wr, cintr);
+  }
+*/
 
   CameraObject(const float width_ratio = 1.0f, const CameraIntrinsics intr = CameraIntrinsics())
       : DObject(nullptr, "CameraObject"), intrinsics_(intr), width_ratio_(width_ratio) {
+
+    // std::cout << "CameraObject:con3 = ";
+    // intr.print();
+    // std::cout << std::endl;
+
+    // std::cout << "camera: ";
+    // intr.print();
+    // std::cout << std::endl;
 
     // TODO: Move to the usage of intr.wr instead of separate width_ration var
     intrinsics_.wr = width_ratio;

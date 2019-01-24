@@ -484,7 +484,7 @@ void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& 
     
 
 
-    /*
+    
     for (size_t i = 0; i < std::min(static_cast<int>(knnMatches[0].size()), 5); ++i) {
       // std::cout << "match 0 = " << knnMatches[i][0].distance << ", " << knnMatches[i][0].queryIdx << " = " << knnMatches[i][0].trainIdx << std::endl;
       // std::cout << "match 1 = " << knnMatches[i][1].distance << ", " << knnMatches[i][1].queryIdx << " = " << knnMatches[i][1].trainIdx << std::endl;
@@ -868,5 +868,78 @@ void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Poi
 
   cv::convertPointsFromHomogeneous(points4dh.t(), points3d);
 
+}
+
+std::vector<double> GetReprojectionErrors(const std::vector<cv::Point2f>& points, const cv::Mat& proj, const cv::Mat& points3d) {
+
+  std::vector<double> errs(points3d.rows);
+
+  cv::Mat points3dh;
+  points3d.convertTo(points3dh, CV_64F);
+  cv::convertPointsToHomogeneous(points3dh, points3dh);
+  std::cout << "points3dh.row(1) = " << points3dh.row(1) << std::endl << std::flush;
+  std::cout << "points3dh.size = " << points3dh.rows << ", " << points3d.cols << std::endl << std::flush;
+  std::cout << "points3dh.c = " << points3dh.channels() << std::endl << std::flush;
+  std::cout << "points3dh.type = " << points3dh.type() << std::endl << std::flush;
+  std::cout << "proj.type = " << proj.type() << std::endl << std::flush;
+
+
+  // cv::Mat points3dhc(points3dh.rows, 4, CV_64F);
+  // cv::Mat points3dhc(points3dh);
+  // points3dh.convertTo(points3dhc, CV_64F);
+  points3dh = points3dh.reshape(1);
+  //cv::Mat points3dhc = points3dh.reshape(1); // (points3dh.rows, 4, CV_64F, points3dh.data);
+  // points3dh.convertTo(points3dhc, CV_64F);
+  std::cout << "points3dhc.row(1) = " << points3dh.row(1) << std::endl << std::flush;
+  std::cout << "points3dhc.type = " << points3dh.type() << std::endl << std::flush;
+  std::cout << "proj1.size = " << proj.rows << ", " << proj.cols << std::endl << std::flush;
+  std::cout << "points3dhc.size = " << points3dh.rows << ", " << points3dh.cols << std::endl << std::flush;
+  std::cout << "points3dhc.c = " << points3dh.channels() << std::endl << std::flush;
+  cv::Mat ph = proj * points3dh.t();
+  // cv::Mat p2h = proj2 * points3d.t();
+  cv::convertPointsFromHomogeneous(ph.t(), ph);
+  // cv::convertPointsFromHomogeneous(p2h.t(), p2h);
+  std::cout << "p1h.size = " << ph.rows << ", " << ph.cols << std::endl << std::flush;
+  std::cout << "p1h.c = " << ph.channels() << std::endl << std::flush;
+  // std::cout << "p2h.size = " << p2h.size() << std::endl << std::flush;
+  // cv::Mat p1, p2;
+  // cv::convertPointsFromHomogeneous(p1h, p1);
+  // cv::convertPointsFromHomogeneous(p2h, p2);
+  // std::cout << "p1.size = " << p1.size() << std::endl;
+  // std::cout << "p2h.size = " << p2h.size() << std::endl;
+  std::cout << "p1h.row(0) = " << ph.row(0) << std::endl;
+  // std::cout << "p2h.row(0) = " << p2h.row(0) << std::endl;
+
+
+  for (size_t i = 0; i < points.size(); ++i) {
+    double dx, dy;
+    double err;
+    dx = abs(ph.at<double>(i, 0) - points[i].x);
+    dy = abs(ph.at<double>(i, 1) - points[i].y);
+    err = sqrt(dx * dx + dy * dy);
+    errs[i] = err;
+    // std::cout << i << " : err = " << std::fixed << std::setprecision(6) << err << std::endl;
+    // p1h.at<double>(i, 0) = abs(p1h.at<double>(i, 0) - points1f[i].x);
+    // p1h.at<double>(i, 1) = abs(p1h.at<double>(i, 1) - points1f[i].y);
+    // p2h.at<double>(i, 0) = abs(p2h.at<double>(i, 0) - points2f[i].x);
+    // p2h.at<double>(i, 1) = abs(p2h.at<double>(i, 1) - points2f[i].y);
+  }
+
+  return errs;
+
+}
+
+std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp) {
+  os << "(" << wp.pt << ") from ";
+  bool first = true;
+  for (auto& v : wp.views) {
+    if (!first) {
+      os << ", ";
+    } else {
+      first = false;
+    }
+    os << "[" << v.first << "," << v.second << "]";
+  }
+  return os;
 }
 
