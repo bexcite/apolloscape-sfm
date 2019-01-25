@@ -1,6 +1,8 @@
 #ifndef CV_GL_SFM_H_
 #define CV_GL_SFM_H_
 
+#include <ceres/ceres.h>
+
 #include <opencv2/opencv.hpp>
 #include "opencv2/xfeatures2d.hpp"
 #include <glm/glm.hpp>
@@ -31,7 +33,7 @@ struct CameraInfo {
 };
 
 struct WorldPoint3D {
-  cv::Point3f pt;
+  cv::Point3d pt;
   std::map<int, int> views;
 };
 
@@ -70,7 +72,21 @@ void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Poi
 
 std::vector<double> GetReprojectionErrors(const std::vector<cv::Point2f>& points, const cv::Mat& proj, const cv::Mat& points3d);
 
+double GetReprojectionError(const Map3D& map, const std::vector<CameraInfo>& cameras, const std::vector<Features>& features);
+
 std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp);
+
+
+// ============ Ceres Types / Functions ====
+
+void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const std::vector<Features>& features);
+
+struct SuperCostFunctor {
+  template <typename T> bool operator()(const T* const x, T* residual) const {
+    residual[0] = 10.0 - x[0];
+    return true;
+  }
+};
 
 
 

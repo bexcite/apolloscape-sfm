@@ -4,10 +4,19 @@ message("my INCLUDE DIRS = " ${PROJECT_INCLUDE_DIRS})
 # cv_gl_lib - library with all shared code
 add_library(cv_gl_lib shader.cpp camera.cpp mesh.cpp gl_window.cpp utils.cpp sfm.cpp)
 set_property(TARGET cv_gl_lib PROPERTY CXX_STANDARD 11)
-target_include_directories(cv_gl_lib PUBLIC ${PROJECT_INCLUDE_DIRS} )
+target_include_directories(cv_gl_lib PUBLIC ${PROJECT_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS})
 # message("boost INCLUDE_DIRS = " ${Boost_INCLUDE_DIRS})
 # message("boost LIBRARIES = " ${Boost_LIBRARIES})
-target_link_libraries(cv_gl_lib PUBLIC glad glfw stb_image glm assimp Boost::filesystem opencv_imgcodecs opencv_calib3d opencv_xfeatures2d)
+target_link_libraries(cv_gl_lib PUBLIC 
+    glad 
+    glfw 
+    stb_image 
+    glm assimp 
+    Boost::filesystem 
+    opencv_imgcodecs 
+    opencv_calib3d 
+    opencv_xfeatures2d
+    ${CERES_LIBRARIES})
 set_target_properties(cv_gl_lib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 

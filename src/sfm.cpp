@@ -929,6 +929,33 @@ std::vector<double> GetReprojectionErrors(const std::vector<cv::Point2f>& points
 
 }
 
+double GetReprojectionError(const Map3D& map, const std::vector<CameraInfo>& cameras, const std::vector<Features>& features) {
+
+  double err = 0.0;
+
+  for (size_t i = 0; i < map.size(); ++i) {
+    for (auto& view : map[i].views) {
+      cv::Mat proj = GetProjMatrix(cameras[view.first]);
+      const cv::Point2f& point = features[view.first].keypoints[view.second].pt;
+      cv::Matx41d point3dh(
+        map[i].pt.x, map[i].pt.y, map[i].pt.z, 1.0
+      );
+      cv::Mat pred = proj * cv::Mat(point3dh);
+      pred = pred / pred.at<double>(2);
+      double dx = pred.at<double>(0) - double(point.x);
+      double dy = pred.at<double>(1) - double(point.y);
+      // std::cout << "pred = " << pred << std::endl;
+      // std::cout << "dx, dy = " << dx << ", " << dy << std::endl;
+      err += (dx * dx + dy * dy);
+    }
+    
+  }
+
+  return err;
+
+
+}
+
 std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp) {
   os << "(" << wp.pt << ") from ";
   bool first = true;
@@ -941,5 +968,163 @@ std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp) {
     os << "[" << v.first << "," << v.second << "]";
   }
   return os;
+}
+
+// =====================================================
+// ======== Ceres / BundleOptimization =================
+
+struct ReprojectionErrorFunctor {
+  ReprojectionErrorFunctor(const CameraInfo& cam_info, const cv::Point2f& img_point)
+      : camera_info(cam_info), image_point(img_point) {
+
+    proj = GetProjMatrix(camera_info);
+  }
+
+  template<typename T>
+  bool operator()(const T* const point3d,
+                  T* residuals) const {
+    T p[3];
+    p[0] = proj.at<double>(0, 0) * point3d[0] +
+           proj.at<double>(0, 1) * point3d[1] +
+           proj.at<double>(0, 2) * point3d[2] +
+           proj.at<double>(0, 3);
+    p[1] = proj.at<double>(1, 0) * point3d[0] +
+           proj.at<double>(1, 1) * point3d[1] +
+           proj.at<double>(1, 2) * point3d[2] +
+           proj.at<double>(1, 3);
+    p[2] = proj.at<double>(2, 0) * point3d[0] +
+           proj.at<double>(2, 1) * point3d[1] +
+           proj.at<double>(2, 2) * point3d[2] +
+           proj.at<double>(2, 3);
+    // std::cout << "p0/p2 = " << p[0] / p[2] << std::endl;
+    // std::cout << "p1/p2 = " << p[1] / p[2] << std::endl;
+    residuals[0] = p[0] / p[2] - T(image_point.x);
+    residuals[1] = p[1] / p[2] - T(image_point.y);
+    // std::cout << "res0 = " << residuals[0] << std::endl;
+    // std::cout << "res1 = " << residuals[1] << std::endl;
+    return true;
+  }
+
+  static ceres::CostFunction* Create(const CameraInfo& cam_info, const cv::Point2f& img_point) {
+    return (new ceres::AutoDiffCostFunction<ReprojectionErrorFunctor, 2, 3>(
+              new ReprojectionErrorFunctor(cam_info, img_point)));
+  }
+
+  const CameraInfo& camera_info;
+  const cv::Point2f& image_point;
+  cv::Mat proj;
+};
+
+
+void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const std::vector<Features>& features) {
+
+  // TEST output
+  double R[2];
+  ReprojectionErrorFunctor* f = new ReprojectionErrorFunctor(cameras[2], features[2].keypoints[map[0].views[2]].pt);
+  ReprojectionErrorFunctor* f2 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[0].views[5]].pt);
+  ReprojectionErrorFunctor* f3 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[1].views[5]].pt);
+  ReprojectionErrorFunctor* f4 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[3].views[5]].pt);
+
+
+  std::cout << "Optimize Bundle!\n";
+
+  ceres::Problem problem;
+
+  
+  double* points = new double[3 * map.size()];
+  for (size_t i = 0; i < map.size(); ++i) {
+    points[3*i + 0] = map[i].pt.x;
+    points[3*i + 1] = map[i].pt.y;
+    points[3*i + 2] = map[i].pt.z;
+  }
+
+  for (size_t i = 0; i < map.size(); ++i) {
+    for (auto& view : map[i].views) {
+      ceres::CostFunction* cost_function = ReprojectionErrorFunctor::Create(
+          cameras[view.first],
+          features[view.first].keypoints[view.second].pt);
+      problem.AddResidualBlock(cost_function,
+          NULL,
+          &points[3 * i]);
+    }
+  }
+
+  // DEBUG OUTPUT
+  std::cout << "ERRORS BEFORE: \n";
+  (*f)(points, R);
+  std::cout << "Residuals: " << R[0] << ", " << R[1] << std::endl;
+  (*f2)(points, R);
+  std::cout << "Residuals2: " << R[0] << ", " << R[1] << std::endl;
+  (*f3)(&points[3], R);
+  std::cout << "Residuals3: " << R[0] << ", " << R[1] << std::endl;
+  (*f4)(&points[9], R);
+  std::cout << "Residuals4: " << R[0] << ", " << R[1] << std::endl;
+  std::cout << "points[0-2]: " << points[0] << ", " << points[1] << ", " << points[2] << std::endl;
+
+  // Make Ceres automatically detect the bundle structure. Note that the
+  // standard solver, SPARSE_NORMAL_CHOLESKY, also works fine but it is slower
+  // for standard bundle adjustment problems.
+  ceres::Solver::Options options;
+  options.linear_solver_type = ceres::DENSE_SCHUR;
+  options.minimizer_progress_to_stdout = true;
+  options.max_num_iterations = 500;
+  options.eta = 1e-2;
+  options.max_solver_time_in_seconds = 10;
+  options.logging_type = ceres::LoggingType::PER_MINIMIZER_ITERATION;
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+  std::cout << summary.BriefReport() << "\n";
+
+  if (not (summary.termination_type == ceres::CONVERGENCE)) {
+      std::cerr << "Bundle adjustment failed." << std::endl;
+      return;
+  }
+
+  
+  // DEBUG OUTPUT
+  std::cout << "ERRORS AFTER: \n";
+  (*f)(points, R);
+  std::cout << "Residuals: " << R[0] << ", " << R[1] << std::endl;
+  (*f2)(points, R);
+  std::cout << "Residuals2: " << R[0] << ", " << R[1] << std::endl;
+  (*f3)(&points[3], R);
+  std::cout << "Residuals3: " << R[0] << ", " << R[1] << std::endl;
+  (*f4)(&points[9], R);
+  std::cout << "Residuals4: " << R[0] << ", " << R[1] << std::endl;
+  std::cout << "points[0-2]: " << points[0] << ", " << points[1] << ", " << points[2] << std::endl;
+
+  
+
+  // === Copy points back ===
+  for (size_t i = 0; i < map.size(); ++i) {
+    map[i].pt.x = points[3 * i];
+    map[i].pt.y = points[3 * i + 1];
+    map[i].pt.z = points[3 * i + 2];
+  }
+
+  /*
+  // The variable to solve for with its initial value. It will be
+  // mutated in place by the solver.
+  double x = 0.5;
+  const double initial_x = x;
+  // Build the problem.
+  ceres::Problem problem;
+  // Set up the only cost function (also known as residual). This uses
+  // auto-differentiation to obtain the derivative (jacobian).
+  ceres::CostFunction* cost_function =
+      new ceres::AutoDiffCostFunction<SuperCostFunctor, 1, 1>(new SuperCostFunctor);
+  problem.AddResidualBlock(cost_function, NULL, &x);
+  // Run the solver!
+  ceres::Solver::Options options;
+  options.minimizer_progress_to_stdout = true;
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+  std::cout << summary.BriefReport() << "\n";
+  std::cout << "x : " << initial_x
+            << " -> " << x << "\n";
+  */
+
+  delete[] points;
+
 }
 

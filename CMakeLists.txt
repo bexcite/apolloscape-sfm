@@ -24,8 +24,12 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.59 REQUIRED COMPONENTS filesystem)
 # find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenCV REQUIRED)
-
+find_package(Ceres REQUIRED)
 message("OpenCV Version =======: " ${OpenCV_VERSION})
+
+message("Ceres Include Dirs ==: " ${CERES_INCLUDE_DIRS})
+message("Ceres Libraries =====:  " ${CERES_LIBRARIES})
+
 
 message("Project Name =======: " ${PROJECT_NAME})
 

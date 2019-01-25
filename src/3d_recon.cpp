@@ -13,6 +13,8 @@
 
 #include "cv_gl/ccomp.hpp"
 
+#include <glog/logging.h>
+
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
 
@@ -35,6 +37,9 @@ namespace fs = boost::filesystem;
 
 int main(int argc, char* argv[]) {
   std::cout << "Welcome 3D Reconstruction.\n";
+
+  // For Ceres Solver
+  google::InitGoogleLogging(argv[0]);
 
   CameraIntrinsics intr1;
   intr1.fx = 1450.317230113;
@@ -384,8 +389,19 @@ int main(int argc, char* argv[]) {
   std::cout << "rep_err2 = " << rep_err2 << std::endl;
   std::cout << "map.size = " << map.size() << std::endl;
 
+  double all_error;
+
+  all_error = GetReprojectionError(map, cameras, image_features);
+  std::cout << "all_error = " << all_error << std::endl;
+
   // == Optimize Bundle ==
   // TODO!!!!!!!!!!!!!
+  OptimizeBundle(map, cameras, image_features);
+
+  all_error = GetReprojectionError(map, cameras, image_features);
+  std::cout << "all_error = " << all_error << std::endl;
+
+  // OptimizeBundle(map, cameras, image_features);
 
 
 

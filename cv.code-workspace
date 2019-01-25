@@ -8,6 +8,9 @@
     },
     {
       "path": "/Users/pavlo/code/tech-problems/connected2"
+    },
+    {
+      "path": "/Users/pavlo/code/ceres-solver"
     }
   ],
   "settings": {
@@ -30,7 +33,55 @@
       "iostream": "cpp",
       "iosfwd": "cpp",
       "ios": "cpp",
-      "tuple": "cpp"
+      "tuple": "cpp",
+      "cstdint": "cpp",
+      "__tree": "cpp",
+      "map": "cpp",
+      "__bit_reference": "cpp",
+      "__debug": "cpp",
+      "__functional_base": "cpp",
+      "__hash_table": "cpp",
+      "__mutex_base": "cpp",
+      "__split_buffer": "cpp",
+      "__string": "cpp",
+      "__threading_support": "cpp",
+      "__tuple": "cpp",
+      "array": "cpp",
+      "atomic": "cpp",
+      "bitset": "cpp",
+      "cctype": "cpp",
+      "chrono": "cpp",
+      "cmath": "cpp",
+      "complex": "cpp",
+      "cstdarg": "cpp",
+      "cstdio": "cpp",
+      "cstdlib": "cpp",
+      "cstring": "cpp",
+      "ctime": "cpp",
+      "cwchar": "cpp",
+      "cwctype": "cpp",
+      "deque": "cpp",
+      "fstream": "cpp",
+      "functional": "cpp",
+      "iomanip": "cpp",
+      "istream": "cpp",
+      "iterator": "cpp",
+      "limits": "cpp",
+      "list": "cpp",
+      "locale": "cpp",
+      "mutex": "cpp",
+      "numeric": "cpp",
+      "queue": "cpp",
+      "ratio": "cpp",
+      "set": "cpp",
+      "sstream": "cpp",
+      "stack": "cpp",
+      "streambuf": "cpp",
+      "string_view": "cpp",
+      "system_error": "cpp",
+      "thread": "cpp",
+      "unordered_map": "cpp",
+      "utility": "cpp"
     }
   }
 }
