@@ -281,10 +281,15 @@ void ImShowMatchesWithResize(const cv::Mat& img1,
   cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
 
   if (!match.empty()) {
-    DrawMatchesWithResize(img1, kpoints1,
-                          img2, kpoints2,
+    
+    std::vector<cv::DMatch> new_match;
+    for (size_t i = 0; i < match.size(); ++i) {
+      new_match.push_back(cv::DMatch(i, i, match[i].distance));
+    }
+    DrawMatchesWithResize(img1, kpoints1m,
+                          img2, kpoints2m,
                           img_matches, 
-                          scale, match);
+                          scale, new_match);
     ImShow("img_matches", img_matches);
     cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 20);
   }

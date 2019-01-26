@@ -31,6 +31,8 @@ public:
   template<typename Func>
   void AddProcessInput(const unsigned int key, Func f);
 
+  double GetTime() { return glfwGetTime(); }
+
   float delta_time;
 
   // void (*f_ptr)();
@@ -61,6 +63,9 @@ private:
   float last_y_;
 
   float delta_time_sum_ = 0;
+
+  // QUICK FIX for GLFW bug 3,2,1
+  // static int macMoved;
 
 };
 

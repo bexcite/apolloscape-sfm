@@ -104,21 +104,20 @@ bool GLWindow::IsRunning() {
   return true;
 }
 
-
+// int GLWindow::macMoved = 0;
 void GLWindow::RunLoop() {
   glfwSwapBuffers(window_);
   glfwPollEvents();
 
 #ifdef __APPLE__
   // std::cout << "Apple" << std::endl;
-  static int macMoved = 0;
 
-  if (macMoved < 2) {
-      int x, y;
-      glfwGetWindowPos(this->window_, &x, &y);
-      glfwSetWindowPos(this->window_, ++x, y);
-      macMoved++;
-  }
+  // if (macMoved < 2) {
+  //     int x, y;
+  //     glfwGetWindowPos(this->window_, &x, &y);
+  //     glfwSetWindowPos(this->window_, macMoved % 2 ? ++x : --x, y);
+  //     macMoved++;
+  // }
 #endif    
 
 }
