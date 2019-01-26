@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unordered_set>
 
 #include <boost/filesystem.hpp>
 
@@ -78,8 +79,8 @@ int main(int argc, char* argv[]) {
   std::cout << "Camera Poses 2: " << camera2_poses[1];
 
   int p_camera_pose = 24; // 24
-  int p_camera_start = 20; //22
-  int p_camera_finish = 23; //25
+  int p_camera_start = 36; //22
+  int p_camera_finish = 39; //25
 
   const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
 
@@ -183,8 +184,9 @@ int main(int argc, char* argv[]) {
   
   CComponents<std::pair<int, int> > ccomp;
 
-  // Match Features Between Image Pairs
+  // == Match Features Between Image Pairs
   std::vector<Matches> image_matches;
+  std::map<std::pair<int, int>, int> matches_index;
   int total_matched_points = 0;
   int cl = 0;
   int longest = 0;
@@ -200,36 +202,59 @@ int main(int argc, char* argv[]) {
     matches.image_index.first = ip.first;
     matches.image_index.second = ip.second;
     ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
+
+    std::cout << "Match: " << ip.first << " - " << ip.second 
+              << " : matches.size = " << matches.match.size() << std::endl;
+
+    // Don't add empty or small matches
+    if (matches.match.size() < 30) { 
+      continue;
+    }
+
     image_matches.emplace_back(matches);
+
+    // put index
+    auto p1 = std::make_pair(ip.first, ip.second);
+    auto p2 = std::make_pair(ip.second, ip.first);
+    matches_index.insert(
+        std::make_pair(p1, image_matches.size() - 1));
+    matches_index.insert(
+        std::make_pair(p2, image_matches.size() - 1));
 
     if (matches.match.size() > most_match) {
       most_match = matches.match.size();
       most_match_id = image_matches.size() - 1;
     }
 
-    std::cout << "Match: " << ip.first << " - " << ip.second << " : matches.size = " << matches.match.size() << std::endl;
     total_matched_points += matches.match.size();
     std::cout << "total_matched_points = " << total_matched_points << std::endl;
 
     for (int i = 0; i < matches.match.size(); ++i) {
-      std::pair<int, int> p1 = std::make_pair(matches.image_index.first, matches.match[i].queryIdx);
-      std::pair<int, int> p2 = std::make_pair(matches.image_index.second, matches.match[i].trainIdx);
+      std::pair<int, int> p1 = std::make_pair(
+          matches.image_index.first,
+          matches.match[i].queryIdx);
+      std::pair<int, int> p2 = std::make_pair(
+          matches.image_index.second, 
+          matches.match[i].trainIdx);
       // std::cout << "union: " << p1 << ", " << p2 << std::endl;
       ccomp.Union(p1, p2);
     }
 
+    // TODO: Extract from the loop
+    /*
     std::cout << "ccomp.count = " << ccomp.Count() << std::endl;
     std::vector<int> comp_ids = ccomp.GetComponentIds();
     cl = 0;
     longest = 0;
     for (auto c : comp_ids) {
-      auto elems = ccomp.GetComponentsById(c);
+      auto elems = ccomp.GetElementsById(c);
       if (elems.size() > longest) {
         longest = elems.size();
         cl = c;
       }
     }
     std::cout << "longest = " << longest << ", id = " << cl << std::endl;
+    */
 
     /*
     // ======== Show Match =========
@@ -269,6 +294,14 @@ int main(int argc, char* argv[]) {
             << std::endl;
 
 
+  // std::unordered_set<int> processed_views;
+  std::unordered_set<int> used_views;
+
+
+  std::unordered_set<int> todo_views;
+  for (size_t i = 0; i < images.size(); ++i) {
+    todo_views.insert(i);
+  }
   
   // == Show Image Pair with best matches ==
   int img1_id = image_matches[most_match_id].image_index.first;
@@ -329,8 +362,6 @@ int main(int argc, char* argv[]) {
   cv::Mat points3d;
   TriangulatePoints(cameras[img1_id], points1f, cameras[img2_id], points2f, points3d);
 
-  
-
 
   std::cout << "points3d.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
   std::cout << "points3d.c = " << points3d.channels() << std::endl << std::flush;
@@ -352,12 +383,11 @@ int main(int argc, char* argv[]) {
 
   Map3D map;
 
-
   // std::vector<cv::Point3d> points3d_good;
   for (size_t i = 0; i < errs1.size(); ++i) {
     rep_err1 += errs1[i];
     rep_err2 += errs2[i];
-    if (errs1[i] < 10.0 && errs2[i] < 10.0) {
+    // if (errs1[i] < 10.0 && errs2[i] < 10.0) {
       // points3d_good.push_back(
       //   cv::Point3d(
       //     points3d.at<float>(i, 0),
@@ -365,19 +395,25 @@ int main(int argc, char* argv[]) {
       //     points3d.at<float>(i, 2)
       //   ));
 
-      // Add point to the map
-      WorldPoint3D wp;
-      wp.pt = cv::Point3d(
-          points3d.at<float>(i, 0),
-          points3d.at<float>(i, 1),
-          points3d.at<float>(i, 2));
-      wp.views[image_matches[most_match_id].image_index.first] 
-          = image_matches[most_match_id].match[i].queryIdx;
-      wp.views[image_matches[most_match_id].image_index.second] 
-          = image_matches[most_match_id].match[i].trainIdx;
-      map.push_back(wp);
-      
+    if (errs1[i] > 3.0 || errs2[i] > 3.0) {
+      // std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
+      //           << ", " << errs2[i] << std::endl;
+      continue;
     }
+
+      // Add point to the map
+    WorldPoint3D wp;
+    wp.pt = cv::Point3d(
+        points3d.at<float>(i, 0),
+        points3d.at<float>(i, 1),
+        points3d.at<float>(i, 2));
+    wp.views[image_matches[most_match_id].image_index.first] 
+        = image_matches[most_match_id].match[i].queryIdx;
+    wp.views[image_matches[most_match_id].image_index.second] 
+        = image_matches[most_match_id].match[i].trainIdx;
+    map.push_back(wp);
+      
+    // }
   }
 
   // for (auto& wp : map) {
@@ -390,7 +426,6 @@ int main(int argc, char* argv[]) {
   std::cout << "map.size = " << map.size() << std::endl;
 
   double all_error;
-
   all_error = GetReprojectionError(map, cameras, image_features);
   std::cout << "all_error = " << all_error << std::endl;
 
@@ -400,6 +435,172 @@ int main(int argc, char* argv[]) {
 
   all_error = GetReprojectionError(map, cameras, image_features);
   std::cout << "all_error = " << all_error << std::endl;
+
+  // processed_views.insert(img1_id);
+  // processed_views.insert(img2_id);
+  used_views.insert(img1_id);
+  used_views.insert(img2_id);
+
+  todo_views.erase(img1_id);
+  todo_views.erase(img2_id);
+
+  
+
+  while (todo_views.size() > 0) {
+
+    // TODO: Get next best view
+    int next_img_id = GetNextBestView(map, todo_views, 
+        ccomp, image_matches, matches_index);
+
+    if (next_img_id < 0) {
+      next_img_id = (* todo_views.begin());
+      todo_views.erase(next_img_id);
+      continue;
+    }
+    
+    /*
+    int img_id = -1;
+    std::list<int>::iterator img_id_it;
+    for (auto it = todo_views.begin(); it != todo_views.end(); ++it) {
+      // calc matches
+      img_id = (*it);
+      img_id_it = it;
+    }
+    */
+
+    if (next_img_id >= 0) {
+      std::cout << "====> Process img_id = " << next_img_id << " (";
+      std::cout << "todo_views.size = " << todo_views.size();
+      std::cout <<  ") ... \n"; 
+
+      Map3D view_map;
+
+      // Pairwise use next_img_id and used_views
+      for (auto view_it = used_views.begin(); view_it != used_views.end(); ++view_it) {
+        int view_id = (* view_it);
+        // std::cout << "==> Triangulate pair = " << next_img_id << ", "
+        //           << view_id << std::endl;
+
+        int first_id = next_img_id;
+        int second_id = view_id;
+
+        // std::cout << "first, second = " << first_id << ", "
+        //           << second_id << std::endl;
+
+        auto m = matches_index.find(std::make_pair(first_id, second_id));
+        if (m == matches_index.end()) {
+          // std::cout << "skip pair ...\n";
+          continue;
+        }
+
+        int matches_id = m->second;
+        Matches& matches = image_matches[matches_id];
+        // std::cout << "matches_id = " << matches_id
+        //           << ", matches.size = " << matches.match.size() << std::endl;
+        
+        if (matches.image_index.first != first_id) {
+          std::swap(first_id, second_id);
+          // std::cout << "SWAP: first, second = " << first_id << ", "
+          //         << second_id << std::endl;
+          // std::cout << "IMAGE_INDEX: first, second = " << matches.image_index.first << ", "
+          //         << matches.image_index.second << std::endl;
+        }
+
+        // == Triangulate Points =====
+        std::vector<cv::Point2f> points1f, points2f;
+        KeyPointsToPointVec(image_features[first_id].keypoints,
+                            image_features[second_id].keypoints,
+                            matches.match, points1f, points2f);
+
+        cv::Mat points3d;
+        TriangulatePoints(cameras[first_id], points1f, 
+                          cameras[second_id], points2f, 
+                          points3d);
+
+
+        // std::cout << "points3d.size = " << points3d.rows << ", " 
+        //           << points3d.cols << std::endl << std::flush;
+        // std::cout << "points3d.c = " << points3d.channels() 
+        //           << std::endl << std::flush;
+        // std::cout << "points3d.type = " << points3d.type() 
+        //           << std::endl << std::flush;
+        // std::cout << "points3d.row(1) = " << points3d.row(1) 
+        //           << std::endl << std::flush;
+
+        // Backprojection error
+        cv::Mat proj1 = GetProjMatrix(cameras[first_id]);
+        cv::Mat proj2 = GetProjMatrix(cameras[second_id]);
+
+        std::vector<double> errs1 = GetReprojectionErrors(points1f, proj1, points3d);
+        std::vector<double> errs2 = GetReprojectionErrors(points2f, proj2, points3d);
+
+        double rep_err1 = 0.0;
+        double rep_err2 = 0.0;
+        for (size_t i = 0; i < errs1.size(); ++i) {
+          // std::cout << i << ": errs1, errs2 = " << errs1[i]
+          //           << ", " << errs2[i] << std::endl;
+          rep_err1 += errs1[i];
+          rep_err2 += errs2[i];
+
+          if (errs1[i] > 3.0 || errs2[i] > 3.0) {
+            // std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
+            //           << ", " << errs2[i] << std::endl;
+            continue;
+          }
+
+
+            // Add point to the map
+          WorldPoint3D wp;
+          wp.pt = cv::Point3d(
+              points3d.at<float>(i, 0),
+              points3d.at<float>(i, 1),
+              points3d.at<float>(i, 2));
+          wp.views[first_id]
+              = matches.match[i].queryIdx;
+          wp.views[second_id] 
+              = matches.match[i].trainIdx;
+          view_map.push_back(wp);
+            
+          // }
+        }
+
+        // std::cout << "rep_err1 = " << rep_err1 << std::endl;
+        // std::cout << "rep_err2 = " << rep_err2 << std::endl;
+        std::cout << "view_map.size = " << view_map.size() << std::endl;
+
+        // for (auto& wp : view_map) {
+        //   std::cout << "view_mp: " << wp << std::endl;
+        // }
+
+
+      }
+
+      double all_error;
+
+      
+      all_error = GetReprojectionError(view_map, cameras, image_features);
+      // std::cout << "view_error = " << all_error << std::endl;
+      // == Optimize Bundle ==
+      OptimizeBundle(view_map, cameras, image_features);
+      all_error = GetReprojectionError(view_map, cameras, image_features);
+      // std::cout << "view_error = " << all_error << std::endl;      
+
+
+      MergeToTheMap(map, view_map, ccomp);
+
+
+      all_error = GetReprojectionError(map, cameras, image_features);
+      std::cout << "map_error = " << all_error << std::endl;
+      // == Optimize Bundle ==
+      OptimizeBundle(map, cameras, image_features);
+      all_error = GetReprojectionError(map, cameras, image_features);
+      std::cout << "map_error = " << all_error << std::endl;
+
+
+      used_views.insert(next_img_id);
+      todo_views.erase(next_img_id);
+    }
+  }
 
   // OptimizeBundle(map, cameras, image_features);
 
@@ -668,6 +869,13 @@ int main(int argc, char* argv[]) {
 
     // co1->AddProjectedPoints(glm_points);
     // co2->AddProjectedPoints(glm_points);    
+
+
+  all_error = GetReprojectionError(map, cameras, image_features);
+  std::cout << "FINAL_error = " << all_error << std::endl;
+  std::cout << "USED_views = " << used_views.size()
+            << " out of " << images.size() << std::endl;
+  std::cout << "FINAL_map.size = " << map.size() << " points" << std::endl;
 
 
   std::map<int, std::vector<int> > map_cameras;

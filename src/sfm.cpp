@@ -294,7 +294,7 @@ void ComputeLineKeyPointsMatch(const Features& features1,
     }
   }
 
-  std::cout << "lgood_matches.size = " << matches.match.size() << std::endl;
+  // std::cout << "lgood_matches.size = " << matches.match.size() << std::endl;
 }
 
 
@@ -864,7 +864,7 @@ void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Poi
   cv::Mat points4dh;
   cv::triangulatePoints(mat_proj1, mat_proj2, points1, points2, points4dh);
 
-  std::cout << "points4dh.size = " << points4dh.size() << std::endl;
+  // std::cout << "points4dh.size = " << points4dh.size() << std::endl;
 
   cv::convertPointsFromHomogeneous(points4dh.t(), points3d);
 
@@ -877,38 +877,27 @@ std::vector<double> GetReprojectionErrors(const std::vector<cv::Point2f>& points
   cv::Mat points3dh;
   points3d.convertTo(points3dh, CV_64F);
   cv::convertPointsToHomogeneous(points3dh, points3dh);
-  std::cout << "points3dh.row(1) = " << points3dh.row(1) << std::endl << std::flush;
-  std::cout << "points3dh.size = " << points3dh.rows << ", " << points3d.cols << std::endl << std::flush;
-  std::cout << "points3dh.c = " << points3dh.channels() << std::endl << std::flush;
-  std::cout << "points3dh.type = " << points3dh.type() << std::endl << std::flush;
-  std::cout << "proj.type = " << proj.type() << std::endl << std::flush;
+  
+  // std::cout << "points3dh.row(1) = " << points3dh.row(1) << std::endl << std::flush;
+  // std::cout << "points3dh.size = " << points3dh.rows << ", " << points3d.cols << std::endl << std::flush;
+  // std::cout << "points3dh.c = " << points3dh.channels() << std::endl << std::flush;
+  // std::cout << "points3dh.type = " << points3dh.type() << std::endl << std::flush;
+  // std::cout << "proj.type = " << proj.type() << std::endl << std::flush;
 
 
-  // cv::Mat points3dhc(points3dh.rows, 4, CV_64F);
-  // cv::Mat points3dhc(points3dh);
-  // points3dh.convertTo(points3dhc, CV_64F);
   points3dh = points3dh.reshape(1);
-  //cv::Mat points3dhc = points3dh.reshape(1); // (points3dh.rows, 4, CV_64F, points3dh.data);
-  // points3dh.convertTo(points3dhc, CV_64F);
-  std::cout << "points3dhc.row(1) = " << points3dh.row(1) << std::endl << std::flush;
-  std::cout << "points3dhc.type = " << points3dh.type() << std::endl << std::flush;
-  std::cout << "proj1.size = " << proj.rows << ", " << proj.cols << std::endl << std::flush;
-  std::cout << "points3dhc.size = " << points3dh.rows << ", " << points3dh.cols << std::endl << std::flush;
-  std::cout << "points3dhc.c = " << points3dh.channels() << std::endl << std::flush;
+
+  // std::cout << "points3dhc.row(1) = " << points3dh.row(1) << std::endl << std::flush;
+  // std::cout << "points3dhc.type = " << points3dh.type() << std::endl << std::flush;
+  // std::cout << "proj1.size = " << proj.rows << ", " << proj.cols << std::endl << std::flush;
+  // std::cout << "points3dhc.size = " << points3dh.rows << ", " << points3dh.cols << std::endl << std::flush;
+  // std::cout << "points3dhc.c = " << points3dh.channels() << std::endl << std::flush;
   cv::Mat ph = proj * points3dh.t();
-  // cv::Mat p2h = proj2 * points3d.t();
   cv::convertPointsFromHomogeneous(ph.t(), ph);
-  // cv::convertPointsFromHomogeneous(p2h.t(), p2h);
-  std::cout << "p1h.size = " << ph.rows << ", " << ph.cols << std::endl << std::flush;
-  std::cout << "p1h.c = " << ph.channels() << std::endl << std::flush;
-  // std::cout << "p2h.size = " << p2h.size() << std::endl << std::flush;
-  // cv::Mat p1, p2;
-  // cv::convertPointsFromHomogeneous(p1h, p1);
-  // cv::convertPointsFromHomogeneous(p2h, p2);
-  // std::cout << "p1.size = " << p1.size() << std::endl;
-  // std::cout << "p2h.size = " << p2h.size() << std::endl;
-  std::cout << "p1h.row(0) = " << ph.row(0) << std::endl;
-  // std::cout << "p2h.row(0) = " << p2h.row(0) << std::endl;
+
+  // std::cout << "p1h.size = " << ph.rows << ", " << ph.cols << std::endl << std::flush;
+  // std::cout << "p1h.c = " << ph.channels() << std::endl << std::flush;
+  // std::cout << "p1h.row(0) = " << ph.row(0) << std::endl;
 
 
   for (size_t i = 0; i < points.size(); ++i) {
@@ -918,11 +907,6 @@ std::vector<double> GetReprojectionErrors(const std::vector<cv::Point2f>& points
     dy = abs(ph.at<double>(i, 1) - points[i].y);
     err = sqrt(dx * dx + dy * dy);
     errs[i] = err;
-    // std::cout << i << " : err = " << std::fixed << std::setprecision(6) << err << std::endl;
-    // p1h.at<double>(i, 0) = abs(p1h.at<double>(i, 0) - points1f[i].x);
-    // p1h.at<double>(i, 1) = abs(p1h.at<double>(i, 1) - points1f[i].y);
-    // p2h.at<double>(i, 0) = abs(p2h.at<double>(i, 0) - points2f[i].x);
-    // p2h.at<double>(i, 1) = abs(p2h.at<double>(i, 1) - points2f[i].y);
   }
 
   return errs;
@@ -953,8 +937,131 @@ double GetReprojectionError(const Map3D& map, const std::vector<CameraInfo>& cam
 
   return err;
 
+}
+
+
+int GetNextBestView(const Map3D& map, 
+    const std::unordered_set<int>& views, 
+    CComponents<std::pair<int, int> >& ccomp,
+    const std::vector<Matches>& image_matches,
+    const std::map<std::pair<int, int>, int>& matches_index) {
+
+  int view_id = -1;
+  int match_cnt = 0;
+
+  int view_id_size = -1;
+  int match_size = 0;
+  for (auto it = views.begin(); it != views.end(); ++it) {
+    int view = (*it);
+    int cnt = 0;
+    for (auto& wp : map) {
+
+      bool point_match = false;
+      for (auto& wp_view : wp.views) {
+        std::pair<int, int> v = wp_view;
+        std::pair<int, int> m_ind = std::make_pair(v.first, view);
+        auto m = matches_index.find(m_ind);
+        if (m == matches_index.end()) {
+          // std::cout << "skip pair = " << m_ind.first << ", "  
+          //           << m_ind.second << std::endl;
+          continue;
+        }
+
+        if (match_size < image_matches[m->second].match.size()) {
+          view_id_size = view;
+          match_size = image_matches[m->second].match.size();
+        }
+
+
+        for (size_t i = 0; i < image_matches[m->second].match.size(); ++i) {
+          const cv::DMatch& match = image_matches[m->second].match[i];
+          int p_id;
+          if (image_matches[m->second].image_index.first == view) {
+            p_id = match.queryIdx;
+          } else {
+            p_id = match.trainIdx;
+          }
+          std::pair<int, int> p = std::make_pair(view, p_id);
+          if (ccomp.Connected(v, p)) {
+            point_match = true;
+            break;
+          }
+        }
+
+        if (point_match) {
+          ++cnt;
+          break;
+        }
+
+      }
+
+
+    }
+    std::cout << "view = " << view << ", cnt = " << cnt 
+              << ", match_size = " << match_size
+              << std::endl;
+    if (match_cnt < cnt) {
+      view_id = view;
+      match_cnt = cnt;
+    }
+  }
+
+  // Final compare
+  if (view_id < 0) {
+    view_id = view_id_size;
+  }
+
+  return view_id;
 
 }
+
+// TODO: Make CComponents const!
+void MergeToTheMap(Map3D& map,
+                   const Map3D& local_map,
+                   CComponents<std::pair<int, int> >& ccomp) {
+  for (auto lp: local_map) {
+    std::pair<int, int> lp_view = (*lp.views.begin());
+
+    int cnt = 0;
+    bool skip = false;
+    for (auto& wp: map) {
+      std::pair<int, int> wp_view = (*wp.views.begin());
+
+      if (ccomp.Connected(lp_view, wp_view)) {
+        double dist = cv::norm(lp.pt - wp.pt);
+        // std::cout << "[" << cnt <<  "] Connected: \n  lp = " << lp
+        //           << "  wp = " << wp 
+        //           << "  dist = " << dist << std::endl;
+
+        if (dist > 0.5) {
+          // std::cout << "DON't CONNECT!!!!\n";
+          skip = true;
+          break;
+        }
+
+        // Merge lp.views to the wp
+        for (auto view : lp.views) {
+          wp.views.insert(view);
+        }
+        // std::cout << "Updated wp = " << wp << std::endl;
+        skip = true;
+        ++cnt;
+
+        break;
+
+        // if (cnt > 1) {
+        //   std::cout << "DOUBLE_CONNECT!!!!\n";
+        // }
+      }
+    }
+
+    if (/*cnt == 0 && */ !skip) {
+      map.push_back(lp);
+    }
+    
+  }
+}
+
 
 std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp) {
   os << "(" << wp.pt << ") from ";
@@ -1019,14 +1126,14 @@ struct ReprojectionErrorFunctor {
 void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const std::vector<Features>& features) {
 
   // TEST output
-  double R[2];
-  ReprojectionErrorFunctor* f = new ReprojectionErrorFunctor(cameras[2], features[2].keypoints[map[0].views[2]].pt);
-  ReprojectionErrorFunctor* f2 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[0].views[5]].pt);
-  ReprojectionErrorFunctor* f3 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[1].views[5]].pt);
-  ReprojectionErrorFunctor* f4 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[3].views[5]].pt);
+  // double R[2];
+  // ReprojectionErrorFunctor* f = new ReprojectionErrorFunctor(cameras[2], features[2].keypoints[map[0].views[2]].pt);
+  // ReprojectionErrorFunctor* f2 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[0].views[5]].pt);
+  // ReprojectionErrorFunctor* f3 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[1].views[5]].pt);
+  // ReprojectionErrorFunctor* f4 = new ReprojectionErrorFunctor(cameras[5], features[5].keypoints[map[3].views[5]].pt);
 
 
-  std::cout << "Optimize Bundle!\n";
+  // std::cout << "Optimize Bundle!\n";
 
   ceres::Problem problem;
 
@@ -1050,16 +1157,16 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   }
 
   // DEBUG OUTPUT
-  std::cout << "ERRORS BEFORE: \n";
-  (*f)(points, R);
-  std::cout << "Residuals: " << R[0] << ", " << R[1] << std::endl;
-  (*f2)(points, R);
-  std::cout << "Residuals2: " << R[0] << ", " << R[1] << std::endl;
-  (*f3)(&points[3], R);
-  std::cout << "Residuals3: " << R[0] << ", " << R[1] << std::endl;
-  (*f4)(&points[9], R);
-  std::cout << "Residuals4: " << R[0] << ", " << R[1] << std::endl;
-  std::cout << "points[0-2]: " << points[0] << ", " << points[1] << ", " << points[2] << std::endl;
+  // std::cout << "ERRORS BEFORE: \n";
+  // (*f)(points, R);
+  // std::cout << "Residuals: " << R[0] << ", " << R[1] << std::endl;
+  // (*f2)(points, R);
+  // std::cout << "Residuals2: " << R[0] << ", " << R[1] << std::endl;
+  // (*f3)(&points[3], R);
+  // std::cout << "Residuals3: " << R[0] << ", " << R[1] << std::endl;
+  // (*f4)(&points[9], R);
+  // std::cout << "Residuals4: " << R[0] << ", " << R[1] << std::endl;
+  // std::cout << "points[0-2]: " << points[0] << ", " << points[1] << ", " << points[2] << std::endl;
 
   // Make Ceres automatically detect the bundle structure. Note that the
   // standard solver, SPARSE_NORMAL_CHOLESKY, also works fine but it is slower
@@ -1070,7 +1177,7 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   options.max_num_iterations = 500;
   options.eta = 1e-2;
   options.max_solver_time_in_seconds = 10;
-  options.logging_type = ceres::LoggingType::PER_MINIMIZER_ITERATION;
+  options.logging_type = ceres::LoggingType::SILENT;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   std::cout << summary.BriefReport() << "\n";
@@ -1082,16 +1189,16 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
 
   
   // DEBUG OUTPUT
-  std::cout << "ERRORS AFTER: \n";
-  (*f)(points, R);
-  std::cout << "Residuals: " << R[0] << ", " << R[1] << std::endl;
-  (*f2)(points, R);
-  std::cout << "Residuals2: " << R[0] << ", " << R[1] << std::endl;
-  (*f3)(&points[3], R);
-  std::cout << "Residuals3: " << R[0] << ", " << R[1] << std::endl;
-  (*f4)(&points[9], R);
-  std::cout << "Residuals4: " << R[0] << ", " << R[1] << std::endl;
-  std::cout << "points[0-2]: " << points[0] << ", " << points[1] << ", " << points[2] << std::endl;
+  // std::cout << "ERRORS AFTER: \n";
+  // (*f)(points, R);
+  // std::cout << "Residuals: " << R[0] << ", " << R[1] << std::endl;
+  // (*f2)(points, R);
+  // std::cout << "Residuals2: " << R[0] << ", " << R[1] << std::endl;
+  // (*f3)(&points[3], R);
+  // std::cout << "Residuals3: " << R[0] << ", " << R[1] << std::endl;
+  // (*f4)(&points[9], R);
+  // std::cout << "Residuals4: " << R[0] << ", " << R[1] << std::endl;
+  // std::cout << "points[0-2]: " << points[0] << ", " << points[1] << ", " << points[2] << std::endl;
 
   
 

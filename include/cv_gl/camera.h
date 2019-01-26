@@ -47,7 +47,7 @@ std::ostream& operator<<(std::ostream& os, const CameraIntrinsics& intr);
 // camera constant
 const float kYaw = 0.0f;
 const float kPitch = 0.0f;  // -5.0f    5.0f
-const float kSpeed = 10.5f; // 2.5f
+const float kSpeed = 40.5f; // 2.5f
 const float kSensitivity = 0.1f;
 const float kZoom = 45.0f;
 

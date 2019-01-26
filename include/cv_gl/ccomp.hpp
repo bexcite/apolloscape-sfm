@@ -7,10 +7,10 @@
 #include <map>
 #include <algorithm>
 
-std::ostream& operator<<(std::ostream& os, std::pair<int, int>& p) {
-  os << "[" << p.first << ", " << p.second << "]";
-  return os;
-}
+// std::ostream& operator<<(std::ostream& os, std::pair<int, int>& p) {
+//   os << "[" << p.first << ", " << p.second << "]";
+//   return os;
+// }
 
 template<typename ElemType>
 class CComponents {
@@ -50,7 +50,7 @@ public:
     return (Find(e1) == Find(e2)) ? 1 : 0; 
   }
 
-  std::vector<int> GetComponentIds() {
+  std::vector<int> GetComponentIds() const {
     std::vector<int> comp_ids;
     for (int i = 0; i < tr.size(); ++i) {
       if (tr[i] == -1) comp_ids.push_back(i);
@@ -58,7 +58,7 @@ public:
     return comp_ids;
   }
 
-  std::vector<ElemType> GetComponentsById(int id) {
+  std::vector<ElemType> GetElementsById(int id) {
     std::vector<ElemType> comp_elems;
     for (int i = 0; i < tr.size(); ++i) {
       if (id == FindById(i)) {
@@ -69,13 +69,13 @@ public:
     return comp_elems;
   }
 
-  void PrintVec(std::ostream& os = std::cout) {
+  void PrintVec(std::ostream& os = std::cout) const {
     for (int i = 0; i < tr.size(); ++i) {
       os << i << " (" << elems[i] << "): " << tr[i] << ",  depth = " << depth[i] << std::endl;
     }
   }
 
-  int Count() { return count; }
+  int Count() const { return count; }
   
 private:
   int GetId(ElemType e) {

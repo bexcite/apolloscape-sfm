@@ -81,7 +81,8 @@
       "system_error": "cpp",
       "thread": "cpp",
       "unordered_map": "cpp",
-      "utility": "cpp"
+      "utility": "cpp",
+      "unordered_set": "cpp"
     }
   }
 }

@@ -1,6 +1,8 @@
 #ifndef CV_GL_SFM_H_
 #define CV_GL_SFM_H_
 
+#include <unordered_set>
+
 #include <ceres/ceres.h>
 
 #include <opencv2/opencv.hpp>
@@ -9,6 +11,7 @@
 
 #include "cv_gl/utils.hpp"
 #include "cv_gl/camera.h"
+#include "cv_gl/ccomp.hpp"
 
 
 struct Features {
@@ -70,11 +73,31 @@ void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Poi
                        const CameraInfo& camera_info2, const std::vector<cv::Point2f>& points2,
                        cv::Mat& points3d);
 
-std::vector<double> GetReprojectionErrors(const std::vector<cv::Point2f>& points, const cv::Mat& proj, const cv::Mat& points3d);
+std::vector<double> GetReprojectionErrors(
+    const std::vector<cv::Point2f>& points,
+    const cv::Mat& proj,
+    const cv::Mat& points3d);
+double GetReprojectionError(
+    const Map3D& map,
+    const std::vector<CameraInfo>& cameras, 
+    const std::vector<Features>& features);
 
-double GetReprojectionError(const Map3D& map, const std::vector<CameraInfo>& cameras, const std::vector<Features>& features);
+
+int GetNextBestView(const Map3D& map, 
+    const std::unordered_set<int>& views, 
+    CComponents<std::pair<int, int> >& ccomp,
+    const std::vector<Matches>& image_matches,
+    const std::map<std::pair<int, int>, int>& matches_index);
+
+// TODO: Make CComponents const
+void MergeToTheMap(Map3D& map, 
+                   const Map3D& local_map, 
+                   CComponents<std::pair<int, int> >& ccomp);
+
 
 std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp);
+
+
 
 
 // ============ Ceres Types / Functions ====
