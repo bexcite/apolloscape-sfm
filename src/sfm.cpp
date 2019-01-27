@@ -265,7 +265,7 @@ void ComputeLineKeyPointsMatch(const Features& features1,
 
   // TODO: Divide by sqrt(a^2 + b^2) - ?
   cv::Mat mask = cv::abs(points1v * kp_lines21);
-  cv::threshold(mask, mask, 0.01, 1, cv::THRESH_BINARY_INV);
+  cv::threshold(mask, mask, 0.01, 1, cv::THRESH_BINARY_INV); // 0.01
   // std::cout << "mask = " << mask.rows << ", " << mask.cols << std::endl;
 
 
@@ -815,6 +815,27 @@ cv::Mat GetProjMatrix(const CameraInfo& camera_info) {
   return mat_proj;
 }
 
+cv::Mat GetRotationTranslationTransform(const CameraInfo& camera_info) {
+  glm::dmat3 r = GetRotation(camera_info.rotation_angles[0], 
+                              camera_info.rotation_angles[1], 
+                              camera_info.rotation_angles[2]);
+  glm::dvec3 t = camera_info.translation;
+  
+  glm::dmat4x3 proj(1.0);
+  proj[3] -= t;
+  proj = glm::transpose(r) * proj;
+  // std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
+
+  cv::Mat mat_rt(3, 4, CV_64F);
+  for (size_t col = 0; col < 4; ++col) {
+    for (size_t row = 0; row < 3; ++row) {
+      mat_rt.at<double>(row, col) = proj[col][row];
+    }
+  }
+  return mat_rt;
+}
+
+
 
 void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Point2f>& points1,
                        const CameraInfo& camera_info2, const std::vector<cv::Point2f>& points2,
@@ -861,10 +882,31 @@ void TriangulatePoints(const CameraInfo& camera_info1, const std::vector<cv::Poi
   // std::cout << "mat_proj1 = " << mat_proj1 << std::endl;
   // std::cout << "mat_proj2 = " << mat_proj2 << std::endl;
 
+  // std::cout << "points1 = " << points1 << std::endl;
+  // std::cout << "points2 = " << points2 << std::endl;
+
+  // == Compute Fundamental Matrix ==
+  // cv::Mat fund;
+  // CalcFundamental(camera_info1, camera_info2, fund);
+  // std::cout << "fund = " << fund << std::endl;
+  // std::vector<cv::Point2f> points1n;
+  // std::vector<cv::Point2f> points2n;
+  // cv::correctMatches(fund, points1, points2, points1n, points2n);
+  // for (size_t i = 0; i < points1.size(); ++i) {
+  //   std::cout << i << ": " << points1[i] << " = " << points2[i] << std::endl;
+  //   std::cout << i << ": " << points1n[i] << " = " << points2n[i] << std::endl;
+  // }
+
   cv::Mat points4dh;
   cv::triangulatePoints(mat_proj1, mat_proj2, points1, points2, points4dh);
 
-  // std::cout << "points4dh.size = " << points4dh.size() << std::endl;
+  // for (size_t i = 0; i < points4dh.cols; ++i) {
+  //   std::cout << i << " : " << points4dh.col(i) << std::endl;
+  // }
+
+  std::cout << "points4dh.size = " << points4dh.size() << std::endl;
+  std::cout << "points4dh.rows, cols = " << points4dh.rows << ", " 
+            << points4dh.cols << std::endl;
 
   cv::convertPointsFromHomogeneous(points4dh.t(), points3d);
 
@@ -938,6 +980,28 @@ double GetReprojectionError(const Map3D& map, const std::vector<CameraInfo>& cam
   return err;
 
 }
+
+
+std::vector<double> GetZDistanceFromCamera(const CameraInfo& camera_info,
+                                           const cv::Mat& points3d) {
+
+  std::vector<double> zdist(points3d.rows);
+
+  cv::Mat rt1 = GetRotationTranslationTransform(camera_info);
+  cv::Mat points3dh;
+  points3d.convertTo(points3dh, CV_64F);
+  cv::convertPointsToHomogeneous(points3dh, points3dh);
+  points3dh = points3dh.reshape(1);
+  cv::Mat pc = rt1 * points3dh.t();
+
+  for (size_t i = 0; i < pc.cols; ++i) {
+    zdist[i] = pc.at<double>(2, i);
+  }
+
+  return zdist;
+
+}
+
 
 
 int GetNextBestView(const Map3D& map, 

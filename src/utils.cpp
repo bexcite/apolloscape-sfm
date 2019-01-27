@@ -213,7 +213,7 @@ void DrawKeypointsWithResize(const cv::Mat& input_img,
     kpoints_scaled[k].pt.y = static_cast<int>(kpoints_scaled[k].pt.y * scale);
   }
   cv::Mat img_resized;
-  std::cout << "resize1 = " << scale << std::endl << std::flush;
+  // std::cout << "resize1 = " << scale << std::endl << std::flush;
   cv::resize(input_img, img_resized, cv::Size(), scale, scale, cv::INTER_AREA);
   cv::drawKeypoints(img_resized, kpoints_scaled, out_img);
 }

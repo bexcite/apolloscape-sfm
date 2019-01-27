@@ -589,7 +589,7 @@ class CameraObject: public DObject {
     // Translate to Camera Coordinate System
     
     std::vector<glm::vec3> p(points);
-    std::cout << "proj_points.size = " << p.size() << std::endl;
+    // std::cout << "proj_points.size = " << p.size() << std::endl;
     for (int i = 0; i < p.size(); ++i) {
       // std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
       p[i] -= translation_;

@@ -65,6 +65,7 @@ void GetMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keyp
     const cv::Mat img2, std::vector<cv::KeyPoint>& keypoints2, const cv::Mat fund = cv::Mat());
 
 cv::Mat GetProjMatrix(const CameraInfo& camera_info);
+cv::Mat GetRotationTranslationTransform(const CameraInfo& camera_info);
 
 void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1, const std::vector<cv::Point2f>& points1,
     const CameraIntrinsics& intr2, const ImageData& img_data2, const std::vector<cv::Point2f>& points2, cv::Mat& points3d);
@@ -81,6 +82,8 @@ double GetReprojectionError(
     const Map3D& map,
     const std::vector<CameraInfo>& cameras, 
     const std::vector<Features>& features);
+std::vector<double> GetZDistanceFromCamera(const CameraInfo& camera_info,
+                                           const cv::Mat& points3d);
 
 
 int GetNextBestView(const Map3D& map, 

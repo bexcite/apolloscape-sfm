@@ -79,8 +79,8 @@ int main(int argc, char* argv[]) {
   std::cout << "Camera Poses 2: " << camera2_poses[1];
 
   int p_camera_pose = 37; // 24
-  int p_camera_start = 30; //22 ==== 36
-  int p_camera_finish = 39; //25 ===== 39
+  int p_camera_start = 20; //22 ==== 36 or 37
+  int p_camera_finish = 27; //25 ===== 39 or 40
 
   const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
 
@@ -177,6 +177,12 @@ int main(int argc, char* argv[]) {
       pairs.push_back({ i, j + cam_size });
     }
   }
+  // == All Pairs
+  // for (int i = 0; i < images.size()-1; ++i) {
+  //   for (int j = i + 1; j < images.size(); ++j) {
+  //     pairs.push_back({ i, j });
+  //   }
+  // }
   for (const ImagePair& ip : pairs) {
     std::cout << "pair: " << ip.first << " - " << ip.second << std::endl;
   }
@@ -207,7 +213,7 @@ int main(int argc, char* argv[]) {
               << " : matches.size = " << matches.match.size() << std::endl;
 
     // Don't add empty or small matches
-    if (matches.match.size() < 30) { 
+    if (matches.match.size() < 10) { 
       continue;
     }
 
@@ -289,7 +295,7 @@ int main(int argc, char* argv[]) {
   }
 
 
-  most_match_id = 2;
+  // most_match_id = 2; // 2
 
   std::cout << "total_matched_points = " << total_matched_points << std::endl;
   std::cout << "most_match = " << most_match 
@@ -379,6 +385,17 @@ int main(int argc, char* argv[]) {
   std::vector<double> errs1 = GetReprojectionErrors(points1f, proj1, points3d);
   std::vector<double> errs2 = GetReprojectionErrors(points2f, proj2, points3d);
 
+  // Z distance of points from camera
+  std::vector<double> cam1_zdist = GetZDistanceFromCamera(cameras[img1_id],
+                                                          points3d);
+  std::vector<double> cam2_zdist = GetZDistanceFromCamera(cameras[img2_id],
+                                                          points3d);
+
+  // for (size_t i = 0; i < cam1_zdist.size(); ++i) {
+  //   std::cout << "p = " << i << " : " << cam1_zdist[i] << std::endl;
+  // }
+  // << [end front back]
+
   std::cout << "AFTER points3d.row(0) = " << points3d.row(0) << std::endl << std::flush;
   std::cout << "AFTER points3d.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
 
@@ -399,7 +416,9 @@ int main(int argc, char* argv[]) {
       //     points3d.at<float>(i, 2)
       //   ));
 
-    if (errs1[i] > 3.0 || errs2[i] > 3.0) {
+    if (errs1[i] > 3.0 || errs2[i] > 3.0           // reprojection error too big
+        || cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
+        || points3d.at<float>(i, 2) < 38.0) {      // it's out of the land
       // std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
       //           << ", " << errs2[i] << std::endl;
       continue;
@@ -448,6 +467,7 @@ int main(int argc, char* argv[]) {
   todo_views.erase(img1_id);
   todo_views.erase(img2_id);
 
+  
   
   
 
@@ -527,8 +547,18 @@ int main(int argc, char* argv[]) {
         cv::Mat proj1 = GetProjMatrix(cameras[first_id]);
         cv::Mat proj2 = GetProjMatrix(cameras[second_id]);
 
-        std::vector<double> errs1 = GetReprojectionErrors(points1f, proj1, points3d);
-        std::vector<double> errs2 = GetReprojectionErrors(points2f, proj2, points3d);
+        std::vector<double> errs1 = GetReprojectionErrors(points1f, 
+                                                          proj1, 
+                                                          points3d);
+        std::vector<double> errs2 = GetReprojectionErrors(points2f, 
+                                                          proj2, 
+                                                          points3d);
+
+        // Z distance of points from camera
+        std::vector<double> cam1_zdist = GetZDistanceFromCamera(cameras[first_id],
+                                                                points3d);
+        std::vector<double> cam2_zdist = GetZDistanceFromCamera(cameras[second_id],
+                                                                points3d);
 
         double rep_err1 = 0.0;
         double rep_err2 = 0.0;
@@ -538,7 +568,9 @@ int main(int argc, char* argv[]) {
           rep_err1 += errs1[i];
           rep_err2 += errs2[i];
 
-          if (errs1[i] > 3.0 || errs2[i] > 3.0) {
+          if (errs1[i] > 3.0 || errs2[i] > 3.0           // reprojection error too big
+              || cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
+              || points3d.at<float>(i, 2) < 38.0) {      // it's out of the land
             // std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
             //           << ", " << errs2[i] << std::endl;
             continue;
@@ -832,6 +864,11 @@ int main(int argc, char* argv[]) {
     // co1->AddProjectedPoints(glm_points);
     // co2->AddProjectedPoints(glm_points);    
 
+  // std::cout << "Map Points: \n";
+  // for (size_t i = 0; i < map.size(); ++i) {
+  //   std::cout << i << ": " << map[i] << std::endl;
+  // }
+
 
   all_error = GetReprojectionError(map, cameras, image_features);
   std::cout << "FINAL_error = " << all_error << std::endl;
@@ -842,12 +879,24 @@ int main(int argc, char* argv[]) {
 
   // map cam_id => vec of (keypoint_id, 3d_point_coords)
   std::map<int, std::vector<std::pair<int, glm::vec3> > > map_cameras;
+
+  std::map<int, int> map_counts;
   
   // === Draw Map3D ===
   std::vector<glm::vec3> glm_points;
   for (auto& wp: map) {
     glm::vec3 v(wp.pt.x, wp.pt.y, wp.pt.z);
     glm_points.push_back(v);
+
+    // Counts points view nums
+    int n = wp.views.size();
+    auto mc_it = map_counts.find(n);
+    if (mc_it != map_counts.end()) {
+      mc_it->second++;
+    } else {
+      map_counts.insert(std::make_pair(n, 1));
+    }
+
     for (auto& vw: wp.views) {
       int cam_id = vw.first;
       int point_id = vw.second;
@@ -861,6 +910,12 @@ int main(int argc, char* argv[]) {
       }
     }
   }
+
+  std::cout << "Map counts:\n";
+  for (auto mc: map_counts) {
+    std::cout << mc.first << " : " << mc.second << std::endl;
+  }
+
   std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(glm_points));
   root->AddChild(points_obj);
 
