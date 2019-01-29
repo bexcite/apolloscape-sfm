@@ -20,6 +20,9 @@
 // namespace fs = boost::filesystem;
 
 struct ImageData {
+  std::string record;
+  std::string image_dir;
+  int camera_num;
   std::string filename;
   std::vector<double> coords;
 };
@@ -49,7 +52,10 @@ std::vector<std::string> StringSplit(const std::string& s, const char c);
 
 std::vector<double> StringSplitD(const std::string& s, const char c);
 
-std::vector<ImageData> ReadCameraPoses(boost::filesystem::path file_path);
+std::vector<ImageData> ReadCameraPoses(const boost::filesystem::path file_path,
+                                       const boost::filesystem::path image_dir = "",
+                                       const std::string& record = "",
+                                       const int camera_num = -1);
 
 // template <typename T>
 // void PrintVec(const std::string& intro, const std::vector<T> vec,

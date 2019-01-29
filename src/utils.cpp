@@ -18,7 +18,10 @@ namespace fs = boost::filesystem;
 
 
 std::ostream& operator<<(std::ostream& os, const ImageData image_data) {
-  os << "filename: " << image_data.filename << ", ";
+  os << "record: '" << image_data.record << "', "
+     << "image_dir: " << image_data.image_dir << ", "
+     << "camera_num: " << image_data.camera_num << ", "
+     << "filename: " << image_data.filename << ", ";
   PrintVec("coords: ", image_data.coords);
   return os;
 }
@@ -134,7 +137,10 @@ std::vector<double> StringSplitD(const std::string& s, const char c) {
   return result;
 }
 
-std::vector<ImageData> ReadCameraPoses(fs::path file_path) {
+std::vector<ImageData> ReadCameraPoses(const fs::path file_path,
+                                       const fs::path image_dir,
+                                       const std::string& record,
+                                       const int camera_num) {
   std::vector<ImageData> imgs_data;
   if (!fs::is_regular_file(file_path)) {
     return imgs_data;
@@ -158,6 +164,9 @@ std::vector<ImageData> ReadCameraPoses(fs::path file_path) {
       // PrintVec("pose_splits = ", pose_splits);
       // std::cout << "\n";
       img_data.coords = pose_splits;
+      img_data.camera_num = camera_num;
+      img_data.record = record;
+      img_data.image_dir = image_dir.string();
       imgs_data.push_back(img_data);
     }
     camera_pose_file.close();

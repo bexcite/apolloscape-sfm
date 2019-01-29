@@ -1,7 +1,11 @@
+
+
 #include <iostream>
 #include <unordered_set>
 
 #include <boost/filesystem.hpp>
+
+
 
 #include "cv_gl/camera.h"
 #include "cv_gl/renderer.h"
@@ -10,11 +14,32 @@
 
 #include "cv_gl/gl_window.h"
 #include "cv_gl/utils.hpp"
+
 #include "cv_gl/sfm.h"
+
+#include <cereal/cereal.hpp>
+// #include <cereal/access.hpp>
+
+#include "cv_gl/serialization.hpp"
+
+
+// #include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
+// #include <cereal/types/memory.hpp>
+
+#include <cereal/archives/binary.hpp>
+
+
 
 #include "cv_gl/ccomp.hpp"
 
 #include <glog/logging.h>
+
+
+
+// #include <cereal/archives/json.hpp>
+// #include <cereal/archives/xml.hpp>
+
 
 const int kWindowWidth = 1226/2;
 const int kWindowHeight = 1028/2;
@@ -36,6 +61,54 @@ const float kGlobalScale = 100.0f;
 
 namespace fs = boost::filesystem;
 
+
+// == cv::Mat =============================
+// template<class Archive>
+// void save(Archive& ar, const cv::Mat& mat) {
+//   int rows, cols, type;
+//   bool continuous;
+
+//   rows = mat.rows;
+//   cols = mat.cols;
+//   type = mat.type();
+//   continuous = mat.isContinuous();
+//   ar (rows, cols, type, continuous);
+//   if (continuous) {
+//     const int data_size = rows * cols * static_cast<int>(mat.elemSize());
+//     auto mat_data = cereal::binary_data(mat.ptr(), data_size);
+//     ar(mat_data);
+//   } else {
+//     const int row_size = cols * static_cast<int>(mat.elemSize());
+//     for (int i = 0; i < rows; ++i) {
+//       auto row_data = cereal::binary_data(mat.ptr(i), row_size);
+//       ar(row_data);
+//     }
+//   }
+// }
+// template<class Archive>
+// void load(Archive& ar, cv::Mat& mat) {
+//   int rows, cols, type;
+//   bool continuous;
+
+//   ar (rows, cols, type, continuous);
+
+//   if (continuous) {
+//       mat.create(rows, cols, type);
+//       const int data_size = rows * cols * static_cast<int>(mat.elemSize());
+//       auto mat_data = cereal::binary_data(mat.ptr(), data_size);
+//       ar(mat_data);
+//   }
+//   else {
+//       mat.create(rows, cols, type);
+//       const int row_size = cols * static_cast<int>(mat.elemSize());
+//       for (int i = 0; i < rows; i++) {
+//           auto row_data = cereal::binary_data(mat.ptr(i), row_size);
+//           ar(row_data);
+//       }
+//   }
+// }
+
+
 int main(int argc, char* argv[]) {
   std::cout << "Welcome 3D Reconstruction.\n";
 
@@ -56,6 +129,10 @@ int main(int argc, char* argv[]) {
   intr2.cy = 1013.259732772;
   intr2.wr = kImageWidth/kImageHeight;
 
+  std::vector<CameraIntrinsics> camera_intrs = {intr1, intr2};
+
+  SfM3D sfm(camera_intrs);
+
 
   fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
       / fs::path("pose") / fs::path(kRecordId) / fs::path(kCamera1PoseFile);
@@ -69,8 +146,14 @@ int main(int argc, char* argv[]) {
   fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
       / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_2");
 
-  std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path);
-  std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path);
+  std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path,
+                                                         camera1_image_path,
+                                                         kRecordId, 1);
+  std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path,
+                                                         camera2_image_path,
+                                                         kRecordId, 2);
+
+  
 
   std::cout << "sizes 1 = " << camera1_poses.size() << std::endl;
   std::cout << "sizes 2 = " << camera2_poses.size() << std::endl;
@@ -78,13 +161,57 @@ int main(int argc, char* argv[]) {
   std::cout << "Camera Poses 1: " << camera1_poses[1];
   std::cout << "Camera Poses 2: " << camera2_poses[1];
 
+  // == Slice record ==
   int p_camera_pose = 37; // 24
-  int p_camera_start = 20; //22 ==== 36 or 37
-  int p_camera_finish = 27; //25 ===== 39 or 40
+  int p_camera_start = 35; //22 ==== 36 or 37
+  int p_camera_finish = 39; //25 ===== 39 or 40
+
+  std::vector<ImageData> camera1_poses_s, camera2_poses_s;
+  camera1_poses_s.insert(camera1_poses_s.begin(),
+                         camera1_poses.begin() + p_camera_start, 
+                         camera1_poses.begin() + p_camera_finish);
+  camera2_poses_s.insert(camera2_poses_s.begin(),
+                         camera2_poses.begin() + p_camera_start, 
+                         camera2_poses.begin() + p_camera_finish);
+  sfm.AddImages(camera1_poses_s, camera2_poses_s);
+
+  sfm.ExtractFeatures();
+
+  std::cout << sfm << std::endl;
+
+  {
+    cv::KeyPoint kp;
+    cv::Mat ttt(3,4,CV_64F);
+    // std::ofstream farch("out.xml");
+    // cereal::XMLOutputArchive archive(farch);
+    // archive(sfm);
+    std::ofstream farch("out.bin", std::ios::binary);
+    cereal::BinaryOutputArchive archive(farch);
+    archive(sfm);
+    archive(kp);
+    std::cout << "Serialized!" << std::endl;
+  }
+
+  {
+    SfM3D sfm2;
+    std::cout << "Before: " << sfm2 << std::endl;
+    cv::KeyPoint kp2;
+    cv::Mat ttt2;
+    // std::ofstream farch("out.xml");
+    // cereal::XMLOutputArchive archive(farch);
+    // archive(sfm);
+    std::ifstream farch("out.bin", std::ios::binary);
+    cereal::BinaryInputArchive archive(farch);
+    archive(sfm2);
+    archive(kp2);
+    std::cout << "De-Serialized!" << std::endl;
+    std::cout << "After: " << sfm2 << std::endl;
+  }
+
 
   const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
 
-  
+  return EXIT_SUCCESS;
 
 
 
@@ -112,7 +239,7 @@ int main(int argc, char* argv[]) {
   // Renderer
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
   std::shared_ptr<DObject> root = std::make_shared<DObject>();
-  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(kGlobalScale, 50));
+  std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(kGlobalScale, 60));
   std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(kGlobalScale));
   root->AddChild(axes_obj);
 
@@ -138,7 +265,8 @@ int main(int argc, char* argv[]) {
   std::cout << "Extract Features: \n";
   for (size_t i = p_camera_start; i < camera1_poses.size(); ++i) {
     if (p_camera_finish == i) break;
-    std::cout << "Camera 1: image " << i << std::endl;
+    std::cout << "Camera 1: image " << i 
+              <<  std::endl;
     const ImageData& im_data = camera1_poses[i];
     cv::Mat img;
     Features features;
@@ -373,10 +501,10 @@ int main(int argc, char* argv[]) {
   TriangulatePoints(cameras[img1_id], points1f, cameras[img2_id], points2f, points3d);
 
 
-  std::cout << "points3d.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
-  std::cout << "points3d.c = " << points3d.channels() << std::endl << std::flush;
-  std::cout << "points3d.type = " << points3d.type() << std::endl << std::flush;
-  std::cout << "points3d.row(1) = " << points3d.row(1) << std::endl << std::flush;
+  // std::cout << "points3d.size = " << points3d.rows << ", " << points3d.cols << std::endl << std::flush;
+  // std::cout << "points3d.c = " << points3d.channels() << std::endl << std::flush;
+  // std::cout << "points3d.type = " << points3d.type() << std::endl << std::flush;
+  // std::cout << "points3d.row(1) = " << points3d.row(1) << std::endl << std::flush;
 
   // Backprojection error
   cv::Mat proj1 = GetProjMatrix(cameras[img1_id]);

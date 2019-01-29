@@ -1,8 +1,8 @@
 message("my INCLUDE DIRS = " ${PROJECT_INCLUDE_DIRS})
 
 # ==================================
-# cv_gl_lib - library with all shared code
-add_library(cv_gl_lib shader.cpp camera.cpp mesh.cpp gl_window.cpp utils.cpp sfm.cpp)
+# cv_gl_lib - library with all shared code //  sfm.cpp
+add_library(cv_gl_lib shader.cpp camera.cpp mesh.cpp gl_window.cpp utils.cpp sfm.cpp sfm_common.cpp)
 set_property(TARGET cv_gl_lib PROPERTY CXX_STANDARD 11)
 target_include_directories(cv_gl_lib PUBLIC ${PROJECT_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS})
 # message("boost INCLUDE_DIRS = " ${Boost_INCLUDE_DIRS})
@@ -16,12 +16,14 @@ target_link_libraries(cv_gl_lib PUBLIC
     opencv_imgcodecs 
     opencv_calib3d 
     opencv_xfeatures2d
-    ${CERES_LIBRARIES})
+    ${CERES_LIBRARIES}
+    cereal
+    )
 set_target_properties(cv_gl_lib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
-
+#[[
 add_executable(${PROJECT_NAME} main.cpp)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 # target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE_DIRS} )
@@ -64,15 +66,26 @@ message("two_cameras_name = " ${TWO_CAMERAS_NAME})
 target_link_libraries(${TWO_CAMERAS_NAME} PUBLIC cv_gl_lib)
 set_target_properties(${TWO_CAMERAS_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
+]]
 
 set(3D_RECON_NAME 3d_recon)
-add_executable(${3D_RECON_NAME} 3d_recon.cpp)
+add_executable(${3D_RECON_NAME} 3d_recon.cpp ) #  sfm.cpp sfm_common.cpp
 set_property(TARGET ${3D_RECON_NAME} PROPERTY CXX_STANDARD 11)
 message("3d_recon_name = " ${3D_RECON_NAME})
-target_link_libraries(${3D_RECON_NAME} PUBLIC cv_gl_lib)
+target_link_libraries(${3D_RECON_NAME} PUBLIC cv_gl_lib cereal)
 set_target_properties(${3D_RECON_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+
+set(TS_NAME ts)
+add_executable(${TS_NAME} apps/test_cereal.cpp test_class.cpp) #  sfm.cpp sfm_common.cpp
+set_property(TARGET ${TS_NAME} PROPERTY CXX_STANDARD 11)
+message("ts_name = " ${TS_NAME})
+target_include_directories(${TS_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS} )
+target_link_libraries(${TS_NAME} PUBLIC cv_gl_lib cereal ) # cv_gl_lib
+set_target_properties(${TS_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    
     
     
 
