@@ -3,13 +3,15 @@
 #define CV_GL_SERIALIZATION_MAT_H_
 
 #include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/map.hpp>
 
 #include <iostream>
 
 #include <opencv2/opencv.hpp>
 #include "opencv2/xfeatures2d.hpp"
 
-#include "cv_gl/sfm_common.hpp"
+#include "cv_gl/sfm_common.h"
 
 
 // == ImagePair =========================
@@ -32,6 +34,15 @@ void load(Archive& archive, Features& f) {
   archive(f.keypoints, f.descriptors);
 }
 
+// == Matches ==========================
+template<class Archive>
+void save(Archive& archive, const Matches& m) {
+  archive(m.image_index, m.match);
+}
+template<class Archive>
+void load(Archive& archive, Matches& m) {
+  archive(m.image_index, m.match);
+}
 
 
 namespace cv {

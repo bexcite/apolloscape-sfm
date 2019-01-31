@@ -75,7 +75,7 @@ void PrintVec(const std::string& intro, const std::vector<T> vec,
       delim = ", ";
     }
   }
-  os << "]\n";
+  os << "]";
 }
 
 
@@ -92,6 +92,8 @@ void KeyPointsToPointVec(const std::vector<cv::KeyPoint>& kpoints1,
                          std::vector<cv::Point2f>& points2);
 
 glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_angle);
+
+bool IsPairInOrder(const ImageData& im_data1, const ImageData& im_data2);
 
 
 // ======================================================

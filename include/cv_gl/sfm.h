@@ -4,7 +4,7 @@
 
 #include <unordered_set>
 
-#include "cv_gl/sfm_common.hpp"
+#include "cv_gl/sfm_common.h"
 
 
 // #include <ceres/ceres.h>
@@ -16,6 +16,7 @@
 #include "cv_gl/utils.hpp"
 #include "cv_gl/camera.h"
 #include "cv_gl/ccomp.hpp"
+#include "cv_gl/cache_storage.hpp"
 
 // #include <cereal/cereal.hpp>
 
@@ -25,6 +26,7 @@
 
 class SfM3D {
 public:
+  typedef std::pair<int, int> IntPair;
   SfM3D() {}
   explicit SfM3D(std::vector<CameraIntrinsics> camera_intrs)
       : intrinsics_(camera_intrs) {
@@ -58,6 +60,11 @@ public:
                  const bool make_pairs = true, const int look_back = 5);
   void ExtractFeatures();
   void Print(std::ostream& os = std::cout) const;
+  void MatchImageFeatures(const int skip_thresh = 10);
+
+  int ImageCount() const;
+
+  bool IsPairInOrder(const int p1, const int p2);
 
   // TODO: https://www.patrikhuber.ch/blog/6-serialising-opencv-matrices-using-boost-and-cereal
   // https://github.com/patrikhuber/eos/blob/master/include/eos/morphablemodel/io/mat_cerealisation.hpp
@@ -70,20 +77,27 @@ public:
     archive(ip);
     archive(dm);
     archive(image_features_);
+    archive(image_matches_);
   }
 private:
+  void GenerateAllPairs();
+
   // friend class cereal::access;
   std::vector<CameraIntrinsics> intrinsics_;
   std::vector<ImageData> image_data_;
   std::vector<ImagePair> image_pairs_;
   std::vector<CameraInfo> cameras_;
-  std::vector<cv::Mat> image_previews_;
   std::vector<Features> image_features_;
   std::vector<cv::Mat> images_;
+  std::vector<cv::Mat> image_previews_;
+
+  CComponents<IntPair> ccomp_;
+  std::vector<Matches> image_matches_;
+  std::map<IntPair, int> matches_index_;
 
   const double preview_scale_ = 0.3;
   bool use_cache = true;
-  std::string cache_dir = "cache_files";
+  CacheStorage cache_storage;
 
 
   // Test Part
