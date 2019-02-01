@@ -62,6 +62,18 @@ public:
   void Print(std::ostream& os = std::cout) const;
   void MatchImageFeatures(const int skip_thresh = 10);
 
+  void InitReconstruction();
+  void TriangulatePointsFromViews(const int first_id, 
+                                  const int second_id, 
+                                  Map3D& map_);
+  void OptimizeCurrentMap() { OptimizeMap(map_); }
+  void OptimizeMap(Map3D& map);
+
+  void ReconstructAll();
+  void PrintFinalStats();
+
+  int FindMaxSizeMatch() const;
+
   int ImageCount() const;
 
   bool IsPairInOrder(const int p1, const int p2);
@@ -82,21 +94,31 @@ public:
 private:
   void GenerateAllPairs();
 
-  // friend class cereal::access;
+  // Data Initial
   std::vector<CameraIntrinsics> intrinsics_;
   std::vector<ImageData> image_data_;
-  std::vector<ImagePair> image_pairs_;
   std::vector<CameraInfo> cameras_;
-  std::vector<Features> image_features_;
   std::vector<cv::Mat> images_;
   std::vector<cv::Mat> image_previews_;
 
+  // Pre-processing & Feature Extraction
+  std::vector<Features> image_features_;
+  std::vector<ImagePair> image_pairs_;
+
+  // Matching
   CComponents<IntPair> ccomp_;
   std::vector<Matches> image_matches_;
   std::map<IntPair, int> matches_index_;
 
+  // Reconstruction
+  std::unordered_set<int> used_views_;
+  std::unordered_set<int> todo_views_;
+  Map3D map_;
+
   const double preview_scale_ = 0.3;
   bool use_cache = true;
+
+  // Preprocessing storage
   CacheStorage cache_storage;
 
 
