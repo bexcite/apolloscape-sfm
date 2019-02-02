@@ -72,6 +72,13 @@ public:
   void ReconstructAll();
   void PrintFinalStats();
 
+  void GetMapPointsVec(std::vector<glm::vec3>& glm_points) const;
+  void GetMapCamerasWithPointsVec(
+     std::map<int, std::vector<std::pair<int, glm::vec3> > >& map_cameras);
+  cv::Mat GetImage(int cam_id) const;
+  CameraInfo GetCameraInfo(int cam_id) const;
+  cv::KeyPoint GetKeypoint(int cam_id, int point_id) const;
+
   int FindMaxSizeMatch() const;
 
   int ImageCount() const;
