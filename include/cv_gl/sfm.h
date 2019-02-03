@@ -70,6 +70,8 @@ public:
   void OptimizeMap(Map3D& map);
 
   void ReconstructAll();
+  void ReconstructNextView(const int next_img_id);
+  void ReconstructNextViewPair(const int first_id, const int second_id);
   void PrintFinalStats();
 
   void GetMapPointsVec(std::vector<glm::vec3>& glm_points) const;
@@ -79,7 +81,7 @@ public:
   CameraInfo GetCameraInfo(int cam_id) const;
   cv::KeyPoint GetKeypoint(int cam_id, int point_id) const;
 
-  int FindMaxSizeMatch() const;
+  int FindMaxSizeMatch(const bool within_todo_views = false) const;
 
   int ImageCount() const;
 
