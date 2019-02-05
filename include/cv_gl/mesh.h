@@ -23,6 +23,7 @@ struct Vertex {
   glm::vec3 position;
   glm::vec3 normal;
   glm::vec2 tex_coords;
+  glm::vec3 color;
 };
 
 struct Texture {
@@ -40,10 +41,14 @@ struct Texture {
 struct Material {
   Material(const glm::vec4 amb_color = {0.15, 0.15, 0.15, 1.0},
            const glm::vec4 diff_color = {0.5, 0.5, 0.5, 1.0})
-      : ambient_color(amb_color), diffuse_color(diff_color), ambient_transparent(0) {};
+      : ambient_color(amb_color), 
+        diffuse_color(diff_color), 
+        ambient_transparent(0),
+        use_vertex_color(0) {};
   glm::vec4 ambient_color;
   glm::vec4 diffuse_color;
   int ambient_transparent;
+  int use_vertex_color;
   std::vector<Texture> textures;
   bool IsTransparent() const { return ambient_transparent > 0; }
 };

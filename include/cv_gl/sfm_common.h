@@ -37,6 +37,12 @@ struct WorldPoint3D {
   std::map<int, int> views;
 };
 
+struct Point3DColor {
+  glm::vec3 pt;
+  glm::vec3 color;
+  int comp_id;
+};
+
 typedef std::vector<WorldPoint3D> Map3D;
 
 void CalcFundamental(const CameraInfo& camera_info1, const CameraInfo& camera_info2, cv::Mat& fund);

@@ -10,6 +10,7 @@
 // #include <cv_gl/dobject.h>
 #include "cv_gl/mesh.h"
 #include "cv_gl/shader.h"
+#include "cv_gl/sfm_common.h"
 
 std::vector<Vertex> CalcNormalsFromVertInd(const std::vector<Vertex> &vertices, const std::vector<uint> &indices) {
   
@@ -195,6 +196,19 @@ public:
     std::vector<Vertex> vertices(points.size());
     for (int i = 0; i < points.size(); ++i) {
       vertices[i].position = points[i];
+    }
+    std::vector<unsigned int> indices;
+    auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
+    mesh->SetMeshType(MeshType::POINTS);
+    return mesh;
+  }
+
+  static std::shared_ptr<Mesh> CreatePoints(std::vector<Point3DColor>& points) {
+    std::vector<Texture> textures;
+    std::vector<Vertex> vertices(points.size());
+    for (int i = 0; i < points.size(); ++i) {
+      vertices[i].position = points[i].pt;
+      vertices[i].color = points[i].color;
     }
     std::vector<unsigned int> indices;
     auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
@@ -417,6 +431,24 @@ public:
 
   }
 
+  /* ================ Points Color ================================*/
+  static ColorObject* CreatePoints(std::vector<Point3DColor>& points, const glm::vec4& color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)) {
+
+    auto mesh = MeshFactory::CreatePoints(points);
+
+    auto shader_color = ObjectFactory::GetShader(
+        "../shaders/two.vs",
+        "../shaders/two_model.fs");
+
+    ColorObject* points_obj =
+        new ColorObject(mesh, color, true);
+    points_obj->SetShader(shader_color);
+    points_obj->NoCorrection();
+
+    return points_obj;
+
+  }
+
 
   /* ================ Camera ================================ */
   // static CameraObject* CreateCamera(const float width_ratio = 1.0) {
@@ -622,7 +654,7 @@ class CameraObject: public DObject {
 
   }
 
-  private:
+private:
   std::shared_ptr<ImageObject> image_obj_;
   std::shared_ptr<ColorObject> camera_obj_;
   CameraIntrinsics intrinsics_;

@@ -273,11 +273,17 @@ class ColorObject: public DObject {
  public:
 
   ColorObject(const std::shared_ptr<Mesh> mesh,
-              const glm::vec4& color = glm::vec4(1.0f))
+              const glm::vec4& color = glm::vec4(1.0f),
+              const bool use_vertex_color = false)
       : DObject(mesh, "ColorObject"), color_(color) {
     if (mesh_->GetMeshType() == MeshType::LINES || mesh_->GetMeshType() == MeshType::POINTS) {
       mesh_->material.ambient_color = color;
     } else {
+      mesh_->material.diffuse_color = color;
+    }
+    mesh_->material.use_vertex_color = use_vertex_color;
+    if (use_vertex_color) {
+      mesh_->material.ambient_color = color;
       mesh_->material.diffuse_color = color;
     }
     

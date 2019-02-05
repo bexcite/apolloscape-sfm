@@ -74,7 +74,7 @@ public:
   void ReconstructNextViewPair(const int first_id, const int second_id);
   void PrintFinalStats();
 
-  void GetMapPointsVec(std::vector<glm::vec3>& glm_points) const;
+  void GetMapPointsVec(std::vector<Point3DColor>& glm_points) const;
   void GetMapCamerasWithPointsVec(
      std::map<int, std::vector<std::pair<int, glm::vec3> > >& map_cameras);
   cv::Mat GetImage(int cam_id) const;
