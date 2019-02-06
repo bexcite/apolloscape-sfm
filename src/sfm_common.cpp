@@ -6,7 +6,7 @@
 #include <ceres/ceres.h>
 
 #include "cv_gl/utils.hpp"
-#include "cv_gl/sfm_common.hpp"
+#include "cv_gl/sfm_common.h"
 // #include "cv_gl/ccomp.hpp"
 
 
@@ -1087,12 +1087,19 @@ int GetNextBestView(const Map3D& map,
 void MergeToTheMap(Map3D& map,
                    const Map3D& local_map,
                    CComponents<std::pair<int, int> >& ccomp) {
+
+  int connect_cnt = 0;
+  int idx = 0;
   for (auto lp: local_map) {
     std::pair<int, int> lp_view = (*lp.views.begin());
 
     int cnt = 0;
     bool skip = false;
-    for (auto& wp: map) {
+    double min_dist = 10000.0;
+    int min_dist_id = -1;
+    int looked_points = 0;
+    for (int i = 0; i < map.size(); ++i) {
+      WorldPoint3D& wp = map[i];
       std::pair<int, int> wp_view = (*wp.views.begin());
 
       if (ccomp.Connected(lp_view, wp_view)) {
@@ -1100,12 +1107,31 @@ void MergeToTheMap(Map3D& map,
         // std::cout << "[" << cnt <<  "] Connected: \n  lp = " << lp
         //           << "  wp = " << wp 
         //           << "  dist = " << dist << std::endl;
+        ++looked_points;
+        if (dist < min_dist) {
+          min_dist = dist;
+          min_dist_id = i;
+          // if (min_dist < 100.0) {
+            std::cout << "[" << i << " for " << idx << "] dist = " << dist
+                  <<  ", min_dist = " << min_dist 
+                  << ", looked_points = " << looked_points
+                  << std::endl;
+          //   break;
+          // }
+        }
 
-        if (dist > 0.5) {
-          // std::cout << "DON't CONNECT!!!!\n";
+        // std::cout << "[" << idx << "] dist = " << dist
+        //           <<  ", min_dist = " << min_dist << std::endl;
+
+        /*
+
+        if (dist > 1.0) {
+          std::cout << "DON't CONNECT!!!! dist = " << dist << std::endl;
           skip = true;
           break;
         }
+
+        // std::cout << "connect! dist = " << dist << std::endl;
 
         // Merge lp.views to the wp
         for (auto view : lp.views) {
@@ -1113,9 +1139,12 @@ void MergeToTheMap(Map3D& map,
         }
         // std::cout << "Updated wp = " << wp << std::endl;
         skip = true;
+        ++connect_cnt;
+
         ++cnt;
 
         break;
+        */
 
         // if (cnt > 1) {
         //   std::cout << "DOUBLE_CONNECT!!!!\n";
@@ -1123,11 +1152,31 @@ void MergeToTheMap(Map3D& map,
       }
     }
 
+    if (min_dist_id >= 0) {
+
+      skip = true;
+
+      if (min_dist < 500.0) {
+          // std::cout << "CONNECT!!!! min_dist = " << min_dist << std::endl;
+          WorldPoint3D& wp = map[min_dist_id];
+          // Merge lp.views to the wp
+          for (auto view : lp.views) {
+            wp.views.insert(view);
+          }
+          // std::cout << "Updated wp = " << wp << std::endl;
+          skip = true;
+          ++connect_cnt;
+        } 
+
+    }
+
     if (/*cnt == 0 && */ !skip) {
       map.push_back(lp);
     }
     
+    ++idx;
   }
+  std::cout << ", merge_connected = " << connect_cnt << "";
 }
 
 
@@ -1249,14 +1298,19 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = 500;
   options.eta = 1e-2;
-  options.max_solver_time_in_seconds = 10;
+  options.max_solver_time_in_seconds = 60;
   options.logging_type = ceres::LoggingType::SILENT;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
-  std::cout << summary.BriefReport() << "\n";
+  std::cout << std::endl;
+  // std::cout << summary.BriefReport();
+  std::cout << summary.FullReport();
+  // std::cout << ", SolverTime = " << summary.total_time_in_seconds;
+
 
   if (not (summary.termination_type == ceres::CONVERGENCE)) {
       std::cerr << "Bundle adjustment failed." << std::endl;
+      std::cout << summary.FullReport();
       return;
   }
 
@@ -1305,5 +1359,64 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   */
 
   delete[] points;
+
+}
+
+inline double deg2rad(const double d) {
+  return d / 180.0 * M_PI;
+}
+
+void GetKeyPointColors(const cv::Mat& img,
+                       const cv::KeyPoint& point,
+                       Point3DColor& p3d,
+                       const bool add_colors,
+                       double dangle) {
+
+  
+  if (add_colors) {
+    p3d.color += ::GetGlmColorFromImage(img, point.pt);
+  } else {
+    p3d.color = ::GetGlmColorFromImage(img, point.pt);
+  }
+
+  cv::Point2f tl_pt = point.pt + cv::Point2f(
+      point.size * cos(deg2rad(135.0 + dangle)),
+      point.size * sin(deg2rad(135 + dangle)));
+  // std::cout << "tl_pt = " << tl_pt << std::endl;
+  if (add_colors) {
+    p3d.color_tl += ::GetGlmColorFromImage(img, tl_pt);
+  } else {
+    p3d.color_tl = ::GetGlmColorFromImage(img, tl_pt);
+  }
+
+  cv::Point2f tr_pt = point.pt + cv::Point2f(
+      point.size * cos(deg2rad(45.0 + dangle)), 
+      point.size * sin(deg2rad(45.0 + dangle)));
+  // std::cout << "tr_pt = " << tr_pt << std::endl;
+  if (add_colors) {
+    p3d.color_tr += ::GetGlmColorFromImage(img, tr_pt);
+  } else {
+    p3d.color_tr = ::GetGlmColorFromImage(img, tr_pt);
+  }
+
+  cv::Point2f bl_pt = point.pt + cv::Point2f(
+      point.size * cos(deg2rad(225.0 + dangle)), 
+      point.size * sin(deg2rad(225.0 + dangle)));
+  // std::cout << "bl_pt = " << bl_pt << std::endl;
+  if (add_colors) {
+    p3d.color_bl += ::GetGlmColorFromImage(img, bl_pt);
+  } else {
+    p3d.color_bl = ::GetGlmColorFromImage(img, bl_pt);
+  }
+
+  cv::Point2f br_pt = point.pt + cv::Point2f(
+      point.size * cos(deg2rad(315.0 + dangle)), 
+      point.size * sin(deg2rad(315.0 + dangle)));
+  // std::cout << "br_pt = " << br_pt << std::endl;
+  if (add_colors) {
+    p3d.color_br += ::GetGlmColorFromImage(img, br_pt);
+  } else {
+    p3d.color_br = ::GetGlmColorFromImage(img, br_pt);
+  }
 
 }

@@ -15,17 +15,20 @@ Shader::Shader() {
 }
 
 Shader::Shader(const std::string& vertex_shader_path,
-    const std::string& fragment_shader_path) {
+    const std::string& fragment_shader_path,
+    const std::string& geometry_shader_path) {
 
   ++count_;
 
-  std::cout << "Shader: Constructor 2 params (" << count_ << ")" << std::endl;
+  std::cout << "Shader: Constructor 3 params (" << count_ << ")" << std::endl;
   std::cout << "Vertex s path: " << vertex_shader_path << std::endl;
   std::cout << "Fragment s path: " << fragment_shader_path << std::endl;
+  std::cout << "Geometry s path: " << geometry_shader_path << std::endl;
 
   // store for the debug purposes
   this->vertex_shader_path_ = vertex_shader_path;
   this->fragment_shader_path_ = fragment_shader_path;
+  this->geometry_shader_path_ = geometry_shader_path;
 
 
   // Read vertex shader
@@ -34,7 +37,6 @@ Shader::Shader(const std::string& vertex_shader_path,
   std::stringstream vs_buffer;
   vs_buffer << vsf.rdbuf();
   v_shader_code = vs_buffer.str();
-
   // std::cout << "Vertex content: \n" << v_shader_code << std::endl;
   vsf.close();
   const char* v_shader_code_cstr = v_shader_code.c_str();
@@ -49,6 +51,18 @@ Shader::Shader(const std::string& vertex_shader_path,
   fsf.close();
   const char* f_shader_code_cstr = f_shader_code.c_str();
 
+  // Read geometry shader
+  std::string g_shader_code;
+  if (!geometry_shader_path.empty()) {
+    std::ifstream gsf(geometry_shader_path);
+    std::stringstream gs_buffer;
+    gs_buffer << gsf.rdbuf();
+    g_shader_code = gs_buffer.str();
+    // std::cout << "Geometry content: \n" << g_shader_code << std::endl;
+    gsf.close();
+  }
+  const char* g_shader_code_cstr = g_shader_code.c_str();
+
   // Create program
 
   //  Create vertexShader
@@ -56,7 +70,6 @@ Shader::Shader(const std::string& vertex_shader_path,
   char infoLog[512];
 
   int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
   glShaderSource(vertexShader, 1, &v_shader_code_cstr, nullptr);
   glCompileShader(vertexShader);
   // check for shader compile errors
@@ -79,9 +92,25 @@ Shader::Shader(const std::string& vertex_shader_path,
         << std::endl;
   }
 
+  int geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+  if (!geometry_shader_path.empty()) {
+    glShaderSource(geometryShader, 1, &g_shader_code_cstr, nullptr);
+    glCompileShader(geometryShader);
+    // check for errors
+    glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      glGetShaderInfoLog(geometryShader, 512, nullptr, infoLog);
+      std::cout << "ERROR::SHADER::GEOMETRY::COMPILATION_ERROR\n" << infoLog
+          << std::endl;
+    }
+  }
+
   // link shader into program
   id_ = glCreateProgram();
   glAttachShader(id_, vertexShader);
+  if (!geometry_shader_path.empty()) {
+    glAttachShader(id_, geometryShader);
+  }
   glAttachShader(id_, fragmentShader);
   glLinkProgram(id_);
   glGetProgramiv(id_, GL_LINK_STATUS, &success);
@@ -92,12 +121,16 @@ Shader::Shader(const std::string& vertex_shader_path,
   }
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
+  if (!geometry_shader_path.empty()) {
+    glDeleteShader(geometryShader);
+  }
 }
 
 void
 Shader::print(std::ostream& os) const {
-  os << "Shader: vertex_path = " << this->vertex_shader_path_ <<
-  ", fragment_path = " << this->fragment_shader_path_;
+  os << "Shader: vertex_path = " << this->vertex_shader_path_
+     << ", fragment_path = " << this->fragment_shader_path_ 
+     << ", geometry_path = " << this->geometry_shader_path_;
 }
 
 void

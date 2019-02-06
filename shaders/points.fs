@@ -1,6 +1,5 @@
 #version 330 core
 
-
 struct Material {
 
     // Contribution levels
@@ -19,35 +18,37 @@ struct Material {
     sampler2D texture_diffuse1;
 };
 
-out vec4 FragColor;
-
 in vec4 VertexColor;
-in vec2 TexCoord;
-in vec3 FragPos;
-in vec3 Normal;
+// in vec2 TexCoord;
+// in vec3 FragPos;
+// in vec3 Normal;
 
 // TODO: Change this to an array
-in vec3 LightDir1;
-in vec3 LightDir2;
+// in vec3 LightDir1;
+// in vec3 LightDir2;
 
 uniform Material material;
 
+out vec4 FragColor;
+
 void main() {
 
-  float diff1 = max(dot(Normal, LightDir1), 0.0);
-  float diff2 = max(dot(Normal, LightDir2), 0.0);
+  // float diff1 = max(dot(Normal, LightDir1), 0.0);
+  // float diff2 = max(dot(Normal, LightDir2), 0.0);
 
   vec4 result = vec4(0.0);
 
   vec4 ambient = material.ambient;
-  vec4 diffuse = material.diffuse * (diff1 + diff2);;
+  // vec4 diffuse = material.diffuse * (diff1 + diff2);;
+  vec4 diffuse = vec4(0.0);
 
   if (material.use_vertex_color > 0) {
     ambient = ambient * VertexColor;
-    diffuse = diffuse * VertexColor;
+    // diffuse = diffuse * VertexColor;
 
   }
 
+/*
   // ======= Diffuse part ===============
   if (material.texture_diffuse > 0) {
     vec4 texture_color = texture(material.texture_diffuse1, TexCoord);
@@ -70,10 +71,10 @@ void main() {
     }
     
   } 
+*/
 
   // FragColor = vec4(1.0, 0.6, 0.6, 1.0);
   FragColor = ambient + diffuse;
-  // FragColor.a = 0.8;
-    
+  // FragColor.a = 0.8;  
 
 }

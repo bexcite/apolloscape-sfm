@@ -95,6 +95,8 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
   }
 
   shader->SetInt("material.texture_ambient_transparent", material.ambient_transparent);
+  shader->SetInt("material.use_vertex_color", material.use_vertex_color);
+
   // shader->SetInt("material.texture_ambient_transparent", 0);
 
   shader->SetVector4fv("material.ambient", glm::value_ptr(material.ambient_color));
@@ -163,6 +165,28 @@ Mesh::SetupMesh() {
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
       (void*)(offsetof(Vertex, tex_coords)));
   glEnableVertexAttribArray(2);
+
+  //color
+  glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+      (void*)(offsetof(Vertex, color)));
+  glEnableVertexAttribArray(3);
+
+  //color_tl
+  glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+      (void*)(offsetof(Vertex, color_tl)));
+  glEnableVertexAttribArray(4);
+  //color_tr
+  glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+      (void*)(offsetof(Vertex, color_tr)));
+  glEnableVertexAttribArray(5);
+  //color_bl
+  glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+      (void*)(offsetof(Vertex, color_bl)));
+  glEnableVertexAttribArray(6);
+  //color_br
+  glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+      (void*)(offsetof(Vertex, color_br)));
+  glEnableVertexAttribArray(7);
 
   // Ubind buffer
   glBindBuffer(GL_ARRAY_BUFFER, 0);

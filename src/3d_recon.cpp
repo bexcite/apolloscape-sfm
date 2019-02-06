@@ -57,6 +57,22 @@ const double kImageHeight = 2056.0;
 
 const float kGlobalScale = 100.0f;
 
+const std::vector<std::string> kRecords = {
+  "Record001",
+  // "Record002",
+  // "Record003",
+  // "Record004",
+  // "Record006",
+  // "Record007",
+  // "Record008",
+  // "Record009",
+  // "Record010",
+  // "Record011",
+  // "Record012",
+  // "Record013",
+  // "Record014"
+};
+
 #define TAG_CAMERA_OBJECT 10
 
 namespace fs = boost::filesystem;
@@ -133,58 +149,76 @@ int main(int argc, char* argv[]) {
 
   SfM3D sfm(camera_intrs);
 
+  for (auto record : kRecords) {
+    std::cout << "==== r = " << record << std::endl;
 
-  fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-      / fs::path("pose") / fs::path(kRecordId) / fs::path(kCamera1PoseFile);
-  fs::path camera2_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-      / fs::path("pose") / fs::path(kRecordId) / fs::path(kCamera2PoseFile);
-  std::cout << "Camera 1 path: " << camera1_path << std::endl;
-  std::cout << "Camera 2 path: " << camera2_path << std::endl;
+    fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+        / fs::path("pose") / fs::path(record) / fs::path(kCamera1PoseFile);
+    fs::path camera2_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+        / fs::path("pose") / fs::path(record) / fs::path(kCamera2PoseFile);
+    std::cout << "Camera 1 path: " << camera1_path << std::endl;
+    std::cout << "Camera 2 path: " << camera2_path << std::endl;
 
-  fs::path camera1_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-      / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_1");
-  fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-      / fs::path("image") / fs::path(kRecordId) / fs::path("Camera_2");
+    fs::path camera1_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+        / fs::path("image") / fs::path(record) / fs::path("Camera_1");
+    fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+        / fs::path("image") / fs::path(record) / fs::path("Camera_2");
 
-  std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path,
-                                                         camera1_image_path,
-                                                         kRecordId, 1);
-  std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path,
-                                                         camera2_image_path,
-                                                         kRecordId, 2);
+    std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path,
+                                                          camera1_image_path,
+                                                          record, 1);
+    std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path,
+                                                          camera2_image_path,
+                                                          record, 2);
 
-  
+    
 
-  std::cout << "sizes 1 = " << camera1_poses.size() << std::endl;
-  std::cout << "sizes 2 = " << camera2_poses.size() << std::endl;
+    std::cout << "sizes 1 = " << camera1_poses.size() << std::endl;
+    std::cout << "sizes 2 = " << camera2_poses.size() << std::endl;
 
-  std::cout << "Camera Poses 1: " << camera1_poses[1];
-  std::cout << "Camera Poses 2: " << camera2_poses[1];
+    std::cout << "Camera Poses 1: " << camera1_poses[1] << std::endl;
+    std::cout << "Camera Poses 2: " << camera2_poses[1] << std::endl;
 
-  // == Slice record ==
-  int p_camera_pose = 37; // 24
-  int p_camera_start = 35; //22 ==== 36 or 37
-  int p_camera_finish = 39; //25 ===== 39 or 40
+    // == Slice record ==
+    int p_camera_pose = 0; // 24
+    int p_camera_start = 15; //22 ==== 36 or 37 - 35
+    int p_camera_finish = 35; //25 ===== 39 or 40  - 39
 
-  std::vector<ImageData> camera1_poses_s, camera2_poses_s;
-  camera1_poses_s.insert(camera1_poses_s.begin(),
-                         camera1_poses.begin() + p_camera_start, 
-                         camera1_poses.begin() + p_camera_finish);
-  camera2_poses_s.insert(camera2_poses_s.begin(),
-                         camera2_poses.begin() + p_camera_start, 
-                         camera2_poses.begin() + p_camera_finish);
-  sfm.AddImages(camera1_poses_s, camera2_poses_s);
+    p_camera_start = std::min(p_camera_start,
+                              static_cast<int>(camera1_poses.size()));
+    p_camera_finish = std::min(p_camera_finish,
+                              static_cast<int>(camera1_poses.size()));
+
+    std::vector<ImageData> camera1_poses_s, camera2_poses_s;
+    camera1_poses_s.insert(camera1_poses_s.begin(),
+                          camera1_poses.begin() + p_camera_start, 
+                          camera1_poses.begin() + p_camera_finish);
+    camera2_poses_s.insert(camera2_poses_s.begin(),
+                          camera2_poses.begin() + p_camera_start, 
+                          camera2_poses.begin() + p_camera_finish);
+    sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 5);
+
+  }
+
 
   sfm.ExtractFeatures();
 
-  std::cout << sfm << std::endl;
+  sfm.MatchImageFeatures(60);
 
+  sfm.InitReconstruction();
+
+  sfm.ReconstructAll();
+
+
+  std::cout << sfm << std::endl;
+  sfm.PrintFinalStats();
+
+  // return EXIT_SUCCESS;
+
+/*
   {
     cv::KeyPoint kp;
     cv::Mat ttt(3,4,CV_64F);
-    // std::ofstream farch("out.xml");
-    // cereal::XMLOutputArchive archive(farch);
-    // archive(sfm);
     std::ofstream farch("out.bin", std::ios::binary);
     cereal::BinaryOutputArchive archive(farch);
     archive(sfm);
@@ -197,9 +231,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Before: " << sfm2 << std::endl;
     cv::KeyPoint kp2;
     cv::Mat ttt2;
-    // std::ofstream farch("out.xml");
-    // cereal::XMLOutputArchive archive(farch);
-    // archive(sfm);
     std::ifstream farch("out.bin", std::ios::binary);
     cereal::BinaryInputArchive archive(farch);
     archive(sfm2);
@@ -207,11 +238,12 @@ int main(int argc, char* argv[]) {
     std::cout << "De-Serialized!" << std::endl;
     std::cout << "After: " << sfm2 << std::endl;
   }
+*/
 
 
-  const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
+  // const ImageData& camera_origin_data = camera1_poses[p_camera_pose];
 
-  return EXIT_SUCCESS;
+  
 
 
 
@@ -226,12 +258,12 @@ int main(int argc, char* argv[]) {
       std::make_shared<Camera>(glm::vec3(3.0f * kGlobalScale, 0.0f * kGlobalScale, 1.0f * kGlobalScale)); 
   camera->SetScale(kGlobalScale);
 
-  camera->SetOrigin(glm::vec3(camera_origin_data.coords[3],
-                              camera_origin_data.coords[4],
-                              camera_origin_data.coords[5]));
-  camera->SetRotation(camera_origin_data.coords[0],
-                      camera_origin_data.coords[1],
-                      camera_origin_data.coords[2]);
+  // camera->SetOrigin(glm::vec3(camera_origin_data.coords[3],
+  //                             camera_origin_data.coords[4],
+  //                             camera_origin_data.coords[5]));
+  // camera->SetRotation(camera_origin_data.coords[0],
+  //                     camera_origin_data.coords[1],
+  //                     camera_origin_data.coords[2]);
 
   GLWindow gl_window("OpenGL: 3D Reconstruction", kWindowWidth, kWindowHeight);
   gl_window.SetCamera(camera);
@@ -249,13 +281,14 @@ int main(int argc, char* argv[]) {
   CameraIntrinsics camera_intr = camera->GetCameraIntrinsics();
 
   std::shared_ptr<DObject> cameras1(new DObject());
-  std::shared_ptr<DObject> cameras2(new DObject());
+  // std::shared_ptr<DObject> cameras2(new DObject());
 
   
-  
+  /*
 
   // Expect only paired images
   assert(camera1_poses.size() == camera2_poses.size());
+
 
   // === Extract features from images ===
   std::vector<Features> image_features;
@@ -374,51 +407,35 @@ int main(int argc, char* argv[]) {
       ccomp.Union(p1, p2);
     }
 
-    // TODO: Extract from the loop
-    /*
-    std::cout << "ccomp.count = " << ccomp.Count() << std::endl;
-    std::vector<int> comp_ids = ccomp.GetComponentIds();
-    cl = 0;
-    longest = 0;
-    for (auto c : comp_ids) {
-      auto elems = ccomp.GetElementsById(c);
-      if (elems.size() > longest) {
-        longest = elems.size();
-        cl = c;
-      }
-    }
-    std::cout << "longest = " << longest << ", id = " << cl << std::endl;
-    */
-
-    /*
+    
     // ======== Show Match =========
-    int win_x = 0;
-    int win_y = 20;
-    double win_scale = 0.25;
-    // == Show Camera Images (Keypoints) ==
-    cv::Mat img1 = images[ip.first].clone();
-    cv::Mat img2 = images[ip.second].clone();
-    cv::Mat img1_points, img2_points, img_matches;
-    DrawKeypointsWithResize(img1, features1.keypoints, img1_points, win_scale);
-    DrawKeypointsWithResize(img2, features2.keypoints, img2_points, win_scale);
-    std::vector<cv::KeyPoint> keypoints1, keypoints2;
-    for (size_t i = 0; i < matches.match.size(); ++i) {
-    // std::cout << i << " = " << good_matches[i].queryIdx << " : " << good_matches[i].trainIdx << std::endl;
-    // Add keypoints to output
-      keypoints1.push_back(features1.keypoints[matches.match[i].queryIdx]);
-      keypoints2.push_back(features2.keypoints[matches.match[i].trainIdx]);
-    }
-    DrawMatchesWithResize(img1, keypoints1, img2, keypoints2, img_matches, win_scale);
-    // Debug: Show points
-    ImShow("img1", img1_points);
-    cv::moveWindow("img1", win_x, win_y);
-    ImShow("img2", img2_points);
-    cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
-    // ImShow("mask", feature_mask, win_scale);
-    ImShow("img matches", img_matches);
-    cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
-    cv::waitKey();
-    */
+    // int win_x = 0;
+    // int win_y = 20;
+    // double win_scale = 0.25;
+    // // == Show Camera Images (Keypoints) ==
+    // cv::Mat img1 = images[ip.first].clone();
+    // cv::Mat img2 = images[ip.second].clone();
+    // cv::Mat img1_points, img2_points, img_matches;
+    // DrawKeypointsWithResize(img1, features1.keypoints, img1_points, win_scale);
+    // DrawKeypointsWithResize(img2, features2.keypoints, img2_points, win_scale);
+    // std::vector<cv::KeyPoint> keypoints1, keypoints2;
+    // for (size_t i = 0; i < matches.match.size(); ++i) {
+    // // std::cout << i << " = " << good_matches[i].queryIdx << " : " << good_matches[i].trainIdx << std::endl;
+    // // Add keypoints to output
+    //   keypoints1.push_back(features1.keypoints[matches.match[i].queryIdx]);
+    //   keypoints2.push_back(features2.keypoints[matches.match[i].trainIdx]);
+    // }
+    // DrawMatchesWithResize(img1, keypoints1, img2, keypoints2, img_matches, win_scale);
+    // // Debug: Show points
+    // ImShow("img1", img1_points);
+    // cv::moveWindow("img1", win_x, win_y);
+    // ImShow("img2", img2_points);
+    // cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+    // // ImShow("mask", feature_mask, win_scale);
+    // ImShow("img matches", img_matches);
+    // cv::moveWindow("img matches", win_x, win_y + img1_points.size().height + 20);
+    // cv::waitKey();
+    
 
   }
 
@@ -467,28 +484,27 @@ int main(int argc, char* argv[]) {
   DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
   DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
   
-  /*
-  std::vector<cv::KeyPoint> kpoints1, kpoints2;
-  for (size_t i = 0; i < image_matches[most_match_id].match.size(); ++i) {
-    kpoints1.push_back(image_features[img1_id].keypoints[image_matches[most_match_id].match[i].queryIdx]);
-    kpoints2.push_back(image_features[img2_id].keypoints[image_matches[most_match_id].match[i].trainIdx]);
-  }
+  
+  // std::vector<cv::KeyPoint> kpoints1, kpoints2;
+  // for (size_t i = 0; i < image_matches[most_match_id].match.size(); ++i) {
+  //   kpoints1.push_back(image_features[img1_id].keypoints[image_matches[most_match_id].match[i].queryIdx]);
+  //   kpoints2.push_back(image_features[img2_id].keypoints[image_matches[most_match_id].match[i].trainIdx]);
+  // }
 
-  cv::Mat img1_points, img2_points, img_matches;
-  DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
-  DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
-  DrawMatchesWithResize(img1, image_features[img1_id].keypoints, 
-                        img2, image_features[img2_id].keypoints, 
-                        img_matches, 
-                        win_scale, image_matches[most_match_id].match);
-  ImShow("img1", img1_points);
-  cv::moveWindow("img1", win_x, win_y);
-  ImShow("img2", img2_points);
-  cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
-  // ImShow("img_matches", img_matches);
-  // cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 20);
-  */
-  // cv::waitKey();
+  // cv::Mat img1_points, img2_points, img_matches;
+  // DrawKeypointsWithResize(img1, kpoints1, img1_points, win_scale);
+  // DrawKeypointsWithResize(img2, kpoints2, img2_points, win_scale);
+  // DrawMatchesWithResize(img1, image_features[img1_id].keypoints, 
+  //                       img2, image_features[img2_id].keypoints, 
+  //                       img_matches, 
+  //                       win_scale, image_matches[most_match_id].match);
+  // ImShow("img1", img1_points);
+  // cv::moveWindow("img1", win_x, win_y);
+  // ImShow("img2", img2_points);
+  // cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+  // // ImShow("img_matches", img_matches);
+  // // cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 20);
+  // // cv::waitKey();
   
 
 
@@ -774,37 +790,37 @@ int main(int argc, char* argv[]) {
   // cv::drawMarker(img2_points, points2f[j] * win_scale, cv::Scalar(255.0, 0.0, 0.0), cv::MARKER_CROSS, 5, 1);
 
 
-  /*
+  
   // === Show All Tracks From Longest ==
-  std::vector<int> comp_ids = ccomp.GetComponentIds();
-  std::vector<std::pair<int, int> > comp_counts;
-  for (auto c : comp_ids) {
-    auto elems = ccomp.GetComponentsById(c);
-    comp_counts.push_back({c, elems.size()});
-  }
-  std::sort(comp_counts.begin(), comp_counts.end(), 
-      [](std::pair<int, int>& a, std::pair<int, int>& b) {
-          return a.second < b.second; 
-      });
-  std::cout << "top: " << comp_counts[0].first << ", " << comp_counts[0].second << std::endl;
+  // std::vector<int> comp_ids = ccomp.GetComponentIds();
+  // std::vector<std::pair<int, int> > comp_counts;
+  // for (auto c : comp_ids) {
+  //   auto elems = ccomp.GetComponentsById(c);
+  //   comp_counts.push_back({c, elems.size()});
+  // }
+  // std::sort(comp_counts.begin(), comp_counts.end(), 
+  //     [](std::pair<int, int>& a, std::pair<int, int>& b) {
+  //         return a.second < b.second; 
+  //     });
+  // std::cout << "top: " << comp_counts[0].first << ", " << comp_counts[0].second << std::endl;
 
-  for (auto it = comp_counts.rbegin(); it != comp_counts.rend(); ++it) {
-    auto elems = ccomp.GetComponentsById((*it).first);
-    std::sort(elems.begin(), elems.end());
-    std::cout << "elems (" << (*it).first << " - " << elems.size() << ") = ";
-    double win_scale = 0.3;
-    for (auto el : elems) {
-      std::cout << el << ", " << std::flush;
-      cv::Mat img = images[el.first].clone();
-      std::vector<cv::KeyPoint> kpts = {image_features[el.first].keypoints[el.second]};
-      cv::Mat img_points;
-      DrawKeypointsWithResize(img, kpts, img_points, win_scale);
-      ImShow("img", img_points);
-      cv::waitKey();
-    }
-    std::cout << std::endl;
-  }
-  */
+  // for (auto it = comp_counts.rbegin(); it != comp_counts.rend(); ++it) {
+  //   auto elems = ccomp.GetComponentsById((*it).first);
+  //   std::sort(elems.begin(), elems.end());
+  //   std::cout << "elems (" << (*it).first << " - " << elems.size() << ") = ";
+  //   double win_scale = 0.3;
+  //   for (auto el : elems) {
+  //     std::cout << el << ", " << std::flush;
+  //     cv::Mat img = images[el.first].clone();
+  //     std::vector<cv::KeyPoint> kpts = {image_features[el.first].keypoints[el.second]};
+  //     cv::Mat img_points;
+  //     DrawKeypointsWithResize(img, kpts, img_points, win_scale);
+  //     ImShow("img", img_points);
+  //     cv::waitKey();
+  //   }
+  //   std::cout << std::endl;
+  // }
+  
 
 
 
@@ -823,7 +839,7 @@ int main(int argc, char* argv[]) {
   //   ImShow("img", img_points);
   //   cv::waitKey();
   // }
-
+  */
 
   /*
   // ===== Extract features and Triangulate ================= 
@@ -997,13 +1013,112 @@ int main(int argc, char* argv[]) {
   //   std::cout << i << ": " << map[i] << std::endl;
   // }
 
+  
 
-  all_error = GetReprojectionError(map, cameras, image_features);
-  std::cout << "FINAL_error = " << all_error << std::endl;
-  std::cout << "USED_views = " << used_views.size()
-            << " out of " << images.size() << std::endl;
-  std::cout << "FINAL_map.size = " << map.size() << " points" << std::endl;
 
+  // Map3D map_;
+  // std::vector<Features> image_features_;
+  // std::vector<CameraInfo> cameras_;
+
+  sfm.PrintFinalStats();
+
+  // all_error = GetReprojectionError(map, cameras, image_features);
+  // std::cout << "FINAL_error = " << all_error << std::endl;
+  // std::cout << "USED_views = " << used_views.size()
+  //           << " out of " << images.size() << std::endl;
+  // std::cout << "FINAL_map.size = " << map.size() << " points" << std::endl;
+
+  // Show 3D Points
+  // std::vector<glm::vec3> glm_points;
+  // sfm.GetMapPointsVec(glm_points);
+  // std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(glm_points));
+  // root->AddChild(points_obj);
+
+
+
+  // Get cameras with points
+  // map: cam_id => vec of (keypoint_id, 3d_point_coords)
+  std::map<int, std::vector<std::pair<int, Point3DColor> > > map_cameras;
+  sfm.GetMapCamerasWithPointsVec(map_cameras);
+
+  typedef std::pair<const int, std::vector<std::pair<int, Point3DColor> > > MapCameraEl;
+
+  // Set Origin to the Best Camera (with the most matches)
+  auto cam_max_points = std::max_element(map_cameras.begin(),
+      map_cameras.end(),
+      [](MapCameraEl& el1,
+         MapCameraEl& el2) {
+           return el1.second.size() < el2.second.size();
+      });
+  int cam_max_points_id = cam_max_points->first;
+  std::cout << "cam_max_points_id = " << cam_max_points_id 
+            << ", cam_size = " << cam_max_points->second.size() 
+            << std::endl;
+  CameraInfo origin_cam_info = sfm.GetCameraInfo(cam_max_points_id);
+  // camera->SetOrigin(origin_cam_info.translation); //glm::vec3(cam_info.translation)
+  // camera->SetRotation(origin_cam_info.rotation_angles[0],
+  //                     origin_cam_info.rotation_angles[1],
+  //                     origin_cam_info.rotation_angles[2]);
+
+  // std::vector<std::shared_ptr<CameraObject> > camera_refs;
+
+  // === Draw Cameras ===
+  for (auto& c: map_cameras) {
+    
+    std::cout << "Camera: " << c.first << ": points = " << c.second.size() << std::endl;
+    // PrintVec(" => ", c.second);
+
+    const int& cam_id = c.first;
+    cv::Mat co_img = sfm.GetImage(cam_id);
+
+
+    std::vector<cv::KeyPoint> kpoints;
+    std::vector<Point3DColor> points_3d;
+    for (size_t i = 0; i < c.second.size(); ++i) {
+
+      cv::KeyPoint kp = sfm.GetKeypoint(cam_id, c.second[i].first);
+      // std::cout << "kp.pt = " << kp.pt;
+      // std::cout << ", size = " << kp.size;
+      // std::cout << ", angle = " << kp.angle;
+      // std::cout << std::endl;
+
+      kpoints.push_back(kp);
+      points_3d.push_back(c.second[i].second);
+    }
+    cv::Mat img_points;
+    DrawKeypointsWithResize(co_img, kpoints, img_points, 0.3);
+
+    CameraInfo cam_info = sfm.GetCameraInfo(cam_id);
+    
+    std::shared_ptr<CameraObject> co(
+        new CameraObject(cam_info.intr, kImageWidth, kImageHeight));
+    co->SetTag(TAG_CAMERA_OBJECT);
+    co->SetImageTransparency(true);
+    // co->SetTranslation(glm::vec3(im_data2.coords[3], im_data2.coords[4], im_data2.coords[5]));
+    co->SetTranslation(cam_info.translation);
+    // co->SetRotation(im_data2.coords[0], im_data2.coords[1], im_data2.coords[2]);
+    co->SetRotation(cam_info.rotation_angles[0], 
+                    cam_info.rotation_angles[1], 
+                    cam_info.rotation_angles[2]);
+    // co->SetImage(img2);
+    // co->SetImage(img2_points);
+    co->SetImage(img_points);
+    co->SetImageAlpha(0.99);
+    cameras1->AddChild(co);
+
+    // camera_refs.push_back(co);
+
+    // co->AddProjectedPoints(glm_points);
+    co->AddProjectedPoints(points_3d);
+  }
+
+  
+  /*
+
+  return EXIT_SUCCESS;
+
+
+  
 
   // map cam_id => vec of (keypoint_id, 3d_point_coords)
   std::map<int, std::vector<std::pair<int, glm::vec3> > > map_cameras;
@@ -1056,7 +1171,7 @@ int main(int argc, char* argv[]) {
     // PrintVec(" => ", c.second);
 
     const int& cam_id = c.first;
-    cv::Mat co_img = images[cam_id].clone();
+    cv::Mat co_img = images[cam_id].clone(); // sfm.GetImage(cam_id)
 
 
     std::vector<cv::KeyPoint> kpoints;
@@ -1089,6 +1204,9 @@ int main(int argc, char* argv[]) {
     co->AddProjectedPoints(points_3d);
   }
 
+  */
+
+
   root->AddChild(cameras1);
   // root->AddChild(cameras2);
 
@@ -1108,21 +1226,28 @@ int main(int argc, char* argv[]) {
   root->AddChild(debug_cube_obj);
 
   // == Change Camera Events ===
-  int current_camera_id = 0;
+  // int current_camera_id = 0;
+  int current_camera_id = cam_max_points_id;
   double last_camera_change = 0;  
-  auto change_camera = [&cameras,
+  auto change_camera = [&sfm,
                         &camera] (int camera_id) {
     std::cout << "camera_id = " << camera_id << std::endl;
-    camera->SetOrigin(glm::vec3(cameras[camera_id].translation));
+    CameraInfo cam_info = sfm.GetCameraInfo(camera_id);
+    camera->SetOrigin(glm::vec3(cam_info.translation));
     // camera->SetRotation(cameras[camera_id].rotation_angles[0],
     //                     cameras[camera_id].rotation_angles[1],
     //                     cameras[camera_id].rotation_angles[2]);
   };
 
   change_camera(current_camera_id);
+  camera->SetRotation(origin_cam_info.rotation_angles[0],
+                      origin_cam_info.rotation_angles[1],
+                      origin_cam_info.rotation_angles[2]);
+
+  int cameras_size = sfm.ImageCount();
 
   gl_window.AddProcessInput(GLFW_KEY_J, [&current_camera_id,
-      &last_camera_change, &cameras, &gl_window, &used_views,
+      &last_camera_change, &cameras_size, &gl_window, // &used_views,
       &change_camera] (float dt) {
     const double key_rate = 0.2;
     double now = gl_window.GetTime();
@@ -1130,15 +1255,15 @@ int main(int argc, char* argv[]) {
     last_camera_change = now;
     // std::cout << "AddProcessInput!! == J = " << dt 
     //           << ", time = " << gl_window.GetTime() << std::endl;
-    do {
-      current_camera_id = ++current_camera_id % cameras.size();
-    } while (!used_views.count(current_camera_id));
+    // do {
+      current_camera_id = (current_camera_id + 2) % cameras_size;
+    // } while (!used_views.count(current_camera_id));
 
     change_camera(current_camera_id);
   });
 
   gl_window.AddProcessInput(GLFW_KEY_K, [&current_camera_id,
-      &last_camera_change, &cameras, &gl_window, &used_views,
+      &last_camera_change, &cameras_size, &gl_window, // &used_views,
       &change_camera] (float dt) {
     const double key_rate = 0.2;
     double now = gl_window.GetTime();
@@ -1146,9 +1271,9 @@ int main(int argc, char* argv[]) {
     last_camera_change = now;
     // std::cout << "AddProcessInput!! == K = " << dt 
     //           << ", time = " << gl_window.GetTime() << std::endl;
-    do {
-      current_camera_id = (current_camera_id + cameras.size() - 1) % cameras.size();
-    } while (!used_views.count(current_camera_id));
+    // do {
+      current_camera_id = (current_camera_id + cameras_size - 2) % cameras_size;
+    // } while (!used_views.count(current_camera_id));
 
     change_camera(current_camera_id);
   });
@@ -1179,6 +1304,20 @@ int main(int argc, char* argv[]) {
   });
   // <<<<<< Change Camera Alpha
 
+  std::vector<Point3DColor> glm_points;
+
+  // std::vector<glm::vec3> glm_points;
+  // std::vector<glm::vec3> glm_colors;
+  sfm.GetMapPointsVec(glm_points);
+
+  std::vector<glm::vec3> glm_only_points;
+  for (const auto& p : glm_points) {
+    glm_only_points.push_back(p.pt);
+  }
+
+  std::shared_ptr<DObject> points_obj(
+      ObjectFactory::CreatePoints(glm_points, true/*, glm::vec4(1.0)*/));
+  root->AddChild(points_obj);
 
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
@@ -1188,12 +1327,19 @@ int main(int argc, char* argv[]) {
 
     renderer->Draw(root, true);
 
+    // Crazy drawing  
+    // renderer->Draw(points_obj, true);
+
 
     gl_window.RunLoop();
   }
 
 
+
+
   return EXIT_SUCCESS;
+
+  
 
 
 }

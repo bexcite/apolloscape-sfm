@@ -50,7 +50,7 @@ GLWindow::GLWindow(const std::string& name, const unsigned int width,
   glEnable(GL_DEPTH_TEST);
 
   glEnable(GL_PROGRAM_POINT_SIZE);
-  glPointSize(5.0);
+  glPointSize(1.0);
 
   // TODO: Do I need transparency?
   glEnable(GL_BLEND);

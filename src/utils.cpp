@@ -201,6 +201,22 @@ glm::dmat3 GetRotation(const float x_angle, const float y_angle, const float z_a
     return glm::dmat3(rotation);
 }
 
+
+bool IsPairInOrder(const ImageData& im_data1, const ImageData& im_data2) {
+  // TODO: Optimize it by comparing elements rather than combined strings
+  auto im1_stem = boost::filesystem::path(im_data1.filename).stem();
+  auto im2_stem = boost::filesystem::path(im_data2.filename).stem();
+  std::string cache1_name = im_data1.record + "_"
+                          + std::to_string(im_data1.camera_num) + "_"
+                          + im1_stem.string();
+  std::string cache2_name = im_data2.record + "_"
+                          + std::to_string(im_data2.camera_num) + "_"
+                          + im2_stem.string();
+  // std::cout << "cache1_name = " << cache1_name << std::endl;
+  // std::cout << "cache2_name = " << cache2_name << std::endl;
+  return cache1_name < cache2_name;
+}
+
 std::vector<cv::DMatch> EmptyMatch() {
   return std::vector<cv::DMatch>();
 }
@@ -304,6 +320,17 @@ void ImShowMatchesWithResize(const cv::Mat& img1,
   }
 
 }
+
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::KeyPoint& point) {
+  cv::Vec3b vec = img.at<cv::Vec3b>(point.pt);
+  return glm::vec3(vec[2]/255.0, vec[1]/255.0, vec[0]/255.0);
+}
+
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::Point2f& pt) {
+  cv::Vec3b vec = img.at<cv::Vec3b>(pt);
+  return glm::vec3(vec[2]/255.0, vec[1]/255.0, vec[0]/255.0);
+}
+
 
 
 
