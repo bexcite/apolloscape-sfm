@@ -119,7 +119,8 @@ void ImShowMatchesWithResize(const cv::Mat& img1,
                              const int win_x = 0,
                              const int win_y = 10);
 
-glm::vec3 GetGlmColorFromImage(const cv::Mat& img , const cv::KeyPoint& point);
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::KeyPoint& point);
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::Point2f& pt);
 
 std::vector<cv::DMatch> EmptyMatch();
 

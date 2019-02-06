@@ -24,6 +24,10 @@ struct Vertex {
   glm::vec3 normal;
   glm::vec2 tex_coords;
   glm::vec3 color;
+  glm::vec3 color_tl;
+  glm::vec3 color_tr;
+  glm::vec3 color_bl;
+  glm::vec3 color_br;
 };
 
 struct Texture {

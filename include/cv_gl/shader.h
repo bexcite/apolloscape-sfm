@@ -21,7 +21,8 @@ class Shader {
   Shader& operator=(const Shader&) = delete;
 
   Shader(const std::string& vertex_shader_path,
-         const std::string& fragment_shader_path);
+         const std::string& fragment_shader_path,
+         const std::string& geometry_shader_path = "");
   void Use() const { glUseProgram(id_); }
   unsigned int GetId() const { return id_; }
   void SetFloat(const std::string &, const float) const;
@@ -37,6 +38,7 @@ class Shader {
   unsigned int id_;
   std::string vertex_shader_path_;
   std::string fragment_shader_path_;
+  std::string geometry_shader_path_;
   static int count_;
 };
 

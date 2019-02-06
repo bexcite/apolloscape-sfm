@@ -76,7 +76,7 @@ public:
 
   void GetMapPointsVec(std::vector<Point3DColor>& glm_points) const;
   void GetMapCamerasWithPointsVec(
-     std::map<int, std::vector<std::pair<int, glm::vec3> > >& map_cameras);
+     std::map<int, std::vector<std::pair<int, Point3DColor> > >& map_cameras);
   cv::Mat GetImage(int cam_id) const;
   CameraInfo GetCameraInfo(int cam_id) const;
   cv::KeyPoint GetKeypoint(int cam_id, int point_id) const;

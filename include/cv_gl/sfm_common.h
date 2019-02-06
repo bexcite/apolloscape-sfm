@@ -38,9 +38,16 @@ struct WorldPoint3D {
 };
 
 struct Point3DColor {
+  Point3DColor() :
+      pt{0.0}, color{0.0}, color_br{0.0}, color_bl{0.0}, color_tr{0.0},
+      color_tl{0.0} {}
   glm::vec3 pt;
   glm::vec3 color;
-  int comp_id;
+  glm::vec3 color_br;
+  glm::vec3 color_bl;
+  glm::vec3 color_tr;
+  glm::vec3 color_tl;
+  // int comp_id;
 };
 
 typedef std::vector<WorldPoint3D> Map3D;
@@ -99,6 +106,13 @@ int GetNextBestView(const Map3D& map,
 void MergeToTheMap(Map3D& map, 
                    const Map3D& local_map, 
                    CComponents<std::pair<int, int> >& ccomp);
+
+void GetKeyPointColors(const cv::Mat& img, 
+                       const cv::KeyPoint& point, 
+                       Point3DColor& p3d,
+                       const bool add_colors = false,
+                       double dangle = 0.0);
+
 
 
 // ============ Ceres Types / Functions ====

@@ -209,6 +209,10 @@ public:
     for (int i = 0; i < points.size(); ++i) {
       vertices[i].position = points[i].pt;
       vertices[i].color = points[i].color;
+      vertices[i].color_tl = points[i].color_tl;
+      vertices[i].color_tr = points[i].color_tr;
+      vertices[i].color_bl = points[i].color_bl;
+      vertices[i].color_br = points[i].color_br;
     }
     std::vector<unsigned int> indices;
     auto mesh = std::make_shared<Mesh>(vertices, indices, textures);
@@ -232,15 +236,17 @@ public:
   static std::map<std::string, std::shared_ptr<Shader> > shaders_;
 
   static std::shared_ptr<Shader> GetShader(const std::string& vertex_path,
-      const std::string& fragment_path) {
+      const std::string& fragment_path, const std::string& geometry_path = "") {
     // check existence
-    auto it = shaders_.find(vertex_path + fragment_path);
+    auto it = shaders_.find(vertex_path + fragment_path + geometry_path);
     if (it != shaders_.end()) {
       return it->second;
     }
     // create new
-    std::shared_ptr<Shader> shader = std::make_shared<Shader>(vertex_path, fragment_path);
-    shaders_.insert(std::pair<std::string, std::shared_ptr<Shader> >(vertex_path + fragment_path, shader));
+    std::shared_ptr<Shader> shader = std::make_shared<Shader>(vertex_path, 
+        fragment_path, geometry_path);
+    shaders_.insert(std::pair<std::string, std::shared_ptr<Shader> >(
+          vertex_path + fragment_path + geometry_path, shader));
     return shader;
   }
 
@@ -254,7 +260,11 @@ public:
     //   "../shaders/one.vs",
     //   "../shaders/one_color.fs");
 
-    auto shader_color = std::make_shared<Shader>(
+    // auto shader_color = std::make_shared<Shader>(
+    //     "../shaders/two.vs",
+    //     "../shaders/two_model.fs");
+
+    auto shader_color = ObjectFactory::GetShader(
         "../shaders/two.vs",
         "../shaders/two_model.fs");
 
@@ -432,13 +442,23 @@ public:
   }
 
   /* ================ Points Color ================================*/
-  static ColorObject* CreatePoints(std::vector<Point3DColor>& points, const glm::vec4& color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f)) {
+  static ColorObject* CreatePoints(std::vector<Point3DColor>& points, 
+          const bool extend_points = false,
+          const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)) {
 
     auto mesh = MeshFactory::CreatePoints(points);
 
-    auto shader_color = ObjectFactory::GetShader(
+    std::shared_ptr<Shader> shader_color;
+    if (extend_points) {
+      shader_color = ObjectFactory::GetShader(
+          "../shaders/points.vs",
+          "../shaders/points.fs",
+          "../shaders/points.gs");
+    } else {
+      shader_color = ObjectFactory::GetShader(
         "../shaders/two.vs",
         "../shaders/two_model.fs");
+    }
 
     ColorObject* points_obj =
         new ColorObject(mesh, color, true);
@@ -611,7 +631,7 @@ class CameraObject: public DObject {
   }
 
   void AddProjectedPoints(const std::vector<glm::vec3>& points) {
-    projected_points_.insert(projected_points_.end(), points.begin(), points.end());
+    // projected_points_.insert(projected_points_.end(), points.begin(), points.end());
 
     float f = std::max(intrinsics_.fx, intrinsics_.fy);
 
@@ -640,16 +660,49 @@ class CameraObject: public DObject {
     }
 
     // Corner Points
-    std::vector<glm::vec3> cp(1);
+    // std::vector<glm::vec3> cp(1);
     // cp[0] = glm::vec3((1 - intrinsics_.cx) * width_ratio_, -intrinsics_.cy, f);
-    cp[0] = glm::vec3(-intrinsics_.cx * width_ratio_, -intrinsics_.cy, f);
+    // cp[0] = glm::vec3(-intrinsics_.cx * width_ratio_, -intrinsics_.cy, f);
     // cp[1] = glm::vec3(-(1 - intrinsics_.cx) * width_ratio_, -intrinsics_.cy, f);
     // cp[2] = glm::vec3(-(1 - intrinsics_.cx) * width_ratio_, (1 - intrinsics_.cy), f);
     // cp[3] = glm::vec3(intrinsics_.cx * width_ratio_, (1 - intrinsics_.cy), f);
-    std::shared_ptr<DObject> cp_points_obj(ObjectFactory::CreatePoints(cp));
+    // std::shared_ptr<DObject> cp_points_obj(ObjectFactory::CreatePoints(cp));
     // this->AddChild(cp_points_obj);
 
     std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(p));
+    this->AddChild(points_obj);
+
+  }
+
+void AddProjectedPoints(const std::vector<Point3DColor>& points) {
+
+    float f = std::max(intrinsics_.fx, intrinsics_.fy);
+
+    // Translate to Camera Coordinate System
+    std::vector<glm::vec3> p_glm(points.size());
+    std::vector<Point3DColor> p(points);
+    // std::cout << "proj_points.size = " << p.size() << std::endl;
+    for (int i = 0; i < p.size(); ++i) {
+      // std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
+      // p[i] = points[i].pt;
+      p[i].pt -= translation_;
+      glm::vec3 r = glm::vec3(glm::transpose(rotation_) * glm::vec4(p[i].pt, 1.0f));
+      float sx = intrinsics_.fx * r[0] / r[2]; // + intrinsics_.cx; // TODO: Add s to calculation
+      float sy = intrinsics_.fy * r[1] / r[2]; // + intrinsics_.cy;
+
+      float ssx = sx * width_ratio_; // - intrinsics_.cx * width_ratio_;
+      float ssy = sy; // - intrinsics_.cy;
+      float ssz = f;
+      p[i].pt = glm::vec3(ssx, ssy, ssz);
+      p_glm[i] = p[i].pt;
+      // std::cout << "p[" << i << "] = " << glm::to_string(p[i]) << std::endl;
+      // std::cout << "r[" << i << "] = " << glm::to_string(r) << std::endl;
+      // std::cout << "sx, sy = " << sx << ", " << sy << std::endl;
+      // std::cout << "ssx, ssy, ssz = " << ssx << ", " << ssy << ", " << ssz << std::endl;
+    }
+
+    // std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(p));
+    std::shared_ptr<DObject> points_obj(ObjectFactory::CreatePoints(p_glm));
     this->AddChild(points_obj);
 
   }
@@ -659,7 +712,7 @@ private:
   std::shared_ptr<ColorObject> camera_obj_;
   CameraIntrinsics intrinsics_;
   float width_ratio_;
-  std::vector<glm::vec3> projected_points_;
+  // std::vector<glm::vec3> projected_points_;
 };
 
 
