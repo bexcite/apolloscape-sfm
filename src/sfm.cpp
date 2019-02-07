@@ -120,8 +120,6 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
   }
 
   int total_matched_points = 0;
-  int cl = 0;
-  int longest = 0;
   int most_match = 0;
   int most_match_id = -1;
   int skipped_matches = 0;
@@ -158,12 +156,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
 
     // Restore indexes to the current run
     matches.image_index.first = img_first;
-    matches.image_index.second = img_second;
-
-    // After match indexes can be different, so actualize them
-    // img_first = matches.image_index.first;
-    // img_second = matches.image_index.second;
-    
+    matches.image_index.second = img_second;    
 
     std::cout << "Match: "
               << "(" << img_first << ", " << img_second << ")"
@@ -186,7 +179,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
 
     image_matches_.push_back(matches);
 
-    // put index
+    // put index into matches_index_
     auto p1 = std::make_pair(img_first, img_second);
     auto p2 = std::make_pair(img_second, img_first);
     matches_index_.insert(
@@ -194,6 +187,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
     matches_index_.insert(
         std::make_pair(p2, image_matches_.size() - 1));
 
+    // find most match for debug only
     if (matches.match.size() > most_match) {
       most_match = matches.match.size();
       most_match_id = image_matches_.size() - 1;
@@ -204,6 +198,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
               << ", id: " << image_matches_.size() - 1
               << std::endl;
 
+    // Connect keypoints and images for a quick retrieval later
     for (int i = 0; i < matches.match.size(); ++i) {
       IntPair p1 = std::make_pair(
           matches.image_index.first,
@@ -216,8 +211,6 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
     }
 
   }
-
-  // most_match_id = 2; // 2
 
   std::cout << "total_matched_points = " << total_matched_points << std::endl;
   std::cout << "most_match = " 
@@ -253,35 +246,9 @@ int SfM3D::FindMaxSizeMatch(const bool within_todo_views) const {
 
   return max_match_id;
 
-  // if (max_match_id < 0) {
-  //   return -1;
-  // }
-
-  // auto it = std::max_element(image_matches_.cbegin(), image_matches_.cend(), 
-  //     [&todo_views_, within_todo_views](const Matches& a, const Matches& b) {
-  //       if (!within_todo_views) {
-  //         return a.match.size() < b.match.size();
-  //       } else {
-          
-  //       }
-  //     });
-  // if (it == image_matches_.cend()) {
-  //   return -1;
-  // }
-
-
-  // TODO: Make pair in IntPair
-  // auto p = std::make_pair(max_m.image_index.first,
-  //                         max_m.image_index.second);
-  // auto find = matches_index_.find(p);
-  // if (find == matches_index_.end()) {
-  //   return -1;
-  // }
-  // return find->second;
 }
 
 void SfM3D::InitReconstruction() {
-  // Find the match with the most points
   std::cout << "Init Reconstruction\n";
 
   assert(image_matches_.size() > 0);
@@ -291,6 +258,7 @@ void SfM3D::InitReconstruction() {
     todo_views_.insert(i);
   }
 
+  // Find the match with the most points
   int most_match_id = FindMaxSizeMatch();
   std::cout << "most_match = " 
             << image_matches_[most_match_id].image_index.first 
@@ -631,7 +599,7 @@ void SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) const {
     glm::vec3 v(wp.pt.x, wp.pt.y, wp.pt.z);
     p3d.pt = v;
 
-    p3d.color = glm::vec3(0.0);
+    // p3d.color = glm::vec3(0.0);
     bool first = true;
     double orig_angle = 0.0;
     for (auto& view : wp.views) {

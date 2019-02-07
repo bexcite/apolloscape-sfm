@@ -24,6 +24,7 @@ set_target_properties(cv_gl_lib PROPERTIES
 
 
 #[[
+]]
 add_executable(${PROJECT_NAME} main.cpp)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 # target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE_DIRS} )
@@ -66,7 +67,7 @@ message("two_cameras_name = " ${TWO_CAMERAS_NAME})
 target_link_libraries(${TWO_CAMERAS_NAME} PUBLIC cv_gl_lib)
 set_target_properties(${TWO_CAMERAS_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-]]
+
 
 set(3D_RECON_NAME 3d_recon)
 add_executable(${3D_RECON_NAME} 3d_recon.cpp ) #  sfm.cpp sfm_common.cpp
@@ -77,6 +78,7 @@ set_target_properties(${3D_RECON_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
+# Test Cereal
 set(TS_NAME ts)
 add_executable(${TS_NAME} apps/test_cereal.cpp test_class.cpp) #  sfm.cpp sfm_common.cpp
 set_property(TARGET ${TS_NAME} PROPERTY CXX_STANDARD 11)

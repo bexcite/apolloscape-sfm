@@ -73,71 +73,6 @@ cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data
 
   return fund;
 
-
-  /*
-  // std::cout << "Calc Fundamental.\n";
-  // std::cout << "intr1: " << intr1 << std::endl;
-  // std::cout << "img_data1: " << img_data1 << std::endl;
-  // std::cout << "intr2: " << intr2 << std::endl;
-  // std::cout << "img_data2: " << img_data2 << std::endl;
-
-  glm::dmat3 r1 = GetRotation(img_data1.coords[0], img_data1.coords[1], img_data1.coords[2]);
-  // std::cout << "r1 = " << glm::to_string(r1) << std::endl;
-
-  glm::dmat3 r2 = GetRotation(img_data2.coords[0], img_data2.coords[1], img_data2.coords[2]);
-  // std::cout << "r2 = " << glm::to_string(r2) << std::endl;
-
-  glm::dmat3 k1 = intr1.GetCameraMatrix();
-  // std::cout << "k1 = " << glm::to_string(k1) << std::endl;
-  glm::dmat3 k2 = intr2.GetCameraMatrix();
-  // std::cout << "k2 = " << glm::to_string(k2) << std::endl;
-
-  glm::dvec3 t1(img_data1.coords[3], img_data1.coords[4], img_data1.coords[5]);
-  // std::cout << "t1 = " << glm::to_string(t1) << std::endl;
-  glm::dvec3 t2(img_data2.coords[3], img_data2.coords[4], img_data2.coords[5]);
-  // std::cout << "t2 = " << glm::to_string(t2) << std::endl;
-  glm::dvec3 b = t2 - t1;
-  glm::dmat3x3 sb;
-  sb[0] = glm::dvec3(0.0, b[2], -b[1]);
-  sb[1] = glm::dvec3(-b[2], 0.0, b[0]);
-  sb[2] = glm::dvec3(b[1], -b[0], 0.0);
-  // std::cout << "sb = " << glm::to_string(sb) << std::endl;
-
-  // glm::dmat4x3 t1m(1.0);
-  // t1m[3] -= t1;
-  // std::cout << "t1m = " << glm::to_string(t1m) << std::endl;
-
-  // glm::dmat4x3 t2m(1.0);
-  // t2m[3] -= t2;
-  // std::cout << "t2m = " << glm::to_string(t2m) << std::endl;
-
-  // glm::dmat4x3 full1 = k1 * glm::transpose(r1) * t1m;
-  // std::cout << "full1 = " << glm::to_string(full1) << std::endl;
-
-  // glm::dvec3 test_point(100.0, 100.0, 1.0);
-  // test_point = r1 * test_point + t1;
-  // std::cout << "test_point = " << glm::to_string(test_point) << std::endl;
-
-  // std::cout << "test_point_px = " << glm::to_string(full1 * glm::dvec4(test_point, 1.0)) << std::endl;
-
-  glm::dmat3x3 f = glm::transpose(glm::inverse(k1)) * glm::transpose(r1) * sb * r2 * glm::inverse(k2);
-  // std::cout << "f = " << glm::to_string(f) << std::endl;
-
-  // glm::dvec3 p1(1630.0, 300.0, 1.0);
-  // glm::dvec3 p2(2300.0, 315.0, 1.0);
-  // double res = glm::dot(p1, f * p2);
-  // std::cout << "res = " << res << std::endl;
-  
-  // Transfer to cv::Mat object
-  cv::Mat fm(3, 3, CV_64F);
-  for (int row = 0; row < 3; ++row) {
-    for (int col = 0; col < 3; ++col) {
-      fm.at<double>(row, col) = f[col][row];
-    }
-  }
-
-  return fm;
-  */
 }
 
 void GetFeatureExtractionRegion(const cv::Mat& img, cv::Mat& mask) {
@@ -711,88 +646,7 @@ void TriangulatePoints(const CameraIntrinsics& intr1, const ImageData& img_data1
 
   TriangulatePoints(camera_info1, points1, camera_info2, points2, points3d);
 
-  /*
-  std::cout << "Triangulate Points\n";
 
-  // Find Proj Matrices
-  glm::dmat3 r1 = GetRotation(img_data1.coords[0], img_data1.coords[1], img_data1.coords[2]);
-  // std::cout << "r1 = " << glm::to_string(r1) << std::endl;
-
-  glm::dmat3 r2 = GetRotation(img_data2.coords[0], img_data2.coords[1], img_data2.coords[2]);
-  // std::cout << "r2 = " << glm::to_string(r2) << std::endl;
-
-  glm::dmat3 k1 = intr1.GetCameraMatrix();
-  // std::cout << "k1 = " << glm::to_string(k1) << std::endl;
-  glm::dmat3 k2 = intr2.GetCameraMatrix();
-  // std::cout << "k2 = " << glm::to_string(k2) << std::endl;
-
-  glm::dvec3 t1(img_data1.coords[3], img_data1.coords[4], img_data1.coords[5]);
-  // std::cout << "t1 = " << glm::to_string(t1) << std::endl;
-  glm::dvec3 t2(img_data2.coords[3], img_data2.coords[4], img_data2.coords[5]);
-  // std::cout << "t2 = " << glm::to_string(t2) << std::endl;
-
-  glm::dmat4x3 proj1(1.0);
-  proj1[3] -= t1;
-  proj1 = k1 * glm::transpose(r1) * proj1;
-  // std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
-
-  glm::dmat4x3 proj2(1.0);
-  proj2[3] -= t2;
-  proj2 = k2 * glm::transpose(r2) * proj2;
-  // std::cout << "proj2 = " << glm::to_string(proj2) << std::endl;
-
-  cv::Mat mat_proj1(3, 4, CV_64F);
-  cv::Mat mat_proj2(3, 4, CV_64F);
-  for (size_t col = 0; col < 4; ++col) {
-    for (size_t row = 0; row < 3; ++row) {
-      mat_proj1.at<double>(row, col) = proj1[col][row];
-      mat_proj2.at<double>(row, col) = proj2[col][row];
-    }
-  }
-
-  // std::cout << "mat_proj1 = " << mat_proj1 << std::endl;
-  // std::cout << "mat_proj2 = " << mat_proj2 << std::endl;
-
-  cv::Mat points4dh;
-  cv::triangulatePoints(mat_proj1, mat_proj2, points1, points2, points4dh);
-
-  std::cout << "points4dh.size = " << points4dh.size() << std::endl;
-
-  // Normalize projective
-  // points4d.row(0) = points4d.row(0) / points4d.row(3);
-  // points4d.row(1) = points4d.row(1) / points4d.row(3);
-  // points4d.row(2) = points4d.row(2) / points4d.row(3);
-  // points4d.row(3) = points4d.row(3) / points4d.row(3);
-
-
-  cv::convertPointsFromHomogeneous(points4dh.t(), points3d);
-
-  */
-
-  // std::cout << "points3d[0] = " << points3d.row(0) << std::endl;
-  // std::cout << "points3d[10] = " << points3d.row(10) << std::endl;
-  // std::cout << "points3d[100] = " << points3d.row(100) << std::endl;
-  // std::cout << "points3d[200] = " << points3d.row(200) << std::endl;
-
-  /*
-  glm::dvec3 b = t2 - t1;
-  glm::dmat3x3 sb;
-  sb[0] = glm::dvec3(0.0, b[2], -b[1]);
-  sb[1] = glm::dvec3(-b[2], 0.0, b[0]);
-  sb[2] = glm::dvec3(b[1], -b[0], 0.0);
-  // std::cout << "sb = " << glm::to_string(sb) << std::endl;
-
-  glm::dmat4x3 t1m(1.0);
-  t1m[3] -= t1;
-  // std::cout << "t1m = " << glm::to_string(t1m) << std::endl;
-
-  glm::dmat4x3 t2m(1.0);
-  t2m[3] -= t2;
-  // std::cout << "t2m = " << glm::to_string(t2m) << std::endl;
-
-  glm::dmat4x3 full1 = k1 * glm::transpose(r1) * t1m;
-  // std::cout << "full1 = " << glm::to_string(full1) << std::endl;
-  */
 }
 
 cv::Mat GetProjMatrix(const CameraInfo& camera_info) {
@@ -1154,9 +1008,9 @@ void MergeToTheMap(Map3D& map,
 
     if (min_dist_id >= 0) {
 
-      skip = true;
+      // skip = true;
 
-      if (min_dist < 500.0) {
+      if (min_dist < 200.0) {
           // std::cout << "CONNECT!!!! min_dist = " << min_dist << std::endl;
           WorldPoint3D& wp = map[min_dist_id];
           // Merge lp.views to the wp
@@ -1326,7 +1180,6 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   // (*f4)(&points[9], R);
   // std::cout << "Residuals4: " << R[0] << ", " << R[1] << std::endl;
   // std::cout << "points[0-2]: " << points[0] << ", " << points[1] << ", " << points[2] << std::endl;
-
   
 
   // === Copy points back ===
@@ -1336,27 +1189,6 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
     map[i].pt.z = points[3 * i + 2];
   }
 
-  /*
-  // The variable to solve for with its initial value. It will be
-  // mutated in place by the solver.
-  double x = 0.5;
-  const double initial_x = x;
-  // Build the problem.
-  ceres::Problem problem;
-  // Set up the only cost function (also known as residual). This uses
-  // auto-differentiation to obtain the derivative (jacobian).
-  ceres::CostFunction* cost_function =
-      new ceres::AutoDiffCostFunction<SuperCostFunctor, 1, 1>(new SuperCostFunctor);
-  problem.AddResidualBlock(cost_function, NULL, &x);
-  // Run the solver!
-  ceres::Solver::Options options;
-  options.minimizer_progress_to_stdout = true;
-  ceres::Solver::Summary summary;
-  ceres::Solve(options, &problem, &summary);
-  std::cout << summary.BriefReport() << "\n";
-  std::cout << "x : " << initial_x
-            << " -> " << x << "\n";
-  */
 
   delete[] points;
 
