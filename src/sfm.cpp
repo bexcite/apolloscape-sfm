@@ -57,17 +57,36 @@ void SfM3D::AddImages(const std::vector<ImageData>& camera1_images,
     }
     std::cout << "pairs.size = " << image_pairs_.size() << std::endl;
 
-    // TODO: Looks for conics intersection later
-    // Make random pairs to the previous images
+    // TODO: Looks for conics intersections
     if (first_index > 0) {
-      int d = image_data_.size() - first_index;
-      int r_num = std::min(first_index, d);
-      for (int i = 0; i < r_num; ++i) {
-        int p1 = std::rand() % first_index;
-        int p2 = first_index + std::rand() % d;
-        std::cout << "new pair [" << i << "]: " << p1 << ", " << p2 << std::endl;
-        image_pairs_.push_back({ p1, p2 });
+
+      // double d0 = ::GetCamerasDistance(cameras_[first_index-1], cameras_[first_index-3]);
+      // std::cout << "d0 = " << d0 << std::endl;
+
+      // Add pair based on distance < 25m (works for apolloscape case only)
+      for (int i = 0; i < first_index - 1; ++i) {
+        for (int j = first_index; j < cameras_.size(); ++j) {
+          double d = ::GetCamerasDistance(cameras_[i], cameras_[j]);
+          if (d < look_back * 11.0) {
+            image_pairs_.push_back({ i, j });
+            std::cout << "d = " << d << ": added pair ["
+                      << i << ", " << j << "]"
+                      << std::endl;
+          }
+        }
       }
+
+      // Make random pairs to the previous images
+      // int d = image_data_.size() - first_index;
+      // int r_num = std::min(first_index, d);
+      // for (int i = 0; i < r_num; ++i) {
+      //   int p1 = std::rand() % first_index;
+      //   int p2 = first_index + std::rand() % d;
+      //   std::cout << "new pair [" << i << "]: " << p1 << ", " << p2 << std::endl;
+      //   image_pairs_.push_back({ p1, p2 });
+      // }
+
+
     }
 
     // for (auto ip : image_pairs_) {
@@ -500,7 +519,7 @@ void SfM3D::ReconstructNextView(const int next_img_id) {
 
   OptimizeMap(map_);
 
-  std::cout << std::endl;
+  // std::cout << std::endl;
 
   used_views_.insert(next_img_id);
 
@@ -536,10 +555,24 @@ void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
 
 void SfM3D::ReconstructAll() {
 
+  using namespace std::chrono;
+
+  double total_time = 0.0;
+  int total_views = 0;
+
   while (todo_views_.size() > 0) {
+
+    int todo_size = todo_views_.size();
+
+    auto t0 = high_resolution_clock::now();
 
     int next_img_id = ::GetNextBestView(map_, todo_views_,
         ccomp_, image_matches_, matches_index_);
+
+    auto t1 = high_resolution_clock::now();
+    auto dur_gnbv = duration_cast<microseconds>(t1 - t0).count() / 1e+6;
+    std::cout << ">>>>>>>> dur_gnbv = " << dur_gnbv << std::endl;
+
 
     if (next_img_id < 0) {
       // Didn't find connected views, so proceed with the best pair left
@@ -552,15 +585,38 @@ void SfM3D::ReconstructAll() {
                 << " (id: " << most_match_id << ")"
                 << std::endl;
 
+      auto t2 = high_resolution_clock::now();
+      auto dur_fmsm = duration_cast<microseconds>(t2 - t1).count() / 1e+6;
+      std::cout << ", dur_fmsm = " << dur_fmsm;
+
       int first_id = image_matches_[most_match_id].image_index.first;
       int second_id = image_matches_[most_match_id].image_index.second;
 
       ReconstructNextViewPair(first_id, second_id);
 
-      continue;
+      auto t3 = high_resolution_clock::now();
+      auto dur_rnvp = duration_cast<microseconds>(t3 - t2).count() / 1e+6;
+      std::cout << ", dur_rnvp = " << dur_rnvp;
+
+      // continue;
+    } else {
+      ReconstructNextView(next_img_id);
+      auto t4 = high_resolution_clock::now();
+      auto dur_rnv = duration_cast<microseconds>(t4 - t1).count() / 1e+6;
+      std::cout << ", dur_rnv = " << dur_rnv;
     }
 
-    ReconstructNextView(next_img_id);
+    auto t5 = high_resolution_clock::now();
+    auto dur_vr = duration_cast<microseconds>(t5 - t0).count() / 1e+6;
+    std::cout << ", view_time = " << dur_vr; // << std::endl;
+
+    total_time += dur_vr;
+    total_views += todo_size - todo_views_.size();
+    double view_avg = total_time / total_views;
+    std::cout << "\nview_avg = " << view_avg;
+    std::cout << "\nt_left = " << view_avg * todo_views_.size();
+    
+    std::cout << std::endl;
 
   }
 

@@ -52,6 +52,9 @@ struct Point3DColor {
 
 typedef std::vector<WorldPoint3D> Map3D;
 
+double GetCamerasDistance(const CameraInfo& camera_info1, 
+                         const CameraInfo& camera_info2);
+
 void CalcFundamental(const CameraInfo& camera_info1, const CameraInfo& camera_info2, cv::Mat& fund);
 cv::Mat CalcFundamental(const CameraIntrinsics& intr1, const ImageData& img_data1, const CameraIntrinsics& intr2, const ImageData& img_data2);
 

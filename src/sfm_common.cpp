@@ -1,5 +1,5 @@
 #include <algorithm>
-
+#include <chrono>
 
 #include <boost/filesystem.hpp>
 #include <opencv2/xfeatures2d.hpp>
@@ -12,6 +12,11 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
+
+double GetCamerasDistance(const CameraInfo& camera_info1, 
+                         const CameraInfo& camera_info2) {
+  return glm::distance(camera_info1.translation, camera_info2.translation);
+}
 
 void CalcFundamental(const CameraInfo& camera_info1, const CameraInfo& camera_info2, cv::Mat& fund) {
   glm::dmat3 r1 = GetRotation(camera_info1.rotation_angles[0], camera_info1.rotation_angles[1], camera_info1.rotation_angles[2]);
@@ -942,6 +947,10 @@ void MergeToTheMap(Map3D& map,
                    const Map3D& local_map,
                    CComponents<std::pair<int, int> >& ccomp) {
 
+  using namespace std::chrono;
+
+  auto t0 = high_resolution_clock::now();
+
   int connect_cnt = 0;
   int idx = 0;
   for (auto lp: local_map) {
@@ -966,10 +975,10 @@ void MergeToTheMap(Map3D& map,
           min_dist = dist;
           min_dist_id = i;
           // if (min_dist < 100.0) {
-            std::cout << "[" << i << " for " << idx << "] dist = " << dist
-                  <<  ", min_dist = " << min_dist 
-                  << ", looked_points = " << looked_points
-                  << std::endl;
+            // std::cout << "[" << i << " for " << idx << "] dist = " << dist
+            //       <<  ", min_dist = " << min_dist 
+            //       << ", looked_points = " << looked_points
+            //       << std::endl;
           //   break;
           // }
         }
@@ -1008,29 +1017,37 @@ void MergeToTheMap(Map3D& map,
 
     if (min_dist_id >= 0) {
 
-      // skip = true;
+      skip = true;
+      
 
-      if (min_dist < 200.0) {
-          // std::cout << "CONNECT!!!! min_dist = " << min_dist << std::endl;
-          WorldPoint3D& wp = map[min_dist_id];
-          // Merge lp.views to the wp
-          for (auto view : lp.views) {
-            wp.views.insert(view);
-          }
-          // std::cout << "Updated wp = " << wp << std::endl;
-          skip = true;
-          ++connect_cnt;
-        } 
+      if (min_dist < 20.0) {
+        // std::cout << idx << "] CONNECT!!!! min_dist = " << min_dist << std::endl;
+        WorldPoint3D& wp = map[min_dist_id];
+        // Merge lp.views to the wp
+        for (auto view : lp.views) {
+          wp.views.insert(view);
+        }
+        // std::cout << "Updated wp = " << wp << std::endl;
+        skip = true;
+        ++connect_cnt;
+      } else {
+        // std::cout << idx << "] DISCARD!!!! min_dist = " << min_dist << std::endl;
+      }
 
     }
 
     if (/*cnt == 0 && */ !skip) {
       map.push_back(lp);
+    } else {
+      // std::cout << idx << "] skip point\n";
     }
     
     ++idx;
   }
-  std::cout << ", merge_connected = " << connect_cnt << "";
+  auto t1 = high_resolution_clock::now();
+  auto dur = duration_cast<microseconds>(t1 - t0);
+  std::cout << ", merge_connected = " << connect_cnt << ","
+            << ", merge_time = " << dur.count() / 1e+6;
 }
 
 
@@ -1156,10 +1173,10 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   options.logging_type = ceres::LoggingType::SILENT;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
-  std::cout << std::endl;
+  // std::cout << std::endl;
   // std::cout << summary.BriefReport();
-  std::cout << summary.FullReport();
-  // std::cout << ", SolverTime = " << summary.total_time_in_seconds;
+  // std::cout << summary.FullReport();
+  std::cout << ", SolverTime = " << summary.total_time_in_seconds;
 
 
   if (not (summary.termination_type == ceres::CONVERGENCE)) {

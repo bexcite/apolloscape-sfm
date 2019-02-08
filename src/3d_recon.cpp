@@ -40,7 +40,7 @@ const std::vector<std::string> kRecords = {
   "Record001",
   // "Record002",
   // "Record003",
-  // "Record004",
+  "Record004",
   // "Record006",
   // "Record007",
   // "Record008",
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
     // == Slice record - for testing ==
     int p_camera_pose = 0; // 24
     int p_camera_start = 22; //22 ==== 36 or 37 - 35
-    int p_camera_finish = 28; //25 ===== 39 or 40  - 39
+    int p_camera_finish = 27; //25 ===== 39 or 40  - 39
 
     p_camera_start = std::min(p_camera_start,
                               static_cast<int>(camera1_poses.size()));
@@ -133,12 +133,16 @@ int main(int argc, char* argv[]) {
 
   }
 
+  // return EXIT_SUCCESS;
+
 
   sfm.ExtractFeatures();
 
   sfm.MatchImageFeatures(60);
 
   sfm.InitReconstruction();
+
+
 
   sfm.ReconstructAll();
 
