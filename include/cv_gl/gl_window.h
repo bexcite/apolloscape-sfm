@@ -20,6 +20,7 @@ public:
   GLWindow(const std::string& name, const unsigned int width,
       const unsigned int height);
   ~GLWindow();
+  void Terminate();
 
   bool IsValid();
 

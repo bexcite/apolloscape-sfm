@@ -3,6 +3,8 @@
 
 
 #include <unordered_set>
+#include <mutex>
+#include <atomic>
 
 #include "cv_gl/sfm_common.h"
 
@@ -27,32 +29,39 @@
 class SfM3D {
 public:
   typedef std::pair<int, int> IntPair;
+  
+
+  enum SfMStatus {
+    RECONSTRUCTION,
+    FINISH
+  };
   SfM3D() {}
   explicit SfM3D(std::vector<CameraIntrinsics> camera_intrs)
-      : intrinsics_(camera_intrs) {
+      : intrinsics_(camera_intrs), proc_status_{RECONSTRUCTION} {
 
-    p.x = 1.0;
-    p.y = 2.1;
-    pd.x = 1.0;
-    pd.y = 2.1;
+    // TESTS: For serialization
+    // p.x = 1.0;
+    // p.y = 2.1;
+    // pd.x = 1.0;
+    // pd.y = 2.1;
 
-    piv.push_back(0);
-    piv.push_back(1);
-    piv.push_back(2);
+    // piv.push_back(0);
+    // piv.push_back(1);
+    // piv.push_back(2);
 
-    cv::KeyPoint kp;
-    kp.pt = pd;
-    kp.octave = 4;
+    // cv::KeyPoint kp;
+    // kp.pt = pd;
+    // kp.octave = 4;
 
     
-    kp.pt = pd;
-    kps.push_back(kp);
-    kp.pt = p;
-    kps.push_back(kp);
+    // kp.pt = pd;
+    // kps.push_back(kp);
+    // kp.pt = p;
+    // kps.push_back(kp);
 
-    mat.create(3, 3, CV_64F);
-    dm.queryIdx = 1;
-    dm.trainIdx = 2;
+    // mat.create(3, 3, CV_64F);
+    // dm.queryIdx = 1;
+    // dm.trainIdx = 2;
     
   }
   void AddImages(const std::vector<ImageData>& camera1_images,
@@ -63,45 +72,49 @@ public:
   void MatchImageFeatures(const int skip_thresh = 10);
 
   void InitReconstruction();
-  void TriangulatePointsFromViews(const int first_id, 
-                                  const int second_id, 
-                                  Map3D& map_);
-  void OptimizeCurrentMap() { OptimizeMap(map_); }
-  void OptimizeMap(Map3D& map);
-
   void ReconstructAll();
-  void ReconstructNextView(const int next_img_id);
-  void ReconstructNextViewPair(const int first_id, const int second_id);
   void PrintFinalStats();
 
-  void GetMapPointsVec(std::vector<Point3DColor>& glm_points) const;
-  void GetMapCamerasWithPointsVec(
-     std::map<int, std::vector<std::pair<int, Point3DColor> > >& map_cameras);
+  bool GetMapPointsVec(std::vector<Point3DColor>& glm_points);
+  bool GetMapCamerasWithPointsVec(MapCameras& map_cameras);
   cv::Mat GetImage(int cam_id) const;
   CameraInfo GetCameraInfo(int cam_id) const;
   cv::KeyPoint GetKeypoint(int cam_id, int point_id) const;
 
-  int FindMaxSizeMatch(const bool within_todo_views = false) const;
-
   int ImageCount() const;
 
-  bool IsPairInOrder(const int p1, const int p2);
+  void SetProcStatus(SfMStatus proc_status);
+  
+  
 
   // TODO: https://www.patrikhuber.ch/blog/6-serialising-opencv-matrices-using-boost-and-cereal
   // https://github.com/patrikhuber/eos/blob/master/include/eos/morphablemodel/io/mat_cerealisation.hpp
   template<class Archive>
   void serialize(Archive& archive) {
-    archive (p, pd, piv, kps);
+    // archive (p, pd, piv, kps);
     //archive (p, pd, piv, kps); // , pd /*, kps*/
     // archive(mat);
     // archive(mats);
-    archive(ip);
-    archive(dm);
+    // archive(ip);
+    // archive(dm);
     archive(image_features_);
     archive(image_matches_);
   }
 private:
   void GenerateAllPairs();
+
+  void TriangulatePointsFromViews(const int first_id, 
+                                  const int second_id, 
+                                  Map3D& map);
+  void OptimizeCurrentMap() { OptimizeMap(map_); }
+  void OptimizeMap(Map3D& map);
+
+  void ReconstructNextView(const int next_img_id);
+  void ReconstructNextViewPair(const int first_id, const int second_id);
+
+  int FindMaxSizeMatch(const bool within_todo_views = false) const;
+
+  bool IsPairInOrder(const int p1, const int p2);
 
   // Data Initial
   std::vector<CameraIntrinsics> intrinsics_;
@@ -130,16 +143,20 @@ private:
   // Preprocessing storage
   CacheStorage cache_storage;
 
+  std::mutex map_mutex;
+
+  std::atomic<SfMStatus> proc_status_;
+
 
   // Test Part
-  cv::Point2f p;
-  std::vector<int> piv;
-  cv::Point2d pd;
-  std::vector<cv::KeyPoint> kps;
-  std::vector<cv::Mat> mats;
-  ImagePair ip;
-  cv::DMatch dm;
-  cv::Mat mat;
+  // cv::Point2f p;
+  // std::vector<int> piv;
+  // cv::Point2d pd;
+  // std::vector<cv::KeyPoint> kps;
+  // std::vector<cv::Mat> mats;
+  // ImagePair ip;
+  // cv::DMatch dm;
+  // cv::Mat mat;
 };
 
 

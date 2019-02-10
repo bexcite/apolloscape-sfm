@@ -52,6 +52,8 @@ struct Point3DColor {
 
 typedef std::vector<WorldPoint3D> Map3D;
 
+typedef std::map<int, std::vector<std::pair<int, Point3DColor> > > MapCameras;
+
 double GetCamerasDistance(const CameraInfo& camera_info1, 
                          const CameraInfo& camera_info2);
 

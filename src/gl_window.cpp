@@ -87,9 +87,9 @@ bool GLWindow::IsRunning() {
 
   // FPS calc and output
   delta_time_sum_ += delta_time;
-  if (frames_ % 100 == 0) {
-    float fps = 100.0f / delta_time_sum_;
-    // std::cout << "FPS = " << fps << std::endl;
+  if (frames_ % 1000 == 0) {
+    float fps = 1000.0f / delta_time_sum_;
+    std::cout << "\n\n======== FPS = " << fps << std::endl;
     delta_time_sum_ = 0;
   }
   ++frames_;
@@ -180,8 +180,16 @@ void GLWindow::SetCamera(const std::shared_ptr<Camera> camera) {
   camera_ = camera;
 }
 
+void GLWindow::Terminate() {
+  std::cout << "GLWindow - Terminate!!!" << std::endl;
+  glfwDestroyWindow(window_);
+  glfwTerminate();
+  // window_ = nullptr;
+}
+
 GLWindow::~GLWindow() {
   std::cout << "GLWindow - (dest)" << std::endl;
-  glfwTerminate();
+  // glfwTerminate();
+  Terminate();
   window_ = nullptr;
 }

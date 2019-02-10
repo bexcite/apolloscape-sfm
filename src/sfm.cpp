@@ -502,7 +502,9 @@ void SfM3D::ReconstructNextView(const int next_img_id) {
   // std::cout << "view_error = " << all_error << std::endl;      
   */
 
+  map_mutex.lock();
   ::MergeToTheMap(map_, view_map, ccomp_);
+  map_mutex.unlock();
 
   std::cout << ", map = " << map_.size();
   
@@ -538,8 +540,10 @@ void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
   TriangulatePointsFromViews(first_id, second_id, view_map);
   std::cout << ", view_map = " << view_map.size();
 
+  map_mutex.lock();
   ::MergeToTheMap(map_, view_map, ccomp_);
   std::cout << ", map = " << map_.size();
+  map_mutex.unlock();
 
   OptimizeMap(map_);
 
@@ -561,6 +565,12 @@ void SfM3D::ReconstructAll() {
   int total_views = 0;
 
   while (todo_views_.size() > 0) {
+
+    // check finish flag and finish)
+    if (proc_status_.load() == FINISH) {
+      std::cout << "FINISJ!!!\n";
+      break;
+    }
 
     int todo_size = todo_views_.size();
 
@@ -649,7 +659,14 @@ void SfM3D::PrintFinalStats() {
   std::cout << "FINAL_map.size = " << map_.size() << " points" << std::endl;
 }
 
-void SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) const {
+bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) {
+
+  if(!map_mutex.try_lock()) return false;
+
+  using namespace std::chrono;
+  auto t0 = high_resolution_clock::now();
+
+  // std::cout << "GET MAP POINTS VEC <<<<<<!!!!!!!!!!! = " << map_.size();
   for (auto& wp: map_) {
     Point3DColor p3d;
     glm::vec3 v(wp.pt.x, wp.pt.y, wp.pt.z);
@@ -705,10 +722,22 @@ void SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) const {
 
     glm_points.push_back(p3d);
   }
+
+  map_mutex.unlock();
+
+  auto t1 = high_resolution_clock::now();
+  auto dur_gmpv = duration_cast<microseconds>(t1 - t0).count() / 1e+6;
+  // std::cout << "\nGET_MAP_POINTS_TIME = " << dur_gmpv << std::endl;
+
+  return true;
 }
 
-void SfM3D::GetMapCamerasWithPointsVec(
-        std::map<int, std::vector<std::pair<int, Point3DColor> > >& map_cameras) {
+bool SfM3D::GetMapCamerasWithPointsVec(MapCameras& map_cameras) {
+
+  if (!map_mutex.try_lock()) return false;
+
+  using namespace std::chrono;
+  auto t0 = high_resolution_clock::now();
 
   for (auto& wp: map_) {
 
@@ -741,6 +770,13 @@ void SfM3D::GetMapCamerasWithPointsVec(
     }
   }
 
+  map_mutex.unlock();
+  auto t1 = high_resolution_clock::now();
+  auto dur_gmc = duration_cast<microseconds>(t1 - t0).count() / 1e+6;
+  // std::cout << "\nGET_MAP_CAMERAS_TIME = " << dur_gmc << std::endl;
+
+  return true;
+
 }
 
 cv::Mat SfM3D::GetImage(int cam_id) const {
@@ -767,6 +803,10 @@ void SfM3D::GenerateAllPairs() {
 
 int SfM3D::ImageCount() const {
   return image_data_.size();
+}
+
+void SfM3D::SetProcStatus(SfMStatus proc_status) {
+  proc_status_.store(proc_status);
 }
 
 bool SfM3D::IsPairInOrder(const int p1, const int p2) {

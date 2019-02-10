@@ -2,6 +2,8 @@
 #ifndef CV_GL_DOBJECT_H_
 #define CV_GL_DOBJECT_H_
 
+#include <iterator>
+
 #include <glm/glm.hpp>
 #include "cv_gl/camera.h"
 #include "cv_gl/utils.hpp"
@@ -116,12 +118,14 @@ class DObject {
     // Draw children if any
     for (auto& c : children_) {
       // std::cout << "-=-= DRAW CHILDREN <<<<<<<<<<<< " << std::endl;
-      c->Draw(view_matrix, proj_matrix, model_matrix, shdr, d_elements);
+      if (c) {
+        c->Draw(view_matrix, proj_matrix, model_matrix, shdr, d_elements);
+      }
     }
 
   };
 
-  void AddChild(const std::shared_ptr<DObject> child) {
+  void AddChild(const std::shared_ptr<DObject>& child) {
     // std::cout << "scale_ = " << glm::to_string(scale_) << std::endl;
     // if (children.empty()) {
     //   std::cout << "children = " << children.size() << std::endl;
@@ -132,7 +136,11 @@ class DObject {
     children_.emplace_back(child);
   }
 
-  virtual void PrepareShader(const std::shared_ptr<Shader> shader) const {
+  void ClearChildren() {
+    children_.clear();
+  }
+
+  virtual void PrepareShader(const std::shared_ptr<Shader>& shader) const {
     // std::cout << "DObject::PrepareShader" << std::endl;
     // glm::vec4 floor_color = glm::vec4(0.7f, 0.7f, 1.0f, 1.0f);
     // shader->SetVector4fv("color", glm::value_ptr(floor_color));
@@ -248,6 +256,15 @@ class DObject {
   }
 
   std::list<std::shared_ptr<DObject> > GetChildren() { return children_; }
+
+  int GetChildrenSize() { return children_.size(); }
+
+  std::shared_ptr<DObject>& GetChild(int idx) {
+    assert(idx < children_.size());
+    auto it = children_.begin();
+    std::advance(it, idx);
+    return *it;
+  }
 
 
  protected:

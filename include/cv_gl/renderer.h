@@ -48,11 +48,15 @@ class Renderer {
   };
 
   void Draw(const DObject* object_ptr, const bool transparency = false) {
-    Draw((*object_ptr), transparency);
+    if (object_ptr) {
+      Draw((*object_ptr), transparency);
+    }
   };
 
   void Draw(const std::shared_ptr<DObject>& object_ptr, const bool transparency = false) {
-    Draw((*object_ptr), transparency);
+    if (object_ptr) {
+      Draw((*object_ptr), transparency);
+    }
   };
 
  private:

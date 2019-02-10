@@ -1,4 +1,6 @@
 // Copyright Pavlo 2018
+#include <chrono>
+
 #include <boost/filesystem.hpp>
 
 #include <glm/glm.hpp>
@@ -239,8 +241,18 @@ void DrawKeypointsWithResize(const cv::Mat& input_img,
   }
   cv::Mat img_resized;
   // std::cout << "resize1 = " << scale << std::endl << std::flush;
+  using namespace std::chrono;
+  auto t1_0 = high_resolution_clock::now();
   cv::resize(input_img, img_resized, cv::Size(), scale, scale, cv::INTER_AREA);
+  auto t1_1 = high_resolution_clock::now();
   cv::drawKeypoints(img_resized, kpoints_scaled, out_img);
+  auto t1_2 = high_resolution_clock::now();
+  std::cout << "\n  >> resize_TIME = " 
+            << duration_cast<microseconds>(t1_1-t1_0).count() / 1e+6 
+            << std::endl;
+  std::cout << "\n  >> draw_TIME = " 
+            << duration_cast<microseconds>(t1_2-t1_1).count() / 1e+6 
+            << std::endl;
 }
 
 void DrawMatchesWithResize(const cv::Mat& img1,
