@@ -122,8 +122,8 @@ int main(int argc, char* argv[]) {
 
     // == Slice record - for testing ==
     int p_camera_pose = 0; // 24
-    int p_camera_start = 10; //22 ==== 36 or 37 - 35
-    int p_camera_finish = 40; //25 ===== 39 or 40  - 39
+    int p_camera_start = 20; //22 ==== 36 or 37 - 35
+    int p_camera_finish = 30; //25 ===== 39 or 40  - 39
 
     p_camera_start = std::min(p_camera_start,
                               static_cast<int>(camera1_poses.size()));
@@ -179,8 +179,8 @@ int main(int argc, char* argv[]) {
   std::unique_ptr<Renderer> renderer(new Renderer(camera));
   std::shared_ptr<DObject> root = std::make_shared<DObject>();
   std::shared_ptr<ColorObject> floor_obj(ObjectFactory::CreateFloor(kGlobalScale, 60));
-  std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(kGlobalScale));
-  root->AddChild(axes_obj);
+  // std::shared_ptr<DObject> axes_obj(ObjectFactory::CreateAxes(kGlobalScale));
+  // root->AddChild(axes_obj);
 
   // ========= 3D Recon Objects ===================
   std::shared_ptr<DObject> cameras(new DObject());
@@ -252,13 +252,23 @@ int main(int argc, char* argv[]) {
   // Get cameras with points
   // map: cam_id => vec of (keypoint_id, 3d_point_coords)
   // std::map<int, std::vector<std::pair<int, Point3DColor> > > map_cameras;
-  MapCameras map_cameras;
+  // MapCameras map_cameras;
+
+
+  std::vector<Point3DColor> glm_points;
+  MapCameras map_cams;
+  int lv = 0;
+  sfm.GetMapPointsAndCameras(glm_points, map_cams, lv);
+  MakeCameras(cameras, map_cams, sfm, cameras_pool);
+  
+
+  /*
   while(!sfm.GetMapCamerasWithPointsVec(map_cameras)) {
     std::cout << "wait ... ";
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
-
   MakeCameras(cameras, map_cameras, sfm, cameras_pool);
+  */
 
   // root->AddChild(cameras);
 
@@ -266,8 +276,8 @@ int main(int argc, char* argv[]) {
   typedef std::pair<const int, std::vector<std::pair<int, Point3DColor> > > MapCameraEl;
 
   // Set Origin to the Best Camera (with the most matches)
-  auto cam_max_points = std::max_element(map_cameras.begin(),
-      map_cameras.end(),
+  auto cam_max_points = std::max_element(map_cams.begin(),
+      map_cams.end(),
       [](MapCameraEl& el1,
          MapCameraEl& el2) {
            return el1.second.size() < el2.second.size();
@@ -292,12 +302,13 @@ int main(int argc, char* argv[]) {
 
   // ========= View Debug Objects =================
 
-  std::shared_ptr<ModelObject> debug_cube_obj(
-      ObjectFactory::CreateModelObject(
-          "../data/objects/debug_cube/debug_cube.obj"));
-  debug_cube_obj->SetScale(glm::vec3(kGlobalScale));
-  debug_cube_obj->SetTranslation(glm::vec3(3.0f * kGlobalScale, 3.0f * kGlobalScale, 3.0f * kGlobalScale));
-  root->AddChild(debug_cube_obj);
+  // std::shared_ptr<ModelObject> debug_cube_obj(
+  //     ObjectFactory::CreateModelObject(
+  //         "../data/objects/debug_cube/debug_cube.obj"));
+  // debug_cube_obj->SetScale(glm::vec3(kGlobalScale));
+  // debug_cube_obj->SetTranslation(glm::vec3(3.0f * kGlobalScale, 3.0f * kGlobalScale, 3.0f * kGlobalScale));
+  // root->AddChild(debug_cube_obj);
+
 
   // == Change Camera Events ===
   // int current_camera_id = 0;
@@ -405,9 +416,67 @@ int main(int argc, char* argv[]) {
   // return EXIT_SUCCESS; 
 
   
+  
+
 
   std::shared_ptr<DObject> points_obj(nullptr);
+
+
+  // auto po = std::ref(points_obj);
+
   // root->AddChild(points_obj);
+
+  std::mutex cameras_points_mu;
+  std::atomic<ThreadStatus> vis_prep_status(ThreadStatus::PROCESSING);
+
+  std::thread vis_prep([&vis_prep_status, &glm_points, &map_cams, &sfm,
+                        &cameras_points_mu]() {
+    int last_version = 0;
+    while(vis_prep_status.load() != ThreadStatus::FINISH) {
+      
+      std::vector<Point3DColor> glm_points_temp;
+      MapCameras map_cams_temp;
+
+      sfm.GetMapPointsAndCameras(glm_points_temp, map_cams_temp, last_version);
+
+      cameras_points_mu.lock();
+      glm_points = glm_points_temp;
+      map_cams = map_cams_temp;
+      cameras_points_mu.unlock();
+
+      std::cout << "\nFETCHED_VIS_VERSION = " << last_version << std::endl;
+
+      /*
+      if(sfm.GetMapPointsVec(glm_points_temp)) {
+        // std::cout << "\n\nglm_points_temp.size = " 
+                  // << glm_points_temp.size() << std::endl;
+        cameras_points_mu.lock();
+        glm_points = glm_points_temp;
+        cameras_points_mu.unlock();
+      }
+
+      
+      if(sfm.GetMapCamerasWithPointsVec(map_cams_temp)) {
+        cameras_points_mu.lock();
+        map_cams = map_cams_temp;
+        cameras_points_mu.unlock();
+      }
+      */
+
+      
+
+      // std::cout << "\n TICKING ... \n";
+
+      //std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+  });
+
+
+  
+  long frames_cntr = 0;
+  double dur_make_points = 0;
+  double dur_make_cameras = 0;
+  double dur_all = 0;
 
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
@@ -418,36 +487,52 @@ int main(int argc, char* argv[]) {
     
 
     // Crazy drawing
-    std::vector<Point3DColor> glm_points;
-    if(sfm.GetMapPointsVec(glm_points)) {
+    
+    // if(sfm.GetMapPointsVec(glm_points)) {
       // std::cout << "\n\nglm_points.size = " << glm_points.size() << std::endl;
-      auto t0 = high_resolution_clock::now();
-      points_obj = std::shared_ptr<DObject>(
-        ObjectFactory::CreatePoints(glm_points, true/*, glm::vec4(1.0)*/));
-      auto t1 = high_resolution_clock::now();
-      double dur_mp = duration_cast<microseconds>(t1-t0).count() / 1e+6;
-      // std::cout << "\nMAKE_POINTS_TIME = " << dur_mp << std::endl;
+    auto t00 = high_resolution_clock::now();
+    cameras_points_mu.lock();
+    auto t0 = high_resolution_clock::now();
+    points_obj = std::shared_ptr<DObject>(
+      ObjectFactory::CreatePoints(glm_points, true));
+    auto t1 = high_resolution_clock::now();
+    double dur_mp = duration_cast<microseconds>(t1-t0).count() / 1e+6;
+    dur_make_points += dur_mp;
+    // std::cout << "\nMAKE_POINTS_TIME = " << dur_mp << std::endl;
+    
+    // }
+    
+    // if(sfm.GetMapCamerasWithPointsVec(map_cams)) {
+    auto t2 = high_resolution_clock::now();
+    MakeCameras(cameras, map_cams, sfm, cameras_pool);
+    change_alpha();
+    auto t3 = high_resolution_clock::now();
+    double dur = duration_cast<microseconds>(t3-t2).count() / 1e+6;
+    dur_make_cameras += dur;
+    // std::cout << "MAKE_CAMERAS_TIME = " << dur << std::endl;
+    // }
+    cameras_points_mu.unlock();
+    auto t11 = high_resolution_clock::now();
+    dur_all += duration_cast<microseconds>(t11-t00).count() / 1e+6;
+
+    if (frames_cntr % 1000 == 0) {
+      std::cout << "\nMAKE_POINTS_TIME = " << dur_make_points / 1000.0 << std::endl;
+      std::cout << "MAKE_CAMERAS_TIME = " << dur_make_cameras / 1000.0 << std::endl;
+      std::cout << "FRAME_ALL_HARD_TIME = " << dur_all / 1000.0 << std::endl;
+      dur_make_points = 0.0;
+      dur_make_cameras = 0.0;
+      dur_all = 0.0;
     }
 
-    MapCameras map_cams;
-    if(sfm.GetMapCamerasWithPointsVec(map_cams)) {
-      auto t0 = high_resolution_clock::now();
-      MakeCameras(cameras, map_cams, sfm, cameras_pool);
-      auto t1 = high_resolution_clock::now();
-      double dur = duration_cast<microseconds>(t1-t0).count() / 1e+6;
-      // std::cout << "\nMAKE_CAMERAS_TIME = " << dur << std::endl;
-      change_alpha();
-    }
-
+    
     if (points_obj) {
       renderer->Draw(points_obj, true);
     }
-
     if (cameras) {
       renderer->Draw(cameras, true);
     }
 
-
+    ++frames_cntr;
     gl_window.RunLoop();
   }
 
@@ -455,10 +540,12 @@ int main(int argc, char* argv[]) {
 
   // first.detach();
 
+
+
+  vis_prep_status.store(ThreadStatus::FINISH);
   sfm.SetProcStatus(SfM3D::FINISH);
-
   first.join();
-
+  vis_prep.join();
 
   return EXIT_SUCCESS; 
 
@@ -484,10 +571,10 @@ void MakeCameras(std::shared_ptr<DObject>& cameras,
   // === Draw Cameras ===
   for (auto& c: map_cameras) {
     
-    // std::cout << "Camera: " << c.first << ": points = " << c.second.size() << std::endl;
+    std::cout << "Camera: " << c.first << ": points = " << c.second.size() << std::endl;
     // PrintVec(" => ", c.second);
 
-    const int& cam_id = c.first;
+    const int& cam_id = c.first;  
 
     std::shared_ptr<CameraObject> co = cameras_pool[cam_id];
 

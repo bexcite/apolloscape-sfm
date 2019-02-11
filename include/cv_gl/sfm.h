@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <atomic>
+#include <condition_variable>
 
 #include "cv_gl/sfm_common.h"
 
@@ -35,9 +36,11 @@ public:
     RECONSTRUCTION,
     FINISH
   };
-  SfM3D() {}
+  SfM3D() : SfM3D{std::vector<CameraIntrinsics>()} {}
   explicit SfM3D(std::vector<CameraIntrinsics> camera_intrs)
-      : intrinsics_(camera_intrs), proc_status_{RECONSTRUCTION} {
+      : intrinsics_(camera_intrs), 
+        proc_status_{RECONSTRUCTION},
+        vis_version_{0} {
 
     // TESTS: For serialization
     // p.x = 1.0;
@@ -77,6 +80,10 @@ public:
 
   bool GetMapPointsVec(std::vector<Point3DColor>& glm_points);
   bool GetMapCamerasWithPointsVec(MapCameras& map_cameras);
+  void GetMapPointsAndCameras(std::vector<Point3DColor>& glm_points,
+                              MapCameras& map_cameras,
+                              int& last_version);
+
   cv::Mat GetImage(int cam_id) const;
   CameraInfo GetCameraInfo(int cam_id) const;
   cv::KeyPoint GetKeypoint(int cam_id, int point_id) const;
@@ -143,7 +150,10 @@ private:
   // Preprocessing storage
   CacheStorage cache_storage;
 
+
   std::mutex map_mutex;
+  std::condition_variable map_update_;
+  std::atomic<long> vis_version_;
 
   std::atomic<SfMStatus> proc_status_;
 
@@ -174,104 +184,6 @@ struct SuperCostFunctor {
   }
 };
 
-// ==========================================
-// ======= Serializations ===================
-// ==========================================
-// #include "cereal/cereal.hpp"
 
-/*
-namespace cv {
-
-// == cv::Point ============================
-template<class Archive, typename T>
-void save(Archive& archive, const cv::Point_<T>& point) {
-  archive(point.x, point.y);
-}
-template<class Archive, typename T>
-void load(Archive& archive, cv::Point_<T>& point) {
-  archive(point.x, point.y);
-}
-
-
-
-// == cv::KeyPoint =========================
-template<class Archive>
-void save(Archive& archive, const cv::KeyPoint& keypoint) {
-  archive(keypoint.pt, keypoint.size, keypoint.angle, 
-      keypoint.response, keypoint.octave, keypoint.class_id);
-}
-template<class Archive>
-void load(Archive& archive, cv::KeyPoint& keypoint) {
-  archive(keypoint.pt, keypoint.size, keypoint.angle, 
-      keypoint.response, keypoint.octave, keypoint.class_id);
-}
-
-}
-*/
-
-/*
-// == cv::Mat =============================
-template<class Archive>
-void save(Archive& ar, const cv::Mat& mat) {
-  int rows, cols, type;
-  bool continuous;
-
-  rows = mat.rows;
-  cols = mat.cols;
-  type = mat.type();
-  continuous = mat.isContinuous();
-  ar (rows, cols, type, continuous);
-  // if (continuous) {
-  //   const int data_size = rows * cols * static_cast<int>(mat.elemSize());
-  //   auto mat_data = cereal::binary_data(mat.ptr(), data_size);
-  //   ar(mat_data);
-  // } else {
-  //   const int row_size = cols * static_cast<int>(mat.elemSize());
-  //   for (int i = 0; i < rows; ++i) {
-  //     auto row_data = cereal::binary_data(mat.ptr(i), row_size);
-  //     ar(row_data);
-  //   }
-  // }
-}
-template<class Archive>
-void load(Archive& ar, cv::Mat& mat) {
-  int rows, cols, type;
-  bool continuous;
-
-  ar (rows, cols, type, continuous);
-
-  // if (continuous) {
-  //     mat.create(rows, cols, type);
-  //     const int data_size = rows * cols * static_cast<int>(mat.elemSize());
-  //     auto mat_data = cereal::binary_data(mat.ptr(), data_size);
-  //     ar(mat_data);
-  // }
-  // else {
-  //     mat.create(rows, cols, type);
-  //     const int row_size = cols * static_cast<int>(mat.elemSize());
-  //     for (int i = 0; i < rows; i++) {
-  //         auto row_data = cereal::binary_data(mat.ptr(i), row_size);
-  //         ar(row_data);
-  //     }
-  // }
-}
-
-// void spec()
-// {
-//     cv::KeyPoint kp;
-//     cv::Mat ttt(3,4,CV_64F);
-//     // std::ofstream farch("out.xml");
-//     // cereal::XMLOutputArchive archive(farch);
-//     // archive(sfm);
-//     std::ofstream farch("out.bin", std::ios::binary);
-//     cereal::BinaryOutputArchive archive(farch);
-//     // archive(sfm);
-//     archive(kp);
-//   }
-
-
-// == cv::Mat =============================
-
-*/
 
 #endif  // CV_GL_SFM_H_

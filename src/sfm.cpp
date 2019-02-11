@@ -527,6 +527,9 @@ void SfM3D::ReconstructNextView(const int next_img_id) {
 
   todo_views_.erase(next_img_id);
 
+  ++vis_version_;
+  map_update_.notify_one();
+
 }
 
 void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
@@ -555,6 +558,8 @@ void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
   todo_views_.erase(first_id);
   todo_views_.erase(second_id);
 
+  ++vis_version_;
+  map_update_.notify_one();
 }
 
 void SfM3D::ReconstructAll() {
@@ -661,7 +666,11 @@ void SfM3D::PrintFinalStats() {
 
 bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) {
 
-  if(!map_mutex.try_lock()) return false;
+  // if(!map_mutex.try_lock()) return false;
+
+  std::cout << "\n VIS_version (gmpv) = " <<  vis_version_.load() << std::endl;
+
+  glm_points.clear();
 
   using namespace std::chrono;
   auto t0 = high_resolution_clock::now();
@@ -723,18 +732,22 @@ bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) {
     glm_points.push_back(p3d);
   }
 
-  map_mutex.unlock();
+  // map_mutex.unlock();
 
   auto t1 = high_resolution_clock::now();
   auto dur_gmpv = duration_cast<microseconds>(t1 - t0).count() / 1e+6;
-  // std::cout << "\nGET_MAP_POINTS_TIME = " << dur_gmpv << std::endl;
+  std::cout << "\nGET_MAP_POINTS_TIME = " << dur_gmpv << std::endl;
 
   return true;
 }
 
 bool SfM3D::GetMapCamerasWithPointsVec(MapCameras& map_cameras) {
 
-  if (!map_mutex.try_lock()) return false;
+  // if (!map_mutex.try_lock()) return false;
+
+  std::cout << "\n VIS_version (gmcwpv) = " <<  vis_version_.load() << std::endl;
+
+  map_cameras.clear();
 
   using namespace std::chrono;
   auto t0 = high_resolution_clock::now();
@@ -770,12 +783,30 @@ bool SfM3D::GetMapCamerasWithPointsVec(MapCameras& map_cameras) {
     }
   }
 
-  map_mutex.unlock();
+  // map_mutex.unlock();
+
   auto t1 = high_resolution_clock::now();
   auto dur_gmc = duration_cast<microseconds>(t1 - t0).count() / 1e+6;
-  // std::cout << "\nGET_MAP_CAMERAS_TIME = " << dur_gmc << std::endl;
+  std::cout << "\nGET_MAP_CAMERAS_TIME = " << dur_gmc << std::endl;
 
   return true;
+
+}
+
+void SfM3D::GetMapPointsAndCameras(std::vector<Point3DColor>& glm_points,
+                              MapCameras& map_cameras,
+                              int& last_version) {
+
+  std::unique_lock<std::mutex> lck(map_mutex);
+  // map_update_.wait(lck);
+  map_update_.wait(lck, [&]() { return last_version < vis_version_.load(); }); //return last_version < vis_version_.load();
+  std::cout << "\n>> GET_MAP_POINTS_AND_CAMERAS !!!!!!!!!!!!!!!!!!\n";
+
+  GetMapPointsVec(glm_points);
+  GetMapCamerasWithPointsVec(map_cameras);
+
+  last_version = vis_version_.load();
+
 
 }
 
@@ -807,6 +838,9 @@ int SfM3D::ImageCount() const {
 
 void SfM3D::SetProcStatus(SfMStatus proc_status) {
   proc_status_.store(proc_status);
+
+  ++vis_version_;
+  map_update_.notify_all();
 }
 
 bool SfM3D::IsPairInOrder(const int p1, const int p2) {

@@ -27,6 +27,11 @@ struct ImageData {
   std::vector<double> coords;
 };
 
+enum class ThreadStatus {
+  PROCESSING = 0, 
+  FINISH
+};
+
 template <typename T>
 void PrintVec(const std::string& intro, const std::vector<T> vec,
               std::ostream& os = std::cout);
