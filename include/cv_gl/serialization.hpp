@@ -2,9 +2,14 @@
 #ifndef CV_GL_SERIALIZATION_MAT_H_
 #define CV_GL_SERIALIZATION_MAT_H_
 
+#include <glm/glm.hpp>
+
 #include <cereal/cereal.hpp>
+#include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <cereal/types/map.hpp>
+#include <cereal/types/string.hpp>
 
 #include <iostream>
 
@@ -23,6 +28,76 @@ template<class Archive>
 void load(Archive& archive, ImagePair& ip) {
   archive(ip.first, ip.second);
 }
+
+// == CameraIntrinsics =========================
+template<class Archive>
+void save(Archive& archive, const CameraIntrinsics& ci) {
+  archive(ci.fx, ci.fy, ci.s, ci.cx, ci.cy, ci.wr);
+}
+template<class Archive>
+void load(Archive& archive, CameraIntrinsics& ci) {
+  archive(ci.fx, ci.fy, ci.s, ci.cx, ci.cy, ci.wr);
+}
+
+// == ImageData =========================
+template<class Archive>
+void save(Archive& archive, const ImageData& id) {
+  archive(id.record, id.image_dir, id.camera_num, id.filename, id.coords);
+}
+template<class Archive>
+void load(Archive& archive, ImageData& id) {
+  archive(id.record, id.image_dir, id.camera_num, id.filename, id.coords);
+}
+
+// == CameraInfo =========================
+template<class Archive>
+void save(Archive& archive, const CameraInfo& cam_info) {
+  archive(cam_info.intr, cam_info.rotation_angles, cam_info.translation);
+}
+template<class Archive>
+void load(Archive& archive, CameraInfo& cam_info) {
+  archive(cam_info.intr, cam_info.rotation_angles, cam_info.translation);
+}
+
+
+// == WorldPoint3D =========================
+template<class Archive>
+void save(Archive& archive, const WorldPoint3D& point) {
+  archive(point.pt, point.views);
+}
+template<class Archive>
+void load(Archive& archive, WorldPoint3D& point) {
+  archive(point.pt, point.views);
+}
+
+// == Atomic ============================
+template<class Archive, typename T>
+void save(Archive& archive, const std::atomic<T>& p) {
+  T tmp = p.load();
+  archive(tmp);
+}
+template<class Archive, typename T>
+void load(Archive& archive, std::atomic<T>& p) {
+  T tmp;
+  archive(tmp);
+  p.store(tmp);
+}
+
+
+namespace glm {
+
+// == glm::dvec3 =========================
+template<class Archive>
+void save(Archive& archive, const glm::dvec3& vec3) {
+  archive(vec3[0], vec3[1], vec3[2]);
+}
+template<class Archive>
+void load(Archive& archive, glm::dvec3& vec3) {
+  archive(vec3[0], vec3[1], vec3[2]);
+}
+
+}
+
 
 // == Features =========================
 template<class Archive>
@@ -55,6 +130,16 @@ void save(Archive& archive, const cv::Point_<T>& point) {
 template<class Archive, typename T>
 void load(Archive& archive, cv::Point_<T>& point) {
   archive(point.x, point.y);
+}
+
+// == cv::Point3 ============================
+template<class Archive, typename T>
+void save(Archive& archive, const cv::Point3_<T>& point) {
+  archive(point.x, point.y, point.z);
+}
+template<class Archive, typename T>
+void load(Archive& archive, cv::Point3_<T>& point) {
+  archive(point.x, point.y, point.z);
 }
 
 // == cv::KeyPoint =========================

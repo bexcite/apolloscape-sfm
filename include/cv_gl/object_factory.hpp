@@ -243,6 +243,7 @@ public:
       return it->second;
     }
     // create new
+    std::cout << "CREATE NEW SHADER \n\n";
     std::shared_ptr<Shader> shader = std::make_shared<Shader>(vertex_path, 
         fragment_path, geometry_path);
     shaders_.insert(std::pair<std::string, std::shared_ptr<Shader> >(

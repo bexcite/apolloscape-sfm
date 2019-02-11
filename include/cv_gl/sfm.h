@@ -65,6 +65,8 @@ public:
     // mat.create(3, 3, CV_64F);
     // dm.queryIdx = 1;
     // dm.trainIdx = 2;
+
+    // v3 = glm::dvec3(2.0);
     
   }
   void AddImages(const std::vector<ImageData>& camera1_images,
@@ -90,9 +92,10 @@ public:
 
   int ImageCount() const;
 
+  void RestoreImages();
+
   void SetProcStatus(SfMStatus proc_status);
   bool IsFinished();
-  
   
 
   // TODO: https://www.patrikhuber.ch/blog/6-serialising-opencv-matrices-using-boost-and-cereal
@@ -105,8 +108,18 @@ public:
     // archive(mats);
     // archive(ip);
     // archive(dm);
+    archive(intrinsics_);
+    archive(image_data_);
+    archive(cameras_);
+    // archive(images_);
     archive(image_features_);
+    archive(image_pairs_);
     archive(image_matches_);
+    archive(todo_views_);
+    archive(used_views_);
+    archive(map_);
+    archive(matches_index_);
+    archive(ccomp_);
   }
 private:
   void GenerateAllPairs();
@@ -123,6 +136,7 @@ private:
   int FindMaxSizeMatch(const bool within_todo_views = false) const;
 
   bool IsPairInOrder(const int p1, const int p2);
+  
 
   // Data Initial
   std::vector<CameraIntrinsics> intrinsics_;
@@ -139,6 +153,7 @@ private:
   CComponents<IntPair> ccomp_;
   std::vector<Matches> image_matches_;
   std::map<IntPair, int> matches_index_;
+  
 
   // Reconstruction
   std::unordered_set<int> used_views_;
@@ -168,6 +183,9 @@ private:
   // ImagePair ip;
   // cv::DMatch dm;
   // cv::Mat mat;
+  // glm::dvec3 v3;
+  // std::vector<IntPair> int_pairs_;
+  // std::pair<int, int> int_pair_;
 };
 
 

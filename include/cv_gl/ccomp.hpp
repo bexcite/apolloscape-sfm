@@ -76,6 +76,15 @@ public:
   }
 
   int Count() const { return count; }
+
+  template<class Archive>
+  void serialize(Archive& archive) {
+    archive(elems);
+    archive(tr);
+    archive(depth);
+    archive(ids);
+    archive(count);
+  }
   
 private:
   int GetId(ElemType e) {

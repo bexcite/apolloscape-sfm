@@ -5,7 +5,7 @@
 #include <boost/filesystem.hpp>
 
 #include <cereal/cereal.hpp>
-#include <cereal/types/vector.hpp>
+// #include <cereal/types/vector.hpp>
 #include <cereal/archives/binary.hpp>
 #include <glog/logging.h>
 
@@ -41,7 +41,7 @@ const std::vector<std::string> kRecords = {
   "Record001",
   // "Record002",
   // "Record003",
-  "Record004",
+  // "Record004",
   // "Record006",
   // "Record007",
   // "Record008",
@@ -122,8 +122,8 @@ int main(int argc, char* argv[]) {
 
     // == Slice record - for testing ==
     int p_camera_pose = 0; // 24
-    int p_camera_start = 22; //22 ==== 36 or 37 - 35
-    int p_camera_finish = 27; //25 ===== 39 or 40  - 39
+    int p_camera_start = 0; //22 ==== 36 or 37 - 35
+    int p_camera_finish = 120; //25 ===== 39 or 40  - 39
 
     p_camera_start = std::min(p_camera_start,
                               static_cast<int>(camera1_poses.size()));
@@ -151,6 +151,27 @@ int main(int argc, char* argv[]) {
   sfm.InitReconstruction();
 
   // sfm.ReconstructAll();
+
+  {
+    std::cout << "Serializing SFM!!!!\n";
+    std::ofstream file("sfm_out.bin", std::ios::binary);
+    cereal::BinaryOutputArchive archive(file);
+    archive(sfm);
+    sfm.PrintFinalStats();
+    std::cout << "Serializing SFM!!!! - DONE\n";
+  }
+
+  // SfM3D sfm;
+  {
+    
+    std::cout << "De-Serializing SFM!!!!\n";
+    std::ifstream file("sfm_out.bin", std::ios::binary);
+    cereal::BinaryInputArchive archive(file);
+    archive(sfm);
+    sfm.RestoreImages();
+    sfm.PrintFinalStats();
+    std::cout << "De-Serializing SFM!!!! - DONE\n";
+  }
 
   // std::thread first(&SfM3D::ReconstructAll, std::ref(sfm)); // sfm.ReconstructAll
 
@@ -389,7 +410,7 @@ int main(int argc, char* argv[]) {
   
 
 
-  
+  std::atomic<int> last_vis_version(0);
 
   
   // Fetch Points and Cameras for Drawing
@@ -397,15 +418,18 @@ int main(int argc, char* argv[]) {
   std::atomic<ThreadStatus> vis_prep_status(ThreadStatus::PROCESSING);
 
   std::thread vis_prep_thread([&vis_prep_status, &glm_points, &map_cams, &sfm,
-                        &cameras_points_mu]() {
-    int last_version = 0;
+                        &cameras_points_mu, &last_vis_version]() {
+    
     while(vis_prep_status.load() != ThreadStatus::FINISH 
             && !sfm.IsFinished()) {
       
       std::vector<Point3DColor> glm_points_temp;
       MapCameras map_cams_temp;
 
-      sfm.GetMapPointsAndCameras(glm_points_temp, map_cams_temp, last_version);
+      int lversion = last_vis_version.load();
+      sfm.GetMapPointsAndCameras(glm_points_temp, map_cams_temp,
+                                 lversion);
+      last_vis_version.store(lversion);
 
       cameras_points_mu.lock();
       glm_points = glm_points_temp;
@@ -425,6 +449,8 @@ int main(int argc, char* argv[]) {
   double dur_make_cameras = 0;
   double dur_all = 0;
 
+  int drawed_version = -1;
+
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
 
@@ -436,33 +462,38 @@ int main(int argc, char* argv[]) {
     
 
     // Crazy drawing
-    
-    // if(sfm.GetMapPointsVec(glm_points)) {
-      // std::cout << "\n\nglm_points.size = " << glm_points.size() << std::endl;
-    auto t00 = high_resolution_clock::now();
-    cameras_points_mu.lock();
-    auto t0 = high_resolution_clock::now();
-    points_obj = std::shared_ptr<DObject>(
-      ObjectFactory::CreatePoints(glm_points, true));
-    auto t1 = high_resolution_clock::now();
-    double dur_mp = duration_cast<microseconds>(t1-t0).count() / 1e+6;
-    dur_make_points += dur_mp;
-    // std::cout << "\nMAKE_POINTS_TIME = " << dur_mp << std::endl;
-    
-    // }
-    
-    // if(sfm.GetMapCamerasWithPointsVec(map_cams)) {
-    auto t2 = high_resolution_clock::now();
-    MakeCameras(cameras, map_cams, sfm, cameras_pool);
-    change_alpha(cameras_alpha);
-    auto t3 = high_resolution_clock::now();
-    double dur = duration_cast<microseconds>(t3-t2).count() / 1e+6;
-    dur_make_cameras += dur;
-    // std::cout << "MAKE_CAMERAS_TIME = " << dur << std::endl;
-    // }
-    cameras_points_mu.unlock();
-    auto t11 = high_resolution_clock::now();
-    dur_all += duration_cast<microseconds>(t11-t00).count() / 1e+6;
+    if (drawed_version < last_vis_version.load()) {
+      // if(sfm.GetMapPointsVec(glm_points)) {
+        // std::cout << "\n\nglm_points.size = " << glm_points.size() << std::endl;
+      auto t00 = high_resolution_clock::now();
+      cameras_points_mu.lock();
+      auto t0 = high_resolution_clock::now();
+      points_obj = std::shared_ptr<DObject>(
+        ObjectFactory::CreatePoints(glm_points, true));
+      auto t1 = high_resolution_clock::now();
+      double dur_mp = duration_cast<microseconds>(t1-t0).count() / 1e+6;
+      dur_make_points += dur_mp;
+      // std::cout << "\nMAKE_POINTS_TIME = " << dur_mp << std::endl;
+      
+      // }
+      
+      // if(sfm.GetMapCamerasWithPointsVec(map_cams)) {
+      auto t2 = high_resolution_clock::now();
+      MakeCameras(cameras, map_cams, sfm, cameras_pool);
+      change_alpha(cameras_alpha);
+      auto t3 = high_resolution_clock::now();
+      double dur = duration_cast<microseconds>(t3-t2).count() / 1e+6;
+      dur_make_cameras += dur;
+      // std::cout << "MAKE_CAMERAS_TIME = " << dur << std::endl;
+      // }
+      cameras_points_mu.unlock();
+      auto t11 = high_resolution_clock::now();
+      dur_all += duration_cast<microseconds>(t11-t00).count() / 1e+6;
+
+      drawed_version = last_vis_version.load();
+    }
+
+
 
     if (frames_cntr % 1000 == 0) {
       // std::cout << "\nMAKE_POINTS_TIME = " << dur_make_points / 1000.0 << std::endl;

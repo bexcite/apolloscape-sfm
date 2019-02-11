@@ -853,6 +853,20 @@ bool SfM3D::IsPairInOrder(const int p1, const int p2) {
   return ::IsPairInOrder(im_data1, im_data2);
 }
 
+void SfM3D::RestoreImages() {
+  images_.clear();
+  assert(image_data_.size() == cameras_.size());
+  for (size_t i = 0; i < image_data_.size(); ++i) {
+    std::cout << "Restore image " << i << " out of " << image_data_.size()
+              <<std::endl;
+    ImageData& im_data = image_data_[i];
+    boost::filesystem::path full_image_path = boost::filesystem::path(im_data.image_dir)
+        / boost::filesystem::path(im_data.filename);
+    cv::Mat img = cv::imread(full_image_path.string().c_str());
+    images_.push_back(img);
+  }
+};
+
 void SfM3D::Print(std::ostream& os) const {
   os << "SfM3D: intrinsics_.size = " << intrinsics_.size() << ", "
      << "image_data_.size = " << image_data_.size() << ", "
