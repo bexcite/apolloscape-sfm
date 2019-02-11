@@ -446,6 +446,8 @@ public:
           const bool extend_points = false,
           const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)) {
 
+    // std::cout << "\nCREATE_POINTS!!!\n";
+
     auto mesh = MeshFactory::CreatePoints(points);
 
     std::shared_ptr<Shader> shader_color;

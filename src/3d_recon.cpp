@@ -122,8 +122,8 @@ int main(int argc, char* argv[]) {
 
     // == Slice record - for testing ==
     int p_camera_pose = 0; // 24
-    int p_camera_start = 20; //22 ==== 36 or 37 - 35
-    int p_camera_finish = 30; //25 ===== 39 or 40  - 39
+    int p_camera_start = 22; //22 ==== 36 or 37 - 35
+    int p_camera_finish = 27; //25 ===== 39 or 40  - 39
 
     p_camera_start = std::min(p_camera_start,
                               static_cast<int>(camera1_poses.size()));
@@ -150,8 +150,14 @@ int main(int argc, char* argv[]) {
 
   sfm.InitReconstruction();
 
+  // sfm.ReconstructAll();
 
-  std::thread first(&SfM3D::ReconstructAll, std::ref(sfm)); // sfm.ReconstructAll
+  // std::thread first(&SfM3D::ReconstructAll, std::ref(sfm)); // sfm.ReconstructAll
+
+  std::thread recon_thread([&sfm]() {
+    sfm.ReconstructAll();
+    sfm.SetProcStatus(SfM3D::FINISH);
+  });
 
 
   std::cout << sfm << std::endl;
@@ -165,13 +171,6 @@ int main(int argc, char* argv[]) {
       std::make_shared<Camera>(glm::vec3(3.0f * kGlobalScale, 0.0f * kGlobalScale, 1.0f * kGlobalScale)); 
   camera->SetScale(kGlobalScale);
 
-  // camera->SetOrigin(glm::vec3(camera_origin_data.coords[3],
-  //                             camera_origin_data.coords[4],
-  //                             camera_origin_data.coords[5]));
-  // camera->SetRotation(camera_origin_data.coords[0],
-  //                     camera_origin_data.coords[1],
-  //                     camera_origin_data.coords[2]);
-
   GLWindow gl_window("OpenGL: 3D Reconstruction", kWindowWidth, kWindowHeight);
   gl_window.SetCamera(camera);
 
@@ -184,7 +183,7 @@ int main(int argc, char* argv[]) {
 
   // ========= 3D Recon Objects ===================
   std::shared_ptr<DObject> cameras(new DObject());
-  
+  std::shared_ptr<DObject> points_obj(nullptr);
   
 
     // ======== Show Match =========
@@ -260,41 +259,31 @@ int main(int argc, char* argv[]) {
   int lv = 0;
   sfm.GetMapPointsAndCameras(glm_points, map_cams, lv);
   MakeCameras(cameras, map_cams, sfm, cameras_pool);
+
+  int origin_cam_id = map_cams.begin()->first;
+  CameraInfo origin_cam_info = sfm.GetCameraInfo(origin_cam_id);
   
-
-  /*
-  while(!sfm.GetMapCamerasWithPointsVec(map_cameras)) {
-    std::cout << "wait ... ";
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  }
-  MakeCameras(cameras, map_cameras, sfm, cameras_pool);
-  */
-
-  // root->AddChild(cameras);
-
 
   typedef std::pair<const int, std::vector<std::pair<int, Point3DColor> > > MapCameraEl;
 
   // Set Origin to the Best Camera (with the most matches)
-  auto cam_max_points = std::max_element(map_cams.begin(),
-      map_cams.end(),
-      [](MapCameraEl& el1,
-         MapCameraEl& el2) {
-           return el1.second.size() < el2.second.size();
-      });
-  int cam_max_points_id = cam_max_points->first;
-  std::cout << "cam_max_points_id = " << cam_max_points_id 
-            << ", cam_size = " << cam_max_points->second.size() 
-            << std::endl;
-  CameraInfo origin_cam_info = sfm.GetCameraInfo(cam_max_points_id);
+  // auto cam_max_points = std::max_element(map_cams.begin(),
+  //     map_cams.end(),
+  //     [](MapCameraEl& el1,
+  //        MapCameraEl& el2) {
+  //          return el1.second.size() < el2.second.size();
+  //     });
+  // int cam_max_points_id = cam_max_points->first;
+  // std::cout << "cam_max_points_id = " << cam_max_points_id 
+  //           << ", cam_size = " << cam_max_points->second.size() 
+  //           << std::endl;
+  // CameraInfo origin_cam_info = sfm.GetCameraInfo(cam_max_points_id);
   // camera->SetOrigin(origin_cam_info.translation); //glm::vec3(cam_info.translation)
   // camera->SetRotation(origin_cam_info.rotation_angles[0],
   //                     origin_cam_info.rotation_angles[1],
   //                     origin_cam_info.rotation_angles[2]);
 
   // std::vector<std::shared_ptr<CameraObject> > camera_refs;
-
-  
 
 
   // cv windows are not working well with glfw windows
@@ -314,7 +303,7 @@ int main(int argc, char* argv[]) {
   // int current_camera_id = 0;
   // int current_camera_id = cam_max_points_id;
   int current_camera_id = 0;
-  double last_camera_change = 0;  
+  double last_camera_change = 0;
   auto change_camera = [&cameras,
                         &camera] (int camera_id) {
     std::cout << "camera_id = " << camera_id << std::endl;
@@ -327,9 +316,9 @@ int main(int argc, char* argv[]) {
 
   // Set camera pose to the current_camera_id
   change_camera(current_camera_id);
-  // camera->SetRotation(origin_cam_info.rotation_angles[0],
-  //                     origin_cam_info.rotation_angles[1],
-  //                     origin_cam_info.rotation_angles[2]);
+  camera->SetRotation(origin_cam_info.rotation_angles[0],
+                      origin_cam_info.rotation_angles[1],
+                      origin_cam_info.rotation_angles[2]);
 
   int cameras_size = sfm.ImageCount();
 
@@ -370,69 +359,48 @@ int main(int argc, char* argv[]) {
 
 
   // === Change Camera Alphas
-  float cameras_alpha = 0.9f;
-  auto change_alpha = [&cameras, &cameras_alpha]() {
-    auto set_alpha = [&cameras_alpha](std::shared_ptr<DObject> obj) {
+  float cameras_alpha = 0.2f;
+  auto change_alpha = [&cameras/*, &cameras_alpha*/](float cam_alpha) {
+    auto set_alpha = [/*&cameras_alpha*/cam_alpha](std::shared_ptr<DObject> obj) {
       std::shared_ptr<CameraObject> co = std::static_pointer_cast<CameraObject>(obj);
-      co->SetImageAlpha(cameras_alpha);
+      co->SetImageAlpha(/*cameras_alpha*/cam_alpha);
     };
     cameras->Apply(TAG_CAMERA_OBJECT, set_alpha);
   };
 
   // Apply it in order to make all cameras with the same alpha
-  change_alpha();
+  change_alpha(cameras_alpha);
 
   gl_window.AddProcessInput(GLFW_KEY_Z, [&cameras_alpha, &change_alpha](float dt) {
     cameras_alpha = std::max(cameras_alpha - 0.9f * dt, 0.0f);
     // std::cout << "AddProcessInput!! == Z = " << alpha << std::endl;
-    change_alpha();
+    change_alpha(cameras_alpha);
   });
 
   gl_window.AddProcessInput(GLFW_KEY_X, [&cameras_alpha, &change_alpha](float dt) {
     cameras_alpha = std::min(cameras_alpha + 0.9f * dt, 1.0f);
     // std::cout << "AddProcessInput!! == X = " << alpha << std::endl;
-    change_alpha();
+    change_alpha(cameras_alpha);
   });
   // <<<<<< Change Camera Alpha
 
 
   
-
-  // std::vector<glm::vec3> glm_only_points;
-  // for (const auto& p : glm_points) {
-  //   glm_only_points.push_back(p.pt);
-  // }
-
   
-  using namespace std::chrono;
 
 
   
 
-
-  // Premature exit
-  // sfm.SetProcStatus(SfM3D::FINISH);
-  // first.join();
-  // return EXIT_SUCCESS; 
-
   
-  
-
-
-  std::shared_ptr<DObject> points_obj(nullptr);
-
-
-  // auto po = std::ref(points_obj);
-
-  // root->AddChild(points_obj);
-
+  // Fetch Points and Cameras for Drawing
   std::mutex cameras_points_mu;
   std::atomic<ThreadStatus> vis_prep_status(ThreadStatus::PROCESSING);
 
-  std::thread vis_prep([&vis_prep_status, &glm_points, &map_cams, &sfm,
+  std::thread vis_prep_thread([&vis_prep_status, &glm_points, &map_cams, &sfm,
                         &cameras_points_mu]() {
     int last_version = 0;
-    while(vis_prep_status.load() != ThreadStatus::FINISH) {
+    while(vis_prep_status.load() != ThreadStatus::FINISH 
+            && !sfm.IsFinished()) {
       
       std::vector<Point3DColor> glm_points_temp;
       MapCameras map_cams_temp;
@@ -444,29 +412,8 @@ int main(int argc, char* argv[]) {
       map_cams = map_cams_temp;
       cameras_points_mu.unlock();
 
-      std::cout << "\nFETCHED_VIS_VERSION = " << last_version << std::endl;
-
-      /*
-      if(sfm.GetMapPointsVec(glm_points_temp)) {
-        // std::cout << "\n\nglm_points_temp.size = " 
-                  // << glm_points_temp.size() << std::endl;
-        cameras_points_mu.lock();
-        glm_points = glm_points_temp;
-        cameras_points_mu.unlock();
-      }
-
-      
-      if(sfm.GetMapCamerasWithPointsVec(map_cams_temp)) {
-        cameras_points_mu.lock();
-        map_cams = map_cams_temp;
-        cameras_points_mu.unlock();
-      }
-      */
-
-      
-
+      // std::cout << "\nFETCHED_VIS_VERSION = " << last_version << std::endl;      
       // std::cout << "\n TICKING ... \n";
-
       //std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
   });
@@ -480,6 +427,8 @@ int main(int argc, char* argv[]) {
 
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
+
+    using namespace std::chrono;
 
     // ====================== Render =====================
     renderer->Draw(floor_obj);
@@ -505,7 +454,7 @@ int main(int argc, char* argv[]) {
     // if(sfm.GetMapCamerasWithPointsVec(map_cams)) {
     auto t2 = high_resolution_clock::now();
     MakeCameras(cameras, map_cams, sfm, cameras_pool);
-    change_alpha();
+    change_alpha(cameras_alpha);
     auto t3 = high_resolution_clock::now();
     double dur = duration_cast<microseconds>(t3-t2).count() / 1e+6;
     dur_make_cameras += dur;
@@ -516,9 +465,9 @@ int main(int argc, char* argv[]) {
     dur_all += duration_cast<microseconds>(t11-t00).count() / 1e+6;
 
     if (frames_cntr % 1000 == 0) {
-      std::cout << "\nMAKE_POINTS_TIME = " << dur_make_points / 1000.0 << std::endl;
-      std::cout << "MAKE_CAMERAS_TIME = " << dur_make_cameras / 1000.0 << std::endl;
-      std::cout << "FRAME_ALL_HARD_TIME = " << dur_all / 1000.0 << std::endl;
+      // std::cout << "\nMAKE_POINTS_TIME = " << dur_make_points / 1000.0 << std::endl;
+      // std::cout << "MAKE_CAMERAS_TIME = " << dur_make_cameras / 1000.0 << std::endl;
+      // std::cout << "FRAME_ALL_HARD_TIME = " << dur_all / 1000.0 << std::endl;
       dur_make_points = 0.0;
       dur_make_cameras = 0.0;
       dur_all = 0.0;
@@ -544,8 +493,10 @@ int main(int argc, char* argv[]) {
 
   vis_prep_status.store(ThreadStatus::FINISH);
   sfm.SetProcStatus(SfM3D::FINISH);
-  first.join();
-  vis_prep.join();
+  recon_thread.join();
+  vis_prep_thread.join();
+
+
 
   return EXIT_SUCCESS; 
 
@@ -571,7 +522,7 @@ void MakeCameras(std::shared_ptr<DObject>& cameras,
   // === Draw Cameras ===
   for (auto& c: map_cameras) {
     
-    std::cout << "Camera: " << c.first << ": points = " << c.second.size() << std::endl;
+    // std::cout << "Camera: " << c.first << ": points = " << c.second.size() << std::endl;
     // PrintVec(" => ", c.second);
 
     const int& cam_id = c.first;  

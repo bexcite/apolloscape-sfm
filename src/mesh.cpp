@@ -135,7 +135,7 @@ Mesh::Draw(const std::shared_ptr<Shader>& shader) {
 void
 Mesh::SetupMesh() {
 
-  std::cout << "Mesh: Setup (" << (++count_) << ")" << std::endl;
+  // std::cout << "Mesh: Setup (" << (++count_) << ")" << std::endl;
 
   glGenVertexArrays(1, &vao_);
   glGenBuffers(1, &vbo_);
@@ -211,7 +211,7 @@ Mesh::SetupMesh() {
 
 
 Mesh::~Mesh() {
-  std::cout << "mesh (DESTRUCTOR) " << (count_--) << std::endl;
+  // std::cout << "mesh (DESTRUCTOR) " << (count_--) << std::endl;
   // this->write();
   // std::cout << std::endl;
   glDeleteVertexArrays(1, &vao_);

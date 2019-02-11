@@ -91,6 +91,7 @@ public:
   int ImageCount() const;
 
   void SetProcStatus(SfMStatus proc_status);
+  bool IsFinished();
   
   
 

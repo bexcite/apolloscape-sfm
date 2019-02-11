@@ -89,7 +89,7 @@ bool GLWindow::IsRunning() {
   delta_time_sum_ += delta_time;
   if (frames_ % 1000 == 0) {
     float fps = 1000.0f / delta_time_sum_;
-    std::cout << "\n\n======== FPS = " << fps << std::endl;
+    // std::cout << "\n\n======== FPS = " << fps << std::endl;
     delta_time_sum_ = 0;
   }
   ++frames_;
