@@ -138,7 +138,7 @@ Mesh::SetupMesh() {
   // std::cout << "Mesh: Setup (" << (++count_) << ")" << std::endl;
 
   glGenVertexArrays(1, &vao_);
-  std::cout << "Mesh: VAO (" << vao_ << ")" << std::endl;
+  // std::cout << "Mesh: VAO (" << vao_ << ")" << std::endl;
   glGenBuffers(1, &vbo_);
   glGenBuffers(1, &ebo_);
 

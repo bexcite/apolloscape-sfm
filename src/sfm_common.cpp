@@ -1169,7 +1169,7 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = 500;
   options.eta = 1e-2;
-  options.max_solver_time_in_seconds = 60;
+  options.max_solver_time_in_seconds = 300;
   options.logging_type = ceres::LoggingType::SILENT;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
@@ -1219,13 +1219,14 @@ void GetKeyPointColors(const cv::Mat& img,
                        const cv::KeyPoint& point,
                        Point3DColor& p3d,
                        const bool add_colors,
-                       double dangle) {
+                       double dangle,
+                       double image_scale) {
 
   
   if (add_colors) {
-    p3d.color += ::GetGlmColorFromImage(img, point.pt);
+    p3d.color += ::GetGlmColorFromImage(img, point.pt, image_scale);
   } else {
-    p3d.color = ::GetGlmColorFromImage(img, point.pt);
+    p3d.color = ::GetGlmColorFromImage(img, point.pt, image_scale);
   }
 
   cv::Point2f tl_pt = point.pt + cv::Point2f(
@@ -1233,9 +1234,9 @@ void GetKeyPointColors(const cv::Mat& img,
       point.size * sin(deg2rad(135 + dangle)));
   // std::cout << "tl_pt = " << tl_pt << std::endl;
   if (add_colors) {
-    p3d.color_tl += ::GetGlmColorFromImage(img, tl_pt);
+    p3d.color_tl += ::GetGlmColorFromImage(img, tl_pt, image_scale);
   } else {
-    p3d.color_tl = ::GetGlmColorFromImage(img, tl_pt);
+    p3d.color_tl = ::GetGlmColorFromImage(img, tl_pt, image_scale);
   }
 
   cv::Point2f tr_pt = point.pt + cv::Point2f(
@@ -1243,9 +1244,9 @@ void GetKeyPointColors(const cv::Mat& img,
       point.size * sin(deg2rad(45.0 + dangle)));
   // std::cout << "tr_pt = " << tr_pt << std::endl;
   if (add_colors) {
-    p3d.color_tr += ::GetGlmColorFromImage(img, tr_pt);
+    p3d.color_tr += ::GetGlmColorFromImage(img, tr_pt, image_scale);
   } else {
-    p3d.color_tr = ::GetGlmColorFromImage(img, tr_pt);
+    p3d.color_tr = ::GetGlmColorFromImage(img, tr_pt, image_scale);
   }
 
   cv::Point2f bl_pt = point.pt + cv::Point2f(
@@ -1253,9 +1254,9 @@ void GetKeyPointColors(const cv::Mat& img,
       point.size * sin(deg2rad(225.0 + dangle)));
   // std::cout << "bl_pt = " << bl_pt << std::endl;
   if (add_colors) {
-    p3d.color_bl += ::GetGlmColorFromImage(img, bl_pt);
+    p3d.color_bl += ::GetGlmColorFromImage(img, bl_pt, image_scale);
   } else {
-    p3d.color_bl = ::GetGlmColorFromImage(img, bl_pt);
+    p3d.color_bl = ::GetGlmColorFromImage(img, bl_pt, image_scale);
   }
 
   cv::Point2f br_pt = point.pt + cv::Point2f(
@@ -1263,9 +1264,9 @@ void GetKeyPointColors(const cv::Mat& img,
       point.size * sin(deg2rad(315.0 + dangle)));
   // std::cout << "br_pt = " << br_pt << std::endl;
   if (add_colors) {
-    p3d.color_br += ::GetGlmColorFromImage(img, br_pt);
+    p3d.color_br += ::GetGlmColorFromImage(img, br_pt, image_scale);
   } else {
-    p3d.color_br = ::GetGlmColorFromImage(img, br_pt);
+    p3d.color_br = ::GetGlmColorFromImage(img, br_pt, image_scale);
   }
 
 }

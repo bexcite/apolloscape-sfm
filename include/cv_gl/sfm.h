@@ -86,7 +86,7 @@ public:
                               MapCameras& map_cameras,
                               int& last_version);
 
-  cv::Mat GetImage(int cam_id) const;
+  cv::Mat GetImage(int cam_id, bool full_size = false) const;
   CameraInfo GetCameraInfo(int cam_id) const;
   cv::KeyPoint GetKeypoint(int cam_id, int point_id) const;
 
@@ -143,7 +143,9 @@ private:
   std::vector<ImageData> image_data_;
   std::vector<CameraInfo> cameras_;
   std::vector<cv::Mat> images_;
-  std::vector<cv::Mat> image_previews_;
+
+
+  std::vector<cv::Mat> images_resized_;
 
   // Pre-processing & Feature Extraction
   std::vector<Features> image_features_;
@@ -160,7 +162,7 @@ private:
   std::unordered_set<int> todo_views_;
   Map3D map_;
 
-  const double preview_scale_ = 0.3;
+  const double resize_scale_ = 0.25;
   bool use_cache = true;
 
   // Preprocessing storage

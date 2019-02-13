@@ -62,6 +62,8 @@ std::vector<ImageData> ReadCameraPoses(const boost::filesystem::path file_path,
                                        const std::string& record = "",
                                        const int camera_num = -1);
 
+cv::Mat LoadImage(const ImageData& im_data, double scale_factor = 1.0);
+
 // template <typename T>
 // void PrintVec(const std::string& intro, const std::vector<T> vec,
 //               std::ostream& os);
@@ -124,8 +126,12 @@ void ImShowMatchesWithResize(const cv::Mat& img1,
                              const int win_x = 0,
                              const int win_y = 10);
 
-glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::KeyPoint& point);
-glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::Point2f& pt);
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img,
+                               const cv::KeyPoint& point,
+                               double image_scale = 1.0);
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img, 
+                               const cv::Point2f& pt,
+                               double image_scale = 1.0);
 
 std::vector<cv::DMatch> EmptyMatch();
 

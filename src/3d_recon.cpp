@@ -38,11 +38,11 @@ const double kImageHeight = 2056.0;
 const float kGlobalScale = 100.0f;
 
 const std::vector<std::string> kRecords = {
-  "Record001",
-  // "Record002",
-  // "Record003",
+  // "Record001",
+  "Record002",
+  "Record003",
   // "Record004",
-  // "Record006",
+  "Record006",
   // "Record007",
   // "Record008",
   // "Record009",
@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
 
   std::vector<CameraIntrinsics> camera_intrs = {intr1, intr2};
 
+  /*  
   SfM3D sfm(camera_intrs);
 
   for (auto record : kRecords) {
@@ -149,23 +150,23 @@ int main(int argc, char* argv[]) {
   sfm.MatchImageFeatures(60);
 
   sfm.InitReconstruction();
+  */
 
   // sfm.ReconstructAll();
 
-  {
-    std::cout << "Serializing SFM!!!!\n";
-    std::ofstream file("sfm_out.bin", std::ios::binary);
-    cereal::BinaryOutputArchive archive(file);
-    archive(sfm);
-    sfm.PrintFinalStats();
-    std::cout << "Serializing SFM!!!! - DONE\n";
-  }
+  // {
+  //   std::cout << "Serializing SFM!!!!\n";
+  //   std::ofstream file("sfm_out.bin", std::ios::binary);
+  //   cereal::BinaryOutputArchive archive(file);
+  //   archive(sfm);
+  //   sfm.PrintFinalStats();
+  //   std::cout << "Serializing SFM!!!! - DONE\n";
+  // }
 
-  // SfM3D sfm;
+  SfM3D sfm;
   {
-    
     std::cout << "De-Serializing SFM!!!!\n";
-    std::ifstream file("sfm_out.bin", std::ios::binary);
+    std::ifstream file("sfm_out_2.bin", std::ios::binary);
     cereal::BinaryInputArchive archive(file);
     archive(sfm);
     sfm.RestoreImages();
@@ -181,8 +182,8 @@ int main(int argc, char* argv[]) {
   });
 
 
-  std::cout << sfm << std::endl;
-  sfm.PrintFinalStats();
+  // std::cout << sfm << std::endl;
+  // sfm.PrintFinalStats();
 
 
 
@@ -248,6 +249,7 @@ int main(int argc, char* argv[]) {
 
   for (int i = 0; i < sfm.ImageCount(); ++i) {
     cv::Mat co_img = sfm.GetImage(i);
+    // cv::resize(co_img, co_img, cv::Size(), 0.25, 0.25 /*, cv::INTER_AREA*/);
     CameraInfo cam_info = sfm.GetCameraInfo(i);
     std::shared_ptr<CameraObject> co(
         new CameraObject(cam_info.intr, kImageWidth, kImageHeight));
@@ -277,7 +279,7 @@ int main(int argc, char* argv[]) {
 
   std::vector<Point3DColor> glm_points;
   MapCameras map_cams;
-  int lv = 0;
+  int lv = -1;
   sfm.GetMapPointsAndCameras(glm_points, map_cams, lv);
   MakeCameras(cameras, map_cams, sfm, cameras_pool);
 
@@ -436,7 +438,7 @@ int main(int argc, char* argv[]) {
       map_cams = map_cams_temp;
       cameras_points_mu.unlock();
 
-      // std::cout << "\nFETCHED_VIS_VERSION = " << last_version << std::endl;      
+      std::cout << "\nFETCHED_VIS_VERSION = " << last_vis_version << std::endl;      
       // std::cout << "\n TICKING ... \n";
       //std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
@@ -451,8 +453,17 @@ int main(int argc, char* argv[]) {
 
   int drawed_version = -1;
 
+  // points_obj = std::shared_ptr<DObject>(
+  //       ObjectFactory::CreatePoints(glm_points, true));
+  // MakeCameras(cameras, map_cams, sfm, cameras_pool);
+  //     change_alpha(cameras_alpha);
+
+  double all_time = 0;
+
   while(gl_window.IsRunning()) {
     // std::cout << "delta_time = " << gl_window.delta_time << std::endl;
+    all_time += static_cast<double>(gl_window.delta_time);
+    // std::cout << "==== START CYCLE: delta_time = " << all_time << std::endl;
 
     using namespace std::chrono;
 
@@ -506,7 +517,13 @@ int main(int argc, char* argv[]) {
 
     
     if (points_obj) {
-      renderer->Draw(points_obj, true);
+      renderer->Draw(points_obj, false);
+
+      // std::shared_ptr<DObject> points_obj1 = std::shared_ptr<DObject>(
+      //   ObjectFactory::CreatePoints(glm_points, false));
+      // renderer->Draw(points_obj1, false);
+      
+
     }
     if (cameras) {
       renderer->Draw(cameras, true);
@@ -514,6 +531,7 @@ int main(int argc, char* argv[]) {
 
     ++frames_cntr;
     gl_window.RunLoop();
+    // std::cout << "<<< END CYCLE ===========" << std::endl;
   }
 
   // gl_window.Terminate();
@@ -527,6 +545,15 @@ int main(int argc, char* argv[]) {
   recon_thread.join();
   vis_prep_thread.join();
 
+
+  {
+    std::cout << "Serializing SFM!!!!\n";
+    std::ofstream file("sfm_out_2.bin", std::ios::binary);
+    cereal::BinaryOutputArchive archive(file);
+    archive(sfm);
+    sfm.PrintFinalStats();
+    std::cout << "Serializing SFM!!!! - DONE\n";
+  }
 
 
   return EXIT_SUCCESS; 
@@ -543,7 +570,7 @@ void MakeCameras(std::shared_ptr<DObject>& cameras,
   using namespace std::chrono;
   auto t0 = high_resolution_clock::now();
 
-  double dur_dkwr = 0.0; 
+  double dur_dkwr = 0.0;
   double dur_cc = 0.0;
   double dur_app = 0.0;
   double dur_gk = 0.0;

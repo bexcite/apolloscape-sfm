@@ -116,7 +116,8 @@ void GetKeyPointColors(const cv::Mat& img,
                        const cv::KeyPoint& point, 
                        Point3DColor& p3d,
                        const bool add_colors = false,
-                       double dangle = 0.0);
+                       double dangle = 0.0,
+                       double image_scale = 1.0);
 
 
 

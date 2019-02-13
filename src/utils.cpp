@@ -176,6 +176,16 @@ std::vector<ImageData> ReadCameraPoses(const fs::path file_path,
   return imgs_data;
 }
 
+cv::Mat LoadImage(const ImageData& im_data, double scale_factor) {
+  fs::path full_image_path = fs::path(im_data.image_dir)
+      / fs::path(im_data.filename);
+  cv::Mat img = cv::imread(full_image_path.string().c_str());
+  if (scale_factor == 1.0) return img;
+  cv::resize(img, img, cv::Size(), scale_factor, scale_factor);
+  return img;
+}
+
+
 
 void KeyPointToPointVec(const std::vector<cv::KeyPoint>& kpoints, std::vector<cv::Point2f>& points) {
   for (size_t i = 0; i < kpoints.size(); ++i) {
@@ -333,13 +343,14 @@ void ImShowMatchesWithResize(const cv::Mat& img1,
 
 }
 
-glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::KeyPoint& point) {
-  cv::Vec3b vec = img.at<cv::Vec3b>(point.pt);
-  return glm::vec3(vec[2]/255.0, vec[1]/255.0, vec[0]/255.0);
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::KeyPoint& point, double image_scale) {
+  // cv::Vec3b vec = img.at<cv::Vec3b>(point.pt * image_scale);
+  // return glm::vec3(vec[2]/255.0, vec[1]/255.0, vec[0]/255.0);
+  return GetGlmColorFromImage(img, point.pt, image_scale);
 }
 
-glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::Point2f& pt) {
-  cv::Vec3b vec = img.at<cv::Vec3b>(pt);
+glm::vec3 GetGlmColorFromImage(const cv::Mat& img, const cv::Point2f& pt, double image_scale) {
+  cv::Vec3b vec = img.at<cv::Vec3b>(pt * image_scale);
   return glm::vec3(vec[2]/255.0, vec[1]/255.0, vec[0]/255.0);
 }
 

@@ -185,7 +185,7 @@ void save(Archive& ar, const cv::Mat& mat) {
   ar (rows, cols, type, continuous);
   if (continuous) {
     const int data_size = rows * cols * static_cast<int>(mat.elemSize());
-    std::cout << "save data.size = " << data_size << std::endl;
+    // std::cout << "save data.size = " << data_size << std::endl;
     auto mat_data = cereal::binary_data(mat.ptr(), data_size);
     ar(mat_data);
   } else {

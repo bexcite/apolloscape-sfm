@@ -98,7 +98,7 @@ void SfM3D::AddImages(const std::vector<ImageData>& camera1_images,
 void SfM3D::ExtractFeatures() {
   std::cout << "SfM3D: Extract Features\n";
 
-  images_.clear();
+  images_resized_.clear();
   image_features_.clear();
 
   assert(image_data_.size() == cameras_.size());
@@ -107,7 +107,10 @@ void SfM3D::ExtractFeatures() {
     ImageData& im_data = image_data_[i];
     boost::filesystem::path full_image_path = boost::filesystem::path(im_data.image_dir)
         / boost::filesystem::path(im_data.filename);
-    cv::Mat img = cv::imread(full_image_path.string().c_str());
+    // cv::Mat img = cv::imread(full_image_path.string().c_str());
+
+    cv::Mat img = ::LoadImage(im_data);
+
 
     // std::cout << "full_image_path = " << full_image_path.string() << std::endl;
 
@@ -126,7 +129,11 @@ void SfM3D::ExtractFeatures() {
     }
     std::cout << std::endl;
 
-    images_.push_back(img);
+    cv::resize(img, img, cv::Size(), resize_scale_, resize_scale_);
+    images_resized_.push_back(img);
+
+    // images_.push_back();
+
     image_features_.push_back(features);
   }
   
@@ -639,6 +646,8 @@ void SfM3D::ReconstructAll() {
 
 void SfM3D::PrintFinalStats() {
 
+  map_mutex.lock();
+
   // Counts points view nums
   std::map<int, int> map_counts;
   for (auto& wp: map_) {
@@ -658,10 +667,14 @@ void SfM3D::PrintFinalStats() {
 
 
   double all_error = ::GetReprojectionError(map_, cameras_, image_features_);
+
+  map_mutex.unlock();
+
   std::cout << "FINAL_error = " << all_error << std::endl;
   std::cout << "USED_views = " << used_views_.size()
             << " out of " << image_features_.size() << std::endl;
   std::cout << "FINAL_map.size = " << map_.size() << " points" << std::endl;
+  
 }
 
 bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) {
@@ -702,9 +715,9 @@ bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) {
       //           << std::endl;
 
       ::GetKeyPointColors(
-        images_[img_id],
+        images_resized_[img_id],
         kp,
-        p3dc, true, kp.angle - orig_angle);
+        p3dc, true, kp.angle - orig_angle, resize_scale_);
 
       // std::cout << " oo: " << glm::to_string(p3dc.color) << std::endl;
       // std::cout << " tl: " << glm::to_string(p3dc.color_tl) << std::endl;
@@ -761,8 +774,9 @@ bool SfM3D::GetMapCamerasWithPointsVec(MapCameras& map_cameras) {
     for (auto& view : wp.views) {
       int img_id = view.first;
       glm::vec3 v_color = ::GetGlmColorFromImage(
-        images_[img_id],
-        image_features_[img_id].keypoints[view.second]);
+        images_resized_[img_id],
+        image_features_[img_id].keypoints[view.second],
+        resize_scale_);
       // std::cout << "o: " << glm::to_string(v_color) << std::endl;
       p3d.color += v_color;
     }
@@ -810,8 +824,13 @@ void SfM3D::GetMapPointsAndCameras(std::vector<Point3DColor>& glm_points,
 
 }
 
-cv::Mat SfM3D::GetImage(int cam_id) const {
-  return images_[cam_id].clone();
+cv::Mat SfM3D::GetImage(int cam_id, bool full_size) const {
+  if (!full_size) {
+    return images_resized_[cam_id].clone();
+  } else {
+    return ::LoadImage(image_data_[cam_id]);
+  }
+  
 }
 
 CameraInfo SfM3D::GetCameraInfo(int cam_id) const {
@@ -854,16 +873,17 @@ bool SfM3D::IsPairInOrder(const int p1, const int p2) {
 }
 
 void SfM3D::RestoreImages() {
-  images_.clear();
+  images_resized_.clear();
   assert(image_data_.size() == cameras_.size());
   for (size_t i = 0; i < image_data_.size(); ++i) {
     std::cout << "Restore image " << i << " out of " << image_data_.size()
               <<std::endl;
     ImageData& im_data = image_data_[i];
-    boost::filesystem::path full_image_path = boost::filesystem::path(im_data.image_dir)
-        / boost::filesystem::path(im_data.filename);
-    cv::Mat img = cv::imread(full_image_path.string().c_str());
-    images_.push_back(img);
+    // boost::filesystem::path full_image_path = boost::filesystem::path(im_data.image_dir)
+    //     / boost::filesystem::path(im_data.filename);
+    // cv::Mat img = cv::imread(full_image_path.string().c_str());
+    cv::Mat img = ::LoadImage(im_data, resize_scale_);
+    images_resized_.push_back(img);
   }
 };
 
@@ -873,6 +893,7 @@ void SfM3D::Print(std::ostream& os) const {
      << "image_pairs_.size = " << image_pairs_.size() << ", "
      << "cameras_.size = " << cameras_.size() << ", "
      << "images_.size = " << images_.size() << ", "
+     << "images_resized_.size = " << images_resized_.size() << ", "
      << "image_features_.size = " << image_features_.size() << ", "
      << "image_matches_.size = " << image_matches_.size() << ", "
      << "used_views_.size = " << used_views_.size() << ", "

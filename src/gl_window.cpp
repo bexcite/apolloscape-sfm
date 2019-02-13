@@ -2,6 +2,8 @@
 #include "cv_gl/gl_window.h"
 
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -83,14 +85,28 @@ bool GLWindow::IsRunning() {
   // Delta time + FPS
   float time_value = glfwGetTime();
   delta_time = time_value - last_time_;
+
+  if (delta_time < 0.015) {
+    long sleep_for_micro = static_cast<long>((0.015 - delta_time) * 1e+6);
+    std::this_thread::sleep_for(std::chrono::microseconds(sleep_for_micro));
+    // std::cout << "---> SLEEP_FOR_MICRO = " << sleep_for_micro << std::endl;
+    time_value = glfwGetTime();
+    delta_time = time_value - last_time_;
+    sleep_for_micro_sum_ += sleep_for_micro;
+  }
+
   last_time_ = time_value;
 
   // FPS calc and output
   delta_time_sum_ += delta_time;
-  if (frames_ % 1000 == 0) {
-    float fps = 1000.0f / delta_time_sum_;
-    // std::cout << "\n\n======== FPS = " << fps << std::endl;
+  int freq = 100;
+  if (frames_ % freq == 0) {
+    float fps = freq / delta_time_sum_;
+    std::cout << "\n\n======== FPS = " << fps << ","
+              << ", sleep_for_micro = " << sleep_for_micro_sum_ / freq
+              << std::endl;
     delta_time_sum_ = 0;
+    sleep_for_micro_sum_ = 0;
   }
   ++frames_;
 
