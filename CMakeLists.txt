@@ -25,10 +25,12 @@ find_package(Boost 1.59 REQUIRED COMPONENTS filesystem)
 # find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenCV REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(gflags REQUIRED)
 message("OpenCV Version =======: " ${OpenCV_VERSION})
 
 message("Ceres Include Dirs ==: " ${CERES_INCLUDE_DIRS})
 message("Ceres Libraries =====:  " ${CERES_LIBRARIES})
+message("gflags =======: " ${gflags})
 
 
 message("Project Name =======: " ${PROJECT_NAME})

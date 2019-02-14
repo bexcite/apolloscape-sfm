@@ -9,6 +9,9 @@
 #include <cereal/archives/binary.hpp>
 #include <glog/logging.h>
 
+#define STRIP_FLAG_HELP 1    // this must go before the #include!
+#include <gflags/gflags.h>
+
 #include "cv_gl/camera.h"
 #include "cv_gl/renderer.h"
 #include "cv_gl/object_factory.hpp"
@@ -56,6 +59,18 @@ const std::vector<std::string> kRecords = {
 // An ID for Camera in a scene graph
 #define TAG_CAMERA_OBJECT 10
 
+
+DEFINE_string(restore, "", "--restore=\"<filename>\" Saved SfM serialization"
+                           " to continue SfM reconstruction pipeline");
+DEFINE_string(output, "sfm_out.bin", "--output=\"<filename>\" : Destination"
+                      " for SfM serialization");
+DEFINE_bool(h, false, "Show help");
+
+DECLARE_bool(help);
+DECLARE_bool(helpshort);
+
+
+
 namespace fs = boost::filesystem;
 
 void MakeCameras(std::shared_ptr<DObject>& cameras,
@@ -71,6 +86,32 @@ int main(int argc, char* argv[]) {
 
   // Logger for Ceres Solver
   google::InitGoogleLogging(argv[0]);
+
+  
+  gflags::SetUsageMessage("SfM Reconstruction for Apolloscape ZPark dataset");
+  gflags::SetVersionString("0.0.42");
+
+  // Workaround for --help to show only --helpshort
+  // https://github.com/gflags/gflags/issues/43#issuecomment-168280647
+  gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
+  if (FLAGS_help || FLAGS_h) {
+    FLAGS_help = false;
+    FLAGS_helpshort = true;
+  }
+  gflags::HandleCommandLineHelpFlags();
+
+  std::cout << "restore_flag=" << FLAGS_restore << std::endl;
+  std::cout << "output_flag=" << FLAGS_output << std::endl;
+
+  if (FLAGS_restore.empty()) {
+    std::cout << "NO RESTORE\n";
+  } else {
+    std::cout << "TRY TO RESTORE FROM: " << FLAGS_restore << std::endl;
+  }
+
+  // gflags::ShutDownCommandLineFlags();
+  // return EXIT_SUCCESS;
+  
 
   CameraIntrinsics intr1;
   intr1.fx = 1450.317230113;
@@ -88,69 +129,72 @@ int main(int argc, char* argv[]) {
 
   std::vector<CameraIntrinsics> camera_intrs = {intr1, intr2};
 
-  /*  
+  
   SfM3D sfm(camera_intrs);
 
-  for (auto record : kRecords) {
-    std::cout << "==== r = " << record << std::endl;
+  if (FLAGS_restore.empty()) {
+    // Create new run
+    for (auto record : kRecords) {
+      std::cout << "==== r = " << record << std::endl;
 
-    fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-        / fs::path("pose") / fs::path(record) / fs::path(kCamera1PoseFile);
-    fs::path camera2_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-        / fs::path("pose") / fs::path(record) / fs::path(kCamera2PoseFile);
-    std::cout << "Camera 1 path: " << camera1_path << std::endl;
-    std::cout << "Camera 2 path: " << camera2_path << std::endl;
+      fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+          / fs::path("pose") / fs::path(record) / fs::path(kCamera1PoseFile);
+      fs::path camera2_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+          / fs::path("pose") / fs::path(record) / fs::path(kCamera2PoseFile);
+      std::cout << "Camera 1 path: " << camera1_path << std::endl;
+      std::cout << "Camera 2 path: " << camera2_path << std::endl;
 
-    fs::path camera1_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-        / fs::path("image") / fs::path(record) / fs::path("Camera_1");
-    fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
-        / fs::path("image") / fs::path(record) / fs::path("Camera_2");
+      fs::path camera1_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+          / fs::path("image") / fs::path(record) / fs::path("Camera_1");
+      fs::path camera2_image_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
+          / fs::path("image") / fs::path(record) / fs::path("Camera_2");
 
-    std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path,
-                                                          camera1_image_path,
-                                                          record, 1);
-    std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path,
-                                                          camera2_image_path,
-                                                          record, 2);
+      std::vector<ImageData> camera1_poses = ReadCameraPoses(camera1_path,
+                                                            camera1_image_path,
+                                                            record, 1);
+      std::vector<ImageData> camera2_poses = ReadCameraPoses(camera2_path,
+                                                            camera2_image_path,
+                                                            record, 2);
 
-    
+      
 
-    std::cout << "sizes 1 = " << camera1_poses.size() << std::endl;
-    std::cout << "sizes 2 = " << camera2_poses.size() << std::endl;
+      std::cout << "sizes 1 = " << camera1_poses.size() << std::endl;
+      std::cout << "sizes 2 = " << camera2_poses.size() << std::endl;
 
-    std::cout << "Camera Poses 1: " << camera1_poses[1] << std::endl;
-    std::cout << "Camera Poses 2: " << camera2_poses[1] << std::endl;
+      std::cout << "Camera Poses 1: " << camera1_poses[1] << std::endl;
+      std::cout << "Camera Poses 2: " << camera2_poses[1] << std::endl;
 
-    // == Slice record - for testing ==
-    int p_camera_pose = 0; // 24
-    int p_camera_start = 0; //22 ==== 36 or 37 - 35
-    int p_camera_finish = 120; //25 ===== 39 or 40  - 39
+      // == Slice record - for testing ==
+      int p_camera_pose = 0; // 24
+      int p_camera_start = 0; //22 ==== 36 or 37 - 35
+      int p_camera_finish = 10; //25 ===== 39 or 40  - 39
 
-    p_camera_start = std::min(p_camera_start,
-                              static_cast<int>(camera1_poses.size()));
-    p_camera_finish = std::min(p_camera_finish,
-                              static_cast<int>(camera1_poses.size()));
+      p_camera_start = std::min(p_camera_start,
+                                static_cast<int>(camera1_poses.size()));
+      p_camera_finish = std::min(p_camera_finish,
+                                static_cast<int>(camera1_poses.size()));
 
-    std::vector<ImageData> camera1_poses_s, camera2_poses_s;
-    camera1_poses_s.insert(camera1_poses_s.begin(),
-                          camera1_poses.begin() + p_camera_start, 
-                          camera1_poses.begin() + p_camera_finish);
-    camera2_poses_s.insert(camera2_poses_s.begin(),
-                          camera2_poses.begin() + p_camera_start, 
-                          camera2_poses.begin() + p_camera_finish);
-    sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 1);
+      std::vector<ImageData> camera1_poses_s, camera2_poses_s;
+      camera1_poses_s.insert(camera1_poses_s.begin(),
+                            camera1_poses.begin() + p_camera_start, 
+                            camera1_poses.begin() + p_camera_finish);
+      camera2_poses_s.insert(camera2_poses_s.begin(),
+                            camera2_poses.begin() + p_camera_start, 
+                            camera2_poses.begin() + p_camera_finish);
+      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 1);
 
-  }
+    }
 
-  // return EXIT_SUCCESS;
+    // return EXIT_SUCCESS;
 
 
-  sfm.ExtractFeatures();
+    sfm.ExtractFeatures();
 
-  sfm.MatchImageFeatures(60);
+    sfm.MatchImageFeatures(60);
 
-  sfm.InitReconstruction();
-  */
+    sfm.InitReconstruction();
+
+  } else {
 
   // sfm.ReconstructAll();
 
@@ -163,16 +207,19 @@ int main(int argc, char* argv[]) {
   //   std::cout << "Serializing SFM!!!! - DONE\n";
   // }
 
-  SfM3D sfm;
-  {
+  //SfM3D sfm;
+  //{
     std::cout << "De-Serializing SFM!!!!\n";
-    std::ifstream file("sfm_out_2.bin", std::ios::binary);
+    // std::ifstream file("sfm_out_2.bin", std::ios::binary);
+    std::ifstream file(FLAGS_restore, std::ios::binary);
     cereal::BinaryInputArchive archive(file);
     archive(sfm);
     sfm.RestoreImages();
     sfm.PrintFinalStats();
     std::cout << "De-Serializing SFM!!!! - DONE\n";
   }
+
+
 
   // std::thread first(&SfM3D::ReconstructAll, std::ref(sfm)); // sfm.ReconstructAll
 
@@ -546,15 +593,24 @@ int main(int argc, char* argv[]) {
   vis_prep_thread.join();
 
 
+  std::string output_file = FLAGS_output;
+  if (!FLAGS_restore.empty()) {
+    output_file = FLAGS_restore;
+  }
+
+
   {
-    std::cout << "Serializing SFM!!!!\n";
-    std::ofstream file("sfm_out_2.bin", std::ios::binary);
+    std::cout << "Serializing SFM!!!! to: " << output_file << std::endl;
+    std::ofstream file(output_file, std::ios::binary);
     cereal::BinaryOutputArchive archive(file);
     archive(sfm);
     sfm.PrintFinalStats();
-    std::cout << "Serializing SFM!!!! - DONE\n";
+    std::cout << "Serializing SFM!!!! - DONE (" 
+              << output_file << ")" << std::endl;
   }
 
+  // Clear Gflags memory
+  gflags::ShutDownCommandLineFlags();
 
   return EXIT_SUCCESS; 
 

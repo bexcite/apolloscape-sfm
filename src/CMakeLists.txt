@@ -73,7 +73,7 @@ set(3D_RECON_NAME 3d_recon)
 add_executable(${3D_RECON_NAME} 3d_recon.cpp ) #  sfm.cpp sfm_common.cpp
 set_property(TARGET ${3D_RECON_NAME} PROPERTY CXX_STANDARD 11)
 message("3d_recon_name = " ${3D_RECON_NAME})
-target_link_libraries(${3D_RECON_NAME} PUBLIC cv_gl_lib cereal)
+target_link_libraries(${3D_RECON_NAME} PUBLIC cv_gl_lib cereal gflags)
 set_target_properties(${3D_RECON_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
