@@ -299,6 +299,9 @@ void SfM3D::InitReconstruction() {
   map_.clear();
 
   TriangulatePointsFromViews(first_id, second_id, map_);
+
+  CombineMapComponents(map_);
+
   OptimizeMap(map_);
   
   // Add used images
@@ -390,6 +393,10 @@ void SfM3D::TriangulatePointsFromViews(const int first_id,
         = image_matches_[match_index].match[i].queryIdx;
     wp.views[image_matches_[match_index].image_index.second] 
         = image_matches_[match_index].match[i].trainIdx;
+    std::pair<int, int> vk = std::make_pair(
+          image_matches_[match_index].image_index.first,
+          image_matches_[match_index].match[i].queryIdx);
+    wp.component_id = ccomp_.Find(vk);
     map.push_back(wp);
       
     // }
@@ -412,15 +419,17 @@ void SfM3D::TriangulatePointsFromViews(const int first_id,
 
 void SfM3D::OptimizeMap(Map3D& map) {
   // std::cout << "SfM: Optimize Map, map.size = " << map.size() << std::endl;
-  // double all_error;
+  double all_error;
   // all_error = ::GetReprojectionError(map, cameras_, image_features_);
-  // std::cout << "all_error = " << all_error << std::endl;
+  // std::cout << ", err_before = " << all_error;
   // == Optimize Bundle ==
   // TODO!!!!!!!!!!!!!
   ::OptimizeBundle(map, cameras_, image_features_);
   // all_error = ::GetReprojectionError(map, cameras_, image_features_);
-  // std::cout << "all_error = " << all_error << std::endl;
+  // std::cout << ", err_after = " << all_error << std::endl;
 }
+
+
 
 void SfM3D::ReconstructNextView(const int next_img_id) {
 
@@ -510,7 +519,9 @@ void SfM3D::ReconstructNextView(const int next_img_id) {
   */
 
   map_mutex.lock();
-  ::MergeToTheMap(map_, view_map, ccomp_);
+  // ::MergeToTheMap(map_, view_map, ccomp_);
+  // ::MergeToTheMapImproved(map_, view_map, ccomp_);
+  MergeAndCombinePoints(map_, view_map);
   map_mutex.unlock();
 
   std::cout << ", map = " << map_.size();
@@ -551,7 +562,9 @@ void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
   std::cout << ", view_map = " << view_map.size();
 
   map_mutex.lock();
-  ::MergeToTheMap(map_, view_map, ccomp_);
+  // ::MergeToTheMap(map_, view_map, ccomp_);
+  // ::MergeToTheMapImproved(map_, view_map, ccomp_);
+  MergeAndCombinePoints(map_, view_map);
   std::cout << ", map = " << map_.size();
   map_mutex.unlock();
 
@@ -578,6 +591,13 @@ void SfM3D::ReconstructAll() {
 
   while (todo_views_.size() > 0) {
 
+
+    std::cout << "TODO_VIEWS: ";
+    for (auto v : todo_views_) {
+      std::cout << v << ",";
+    }
+    std::cout << std::endl;
+
     // check finish flag and finish)
     if (proc_status_.load() == FINISH) {
       std::cout << "FINISJ!!!\n";
@@ -588,24 +608,44 @@ void SfM3D::ReconstructAll() {
 
     auto t0 = high_resolution_clock::now();
 
-    int next_img_id = ::GetNextBestView(map_, todo_views_,
-        ccomp_, image_matches_, matches_index_);
+    // int next_img_id1 = ::GetNextBestView(map_, todo_views_,
+    //     ccomp_, image_matches_, matches_index_);
+
+    int next_img_id = ::GetNextBestViewByViews(map_, todo_views_,
+        used_views_, image_matches_, matches_index_);
 
     auto t1 = high_resolution_clock::now();
     auto dur_gnbv = duration_cast<microseconds>(t1 - t0).count() / 1e+6;
-    std::cout << ">>>>>>>> dur_gnbv = " << dur_gnbv << std::endl;
+    std::cout << ">>>>>>>> dur_gnbv = " << dur_gnbv 
+              << ", next_img_id = " << next_img_id 
+              // << ", next_img_id1 = " << next_img_id1 
+              << std::endl;
+
+    
 
 
     if (next_img_id < 0) {
       // Didn't find connected views, so proceed with the best pair left
 
       int most_match_id = FindMaxSizeMatch(true);
+
+      if (most_match_id < 0) {
+        std::cerr << "ERROR: matches not found for left imgs ";
+        for (auto v : todo_views_) {
+          std::cerr << v << ",";
+        }
+        std::cerr << std::endl;
+        todo_views_.clear();
+        break;
+      }
+
       std::cout << "OTHER::: most_match = " 
                 << image_matches_[most_match_id].image_index.first 
                 << " - " << image_matches_[most_match_id].image_index.second
                 << ", " << image_matches_[most_match_id].match.size()
                 << " (id: " << most_match_id << ")"
                 << std::endl;
+      
 
       auto t2 = high_resolution_clock::now();
       auto dur_fmsm = duration_cast<microseconds>(t2 - t1).count() / 1e+6;
@@ -639,6 +679,7 @@ void SfM3D::ReconstructAll() {
     std::cout << "\nt_left = " << view_avg * todo_views_.size();
     
     std::cout << std::endl;
+    // break;
 
   }
 

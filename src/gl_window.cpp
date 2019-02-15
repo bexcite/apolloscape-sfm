@@ -99,7 +99,7 @@ bool GLWindow::IsRunning() {
 
   // FPS calc and output
   delta_time_sum_ += delta_time;
-  int freq = 100;
+  int freq = 400;
   if (frames_ % freq == 0) {
     float fps = freq / delta_time_sum_;
     std::cout << "\n\n======== FPS = " << fps << ","

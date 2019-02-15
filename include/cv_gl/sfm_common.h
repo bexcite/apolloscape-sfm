@@ -35,6 +35,7 @@ struct CameraInfo {
 struct WorldPoint3D {
   cv::Point3d pt;
   std::map<int, int> views;
+  int component_id;
 };
 
 struct Point3DColor {
@@ -107,10 +108,26 @@ int GetNextBestView(const Map3D& map,
     const std::vector<Matches>& image_matches,
     const std::map<std::pair<int, int>, int>& matches_index);
 
+int GetNextBestViewByViews(const Map3D& map, 
+    const std::unordered_set<int>& todo_views, 
+    const std::unordered_set<int>& used_views,
+    const std::vector<Matches>& image_matches,
+    const std::map<std::pair<int, int>, int>& matches_index);
+
+
 // TODO: Make CComponents const
 void MergeToTheMap(Map3D& map, 
                    const Map3D& local_map, 
                    CComponents<std::pair<int, int> >& ccomp);
+
+void MergeToTheMapImproved(Map3D& map,
+                           const Map3D& local_map,
+                           CComponents<std::pair<int, int> >& ccomp);
+
+void CombineMapComponents(Map3D& map, const double max_keep_dist = 20.0);
+void MergeAndCombinePoints(Map3D& map,
+                           const Map3D& local_map);
+
 
 void GetKeyPointColors(const cv::Mat& img, 
                        const cv::KeyPoint& point, 
@@ -122,7 +139,8 @@ void GetKeyPointColors(const cv::Mat& img,
 
 
 // ============ Ceres Types / Functions ====
-void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const std::vector<Features>& features);
+void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras,
+                    const std::vector<Features>& features);
 
 
 

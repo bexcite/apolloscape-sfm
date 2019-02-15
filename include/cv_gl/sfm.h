@@ -129,6 +129,7 @@ private:
                                   Map3D& map);
   void OptimizeCurrentMap() { OptimizeMap(map_); }
   void OptimizeMap(Map3D& map);
+  
 
   void ReconstructNextView(const int next_img_id);
   void ReconstructNextViewPair(const int first_id, const int second_id);

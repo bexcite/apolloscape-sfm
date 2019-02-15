@@ -924,9 +924,9 @@ int GetNextBestView(const Map3D& map,
 
 
     }
-    // std::cout << "view = " << view << ", cnt = " << cnt 
-    //           << ", match_size = " << match_size
-    //           << std::endl;
+    std::cout << "view = " << view << ", cnt = " << cnt 
+              << ", match_size = " << match_size
+              << std::endl;
     if (match_cnt < cnt) {
       view_id = view;
       match_cnt = cnt;
@@ -942,6 +942,41 @@ int GetNextBestView(const Map3D& map,
 
 }
 
+
+int GetNextBestViewByViews(const Map3D& map, 
+    const std::unordered_set<int>& todo_views, 
+    const std::unordered_set<int>& used_views,
+    const std::vector<Matches>& image_matches,
+    const std::map<std::pair<int, int>, int>& matches_index) {
+
+  int view_id = -1;
+  int max_match_cnt = 0;
+  for (auto it = todo_views.begin(); it != todo_views.end(); ++it) {
+    int view = (*it);
+    int match_sum = 0;
+    for (auto itc = used_views.begin(); itc != used_views.end(); ++itc) {
+      int used_view = (*itc);
+      std::pair<int, int> m_ind = std::make_pair(view, used_view);
+      auto m = matches_index.find(m_ind);
+      if (m == matches_index.end()) {
+        continue;
+      }
+      match_sum += image_matches[m->second].match.size();
+      // std::cout << "  " << view << " - " << used_view <<  " = " 
+      //           << image_matches[m->second].match.size()
+      //           << std::endl;
+    }
+    if (max_match_cnt < match_sum) {
+      view_id = view;
+      max_match_cnt = match_sum;
+      // std::cout << "cand view = " << view << ", match_sum = " 
+      //           << match_sum << std::endl;
+    }
+  }
+  return view_id;
+}
+
+
 // TODO: Make CComponents const!
 void MergeToTheMap(Map3D& map,
                    const Map3D& local_map,
@@ -951,10 +986,14 @@ void MergeToTheMap(Map3D& map,
 
   auto t0 = high_resolution_clock::now();
 
+  Map3D map_temp;
+
   int connect_cnt = 0;
   int idx = 0;
+  std::cout << std::endl;
   for (auto lp: local_map) {
     std::pair<int, int> lp_view = (*lp.views.begin());
+    // std::cout << idx << " : lp = " << lp;
 
     int cnt = 0;
     bool skip = false;
@@ -965,12 +1004,25 @@ void MergeToTheMap(Map3D& map,
       WorldPoint3D& wp = map[i];
       std::pair<int, int> wp_view = (*wp.views.begin());
 
+      // if (idx == 46) {
+      //   std::cout << std::endl << "TEST: lp = "
+      //             << lp << ", wp = " << wp << std::endl;
+      // }
+
       if (ccomp.Connected(lp_view, wp_view)) {
         double dist = cv::norm(lp.pt - wp.pt);
-        // std::cout << "[" << cnt <<  "] Connected: \n  lp = " << lp
+        // std::cout << "[" << idx <<  "] Connected: \n  lp = " << lp
         //           << "  wp = " << wp 
         //           << "  dist = " << dist << std::endl;
+        
+        // std::cout << " c";
+
         ++looked_points;
+
+        // std::cout << "[" << idx <<  "] Connected: \n  comp_id = " 
+        //           << lp.component_id
+        //           << ", looked_points = " << looked_points
+        //           << std::endl;
         if (dist < min_dist) {
           min_dist = dist;
           min_dist_id = i;
@@ -1030,6 +1082,7 @@ void MergeToTheMap(Map3D& map,
         // std::cout << "Updated wp = " << wp << std::endl;
         skip = true;
         ++connect_cnt;
+        // std::cout << " C-" << connect_cnt;
       } else {
         // std::cout << idx << "] DISCARD!!!! min_dist = " << min_dist << std::endl;
       }
@@ -1037,18 +1090,232 @@ void MergeToTheMap(Map3D& map,
     }
 
     if (/*cnt == 0 && */ !skip) {
-      map.push_back(lp);
+      // map.push_back(lp);
+      map_temp.push_back(lp);
+      // std::cout << " M";
     } else {
       // std::cout << idx << "] skip point\n";
     }
+
+    // std::cout << std::endl;
     
     ++idx;
   }
+
+  // Copy from temp 
+  for (auto& mt : map_temp) {
+    map.push_back(mt);
+  }
+
   auto t1 = high_resolution_clock::now();
   auto dur = duration_cast<microseconds>(t1 - t0);
   std::cout << ", merge_connected = " << connect_cnt << ","
             << ", merge_time = " << dur.count() / 1e+6;
 }
+
+void MergeToTheMapImproved(Map3D& map,
+                           const Map3D& local_map,
+                           CComponents<std::pair<int, int> >& ccomp) {
+  using namespace std::chrono;
+
+  auto t0 = high_resolution_clock::now();
+
+  // std::cout << "\nCombine maps in Merge:\n";
+  // Map3D local_map1 = local_map;
+  // CombineMapComponents(local_map1);
+
+  auto world_point_comp = [](const WorldPoint3D& wp1,
+      const WorldPoint3D& wp2) {
+          return wp1.component_id < wp2.component_id;
+  };
+
+  auto world_point_val_comp = [](const WorldPoint3D& wp1,
+      const int& v) {
+          return wp1.component_id < v;
+  };
+
+  // Sort map by component
+  std::sort(map.begin(), map.end(), world_point_comp);
+
+  // std::cout << "map_ids = ";
+  // for (auto m : map) {
+  //   std::cout << m.component_id << ", ";
+  // }
+  // std::cout << std::endl;
+
+  auto el = std::lower_bound(map.begin(), map.end(), 1976, world_point_val_comp);
+  // std::cout << "Found: " << (*el) << std::endl;
+
+
+  Map3D map_temp;
+
+
+  int connect_cnt = 0;
+  int idx = 0;
+  int cnt = 0;
+  for (auto lp: local_map) {
+    // std::cout << cnt << " : lp = " << lp;
+    double min_dist = 10000.0;
+    // int min_dist_id = -1;
+    // WorldPoint3D min_wp;
+    // bool min_wp_set = false;
+    int looked_points = 0;
+    std::vector<WorldPoint3D>::iterator min_wp_it = map.end();
+    std::pair<int, int> lp_view = (*lp.views.begin());
+    int comp_id = ccomp.Find(lp_view);
+    // if (cnt == 46) {
+    //   std::cout << "look for comp_id = " << comp_id << std::endl;
+    // }
+    auto first_el = map.begin();
+    auto el = std::lower_bound(first_el, map.end(), comp_id, world_point_val_comp);
+    // if (cnt == 46) {
+    //   std::cout << "Found: " << (*el) << std::endl;
+    // }
+    // std::cout << std::endl << "TEST: lp = " << lp
+    //           << std::endl;
+    while (el != map.end() && el->component_id == comp_id) {
+      // 
+      // std::cout << "connected: \n";
+      // std::cout << "  lp: " << lp << std::endl;
+      // std::cout << "  wp: " << (*el) << std::endl;
+
+      double dist = cv::norm(lp.pt - el->pt);
+      // std::cout << "[" << cnt <<  "] Connected: \n  lp = " << lp
+      //           << "  wp = " << (*el) 
+      //           << "  dist = " << dist << std::endl;
+
+      ++looked_points;
+      
+      // std::cout << "[" << cnt <<  "] Connected: \n  comp_id = " 
+      //             << lp.component_id
+      //             << ", looked_points = " << looked_points
+      //             << std::endl;
+      
+      // std::cout << " c";
+      
+      if (dist < min_dist) {
+        min_dist = dist;
+        // min_dist_id = i;
+        // min_wp = (*el);
+        // min_wp_set = true;
+        min_wp_it = el;
+      }
+
+      el = std::lower_bound(std::next(el), map.end(), comp_id, 
+                            world_point_val_comp);
+    }
+
+    if (min_wp_it != map.end()) {
+      if (min_dist < 20.0) {
+        // std::cout << cnt << "] CONNECT!!!! min_dist = " << min_dist << std::endl;
+        WorldPoint3D& wp = (*min_wp_it);
+        // wp.pt = (wp.pt + lp.pt) * 0.5;
+          // Merge lp.views to the wp
+          for (auto view : lp.views) {
+            wp.views.insert(view);
+          }
+          // std::cout << "Updated wp = " << wp << std::endl;
+          ++connect_cnt;
+          // std::cout << " C-" << connect_cnt;
+      }
+    } else {
+      // map.push_back(lp);
+      map_temp.push_back(lp);
+      // std::cout << " M";
+    }
+
+    // std::cout << std::endl;
+    
+    ++cnt;
+  }
+
+  // Copy from temp 
+  for (auto& mt : map_temp) {
+    map.push_back(mt);
+  }
+
+  auto t1 = high_resolution_clock::now();
+  auto dur = duration_cast<microseconds>(t1 - t0);
+  std::cout << ", merge_improved_connected = " << connect_cnt << ","
+            << ", merge_improved_time = " << dur.count() / 1e+6;
+
+}
+
+void CombineMapComponents(Map3D& map, const double max_keep_dist) {
+  auto world_point_comp = [](const WorldPoint3D& wp1,
+      const WorldPoint3D& wp2) {
+          return wp1.component_id < wp2.component_id;
+  };
+
+  auto world_point_val_comp = [](const WorldPoint3D& wp1,
+      const int& v) {
+          return wp1.component_id < v;
+  };
+
+  // Sort map by component
+  std::sort(map.begin(), map.end(), world_point_comp);
+
+  // std::cout << "map_ids = ";
+  // for (auto m : map) {
+  //   std::cout << m.component_id << ", ";
+  // }
+  // std::cout << std::endl;
+
+  auto first = map.begin();
+  while (first != map.end()) {
+    auto second = std::next(first);
+    if (second == map.end()) break;
+    if (first->component_id == second->component_id) {
+      double dist = cv::norm(first->pt - second->pt);
+      // std::cout << "comp: " << first->component_id
+      //           << ", dist = " << dist << std::endl;
+      if (dist < max_keep_dist) {
+        // std::cout << "   merge\n";
+        // combine second to first
+        first->pt = (first->pt + second->pt) * 0.5;
+        // Merge second.views to the first
+        for (auto view : second->views) {
+          first->views.insert(view);
+        }
+        map.erase(second);
+        // ++first;
+      } else {
+        // discrard all further with that id
+        // std::cout << "   discard\n";
+        int discard_id = first->component_id;
+        while (first->component_id == discard_id) {
+          first = map.erase(first);
+        }
+      }
+    } else {
+      ++first;
+    }
+  }
+
+  // std::cout << "map_ids (after) = ";
+  // for (auto m : map) {
+  //   std::cout << m.component_id << ", ";
+  // }
+  // std::cout << std::endl;
+
+}
+
+void MergeAndCombinePoints(Map3D& map,
+                           const Map3D& local_map) {
+
+  using namespace std::chrono;
+  auto t0 = high_resolution_clock::now();
+
+  // std::cout << "\nMerge AND Combine Points:\n";
+  map.insert(map.end(), local_map.begin(), local_map.end());
+  CombineMapComponents(map);
+
+  auto t1 = high_resolution_clock::now();
+  auto dur = duration_cast<microseconds>(t1 - t0);
+  std::cout << ", merge_combine_time = " << dur.count() / 1e+6;
+}
+
+
 
 
 std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp) {
@@ -1062,6 +1329,7 @@ std::ostream& operator<<(std::ostream& os, const WorldPoint3D& wp) {
     }
     os << "[" << v.first << "," << v.second << "]";
   }
+  os << ", comp_id = " << wp.component_id;
   return os;
 }
 
@@ -1145,6 +1413,7 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
           features[view.first].keypoints[view.second].pt);
       problem.AddResidualBlock(cost_function,
           NULL,
+          // new ceres::CauchyLoss(0.5),
           &points[3 * i]);
     }
   }
@@ -1169,7 +1438,7 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = 500;
   options.eta = 1e-2;
-  options.max_solver_time_in_seconds = 600;
+  options.max_solver_time_in_seconds = 1200;
   options.logging_type = ceres::LoggingType::SILENT;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

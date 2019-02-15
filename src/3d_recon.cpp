@@ -41,11 +41,11 @@ const double kImageHeight = 2056.0;
 const float kGlobalScale = 100.0f;
 
 const std::vector<std::string> kRecords = {
-  // "Record001",
-  "Record002",
-  "Record003",
-  // "Record004",
-  "Record006",
+  "Record001",
+  // "Record002",
+  // "Record003",
+  "Record004",
+  // "Record006",
   // "Record007",
   // "Record008",
   // "Record009",
@@ -166,8 +166,8 @@ int main(int argc, char* argv[]) {
 
       // == Slice record - for testing ==
       int p_camera_pose = 0; // 24
-      int p_camera_start = 0; //22 ==== 36 or 37 - 35
-      int p_camera_finish = 10; //25 ===== 39 or 40  - 39
+      int p_camera_start = 20; //22 ==== 36 or 37 - 35
+      int p_camera_finish = 30; //25 ===== 39 or 40  - 39
 
       p_camera_start = std::min(p_camera_start,
                                 static_cast<int>(camera1_poses.size()));
@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
       camera2_poses_s.insert(camera2_poses_s.begin(),
                             camera2_poses.begin() + p_camera_start, 
                             camera2_poses.begin() + p_camera_finish);
-      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 1);
+      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 3);
 
     }
 
@@ -220,8 +220,18 @@ int main(int argc, char* argv[]) {
   }
 
 
+  // using namespace std::chrono;
+  // auto t00 = high_resolution_clock::now();
+  // sfm.ReconstructAll();
+  // sfm.PrintFinalStats();
+  // auto t11 = high_resolution_clock::now();
+  // auto durt = duration_cast<microseconds>(t11 - t00);
+  // std::cout << "TOTAL RECON_ALL TIME: " << durt.count() / 1e+6 << std::endl;
+  // return EXIT_SUCCESS;
 
-  // std::thread first(&SfM3D::ReconstructAll, std::ref(sfm)); // sfm.ReconstructAll
+  // sfm.ReconstructAll();
+  // return EXIT_SUCCESS;
+
 
   std::thread recon_thread([&sfm]() {
     sfm.ReconstructAll();
