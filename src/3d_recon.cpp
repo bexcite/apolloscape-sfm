@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
       camera2_poses_s.insert(camera2_poses_s.begin(),
                             camera2_poses.begin() + p_camera_start, 
                             camera2_poses.begin() + p_camera_finish);
-      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 3);
+      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 1);
 
     }
 

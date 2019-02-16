@@ -1262,35 +1262,61 @@ void CombineMapComponents(Map3D& map, const double max_keep_dist) {
   // std::cout << std::endl;
 
   auto first = map.begin();
-  while (first != map.end()) {
-    auto second = std::next(first);
-    if (second == map.end()) break;
+  auto second = std::next(first);
+  auto w = map.begin();
+  bool discard_first = false;
+  while (second != map.end()) {
+    // auto second = std::next(first);
+    // if (second == map.end()) break;
+    discard_first = false;
     if (first->component_id == second->component_id) {
       double dist = cv::norm(first->pt - second->pt);
       // std::cout << "comp: " << first->component_id
       //           << ", dist = " << dist << std::endl;
       if (dist < max_keep_dist) {
-        // std::cout << "   merge\n";
         // combine second to first
+        // std::cout << "   merge\n";
         first->pt = (first->pt + second->pt) * 0.5;
         // Merge second.views to the first
         for (auto view : second->views) {
           first->views.insert(view);
         }
-        map.erase(second);
+        // map.erase(second);
+        ++second;
         // ++first;
       } else {
         // discrard all further with that id
         // std::cout << "   discard\n";
         int discard_id = first->component_id;
-        while (first->component_id == discard_id) {
-          first = map.erase(first);
+        while (first->component_id == discard_id && second != map.end()) {
+          // first = map.erase(first);
+          first = second;
+          second = std::next(first);
+        }
+        if (first->component_id == discard_id) {
+          discard_first = true;
         }
       }
     } else {
-      ++first;
+      // keep
+      if (first != w) {
+        *w = std::move(*first);
+      }
+      first = second;
+      second = std::next(first);
+      ++w;
     }
   }
+
+  // keep the last first element)
+  if (!discard_first) {
+    if (first != w) {
+      *w = std::move(*first);
+    }
+    ++w;
+  }
+  
+  map.erase(w, map.end());
 
   // std::cout << "map_ids (after) = ";
   // for (auto m : map) {

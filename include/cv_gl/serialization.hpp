@@ -63,11 +63,13 @@ void load(Archive& archive, CameraInfo& cam_info) {
 // == WorldPoint3D =========================
 template<class Archive>
 void save(Archive& archive, const WorldPoint3D& point) {
-  archive(point.pt, point.views);
+  // archive(point.pt, point.views);
+  archive(point.pt, point.views, point.component_id);
 }
 template<class Archive>
 void load(Archive& archive, WorldPoint3D& point) {
-  archive(point.pt, point.views);
+  // archive(point.pt, point.views);
+  archive(point.pt, point.views, point.component_id);
 }
 
 // == Atomic ============================
