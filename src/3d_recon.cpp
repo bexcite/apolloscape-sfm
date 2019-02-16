@@ -166,8 +166,8 @@ int main(int argc, char* argv[]) {
 
       // == Slice record - for testing ==
       int p_camera_pose = 0; // 24
-      int p_camera_start = 20; //22 ==== 36 or 37 - 35
-      int p_camera_finish = 30; //25 ===== 39 or 40  - 39
+      int p_camera_start = 21; //22 ==== 36 or 37 - 35
+      int p_camera_finish = 25; //25 ===== 39 or 40  - 39
 
       p_camera_start = std::min(p_camera_start,
                                 static_cast<int>(camera1_poses.size()));
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
 
     sfm.MatchImageFeatures(60);
 
-    sfm.InitReconstruction();
+    // sfm.InitReconstruction();
 
   } else {
 
@@ -230,7 +230,7 @@ int main(int argc, char* argv[]) {
   // return EXIT_SUCCESS;
 
   // sfm.ReconstructAll();
-  // return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 
 
   std::thread recon_thread([&sfm]() {

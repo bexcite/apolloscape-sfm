@@ -1,5 +1,8 @@
 
 #include <algorithm>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include "cv_gl/utils.hpp"
 #include "cv_gl/sfm.h"
@@ -145,10 +148,160 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
     GenerateAllPairs();
   }
 
+  using namespace std::chrono;
+  auto t0 = high_resolution_clock::now();
+
+  int capacity = std::max(
+      static_cast<int>(std::thread::hardware_concurrency() - 2), 1);
+  std::cout << "image_pairs_.size = " << image_pairs_.size() << std::endl;
+  capacity = std::min(capacity, static_cast<int>(image_pairs_.size()));
+  std::cout << "Concurrency = " << capacity << std::endl;
+
   int total_matched_points = 0;
-  int most_match = 0;
-  int most_match_id = -1;
   int skipped_matches = 0;
+
+  
+
+  std::atomic<int> next_idx(0);
+  std::vector<std::thread> matcher_threads;
+
+  std::mutex cout_mu;
+  std::mutex acc_mu;
+
+  for (int i = 0; i < capacity; ++i) {
+    auto matcher = [this, &next_idx, &cout_mu, &acc_mu,
+                    &skipped_matches, &total_matched_points,
+                    skip_thresh](int thread_id) {
+      int idx;
+      while ((idx = next_idx++) < image_pairs_.size()) {
+
+        // cout_mu.lock();
+        // std::cout << "thread " << thread_id << " : "
+        //           << "process " << idx 
+        //           << " = " << image_pairs_[idx]
+        //           << std::endl;
+        // cout_mu.unlock();
+
+        
+        ImagePair ip = image_pairs_[idx];
+
+        int img_first = ip.first;
+        int img_second = ip.second;
+
+        if (!IsPairInOrder(img_first, img_second)) {
+          std::swap(img_first, img_second);
+        }
+
+        ImageData& im_data1 = image_data_[img_first];
+        ImageData& im_data2 = image_data_[img_second];
+        Features& features1 = image_features_[img_first];
+        Features& features2 = image_features_[img_second];
+        CameraInfo& camera_info1 = cameras_[img_first];
+        CameraInfo& camera_info2 = cameras_[img_second];
+
+        Matches matches;
+        matches.image_index.first = img_first;
+        matches.image_index.second = img_second;
+
+        bool from_cache = true;
+        // bool tst = true;
+        if(!cache_storage.GetImageMatches(im_data1, im_data2, matches)) {
+          from_cache = false;
+          ::ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
+          // Save to Cache
+          cache_storage.SaveImageMatches(im_data1, im_data2, matches);
+        }
+
+        // Restore indexes to the current run
+        matches.image_index.first = img_first;
+        matches.image_index.second = img_second;    
+
+        // cout_mu.lock();
+        // std::cout << "thread " << thread_id << " : ";
+        // std::cout << "Match: "
+        //           << "(" << img_first << ", " << img_second << ")"
+        //           << " [" << (from_cache ? "R" : "C") << "]"
+        //           << ": matches.size = " << matches.match.size()
+        //           << std::endl;
+        // cout_mu.unlock();
+                  // << std::endl;
+
+        // Don't add empty or small matches
+        if (matches.match.size() < skip_thresh) { 
+          std::lock_guard<std::mutex> lck(acc_mu);
+          ++skipped_matches;
+          
+          cout_mu.lock();
+          std::cout << "thread " << thread_id << " : ";
+          std::cout << "Match: "
+                  << "(" << img_first << ", " << img_second << ")"
+                  << " [" << (from_cache ? "R" : "C") << "]"
+                  << ": matches.size = " << matches.match.size();
+                  // << std::endl;
+          std::cout << ", skipped ...\n";
+          cout_mu.unlock();
+          continue;
+        }
+
+
+        acc_mu.lock();
+        image_matches_.push_back(matches);
+
+        // put index into matches_index_
+        auto p1 = std::make_pair(img_first, img_second);
+        auto p2 = std::make_pair(img_second, img_first);
+        matches_index_.insert(
+            std::make_pair(p1, image_matches_.size() - 1));
+        matches_index_.insert(
+            std::make_pair(p2, image_matches_.size() - 1));
+
+        int mid = image_matches_.size() - 1;
+        int tmp = total_matched_points;
+
+        // Connect keypoints and images for a quick retrieval later
+        for (int i = 0; i < matches.match.size(); ++i) {
+          IntPair p1 = std::make_pair(
+              matches.image_index.first,
+              matches.match[i].queryIdx);
+          IntPair p2 = std::make_pair(
+              matches.image_index.second, 
+              matches.match[i].trainIdx);
+          // std::cout << "union: " << p1 << ", " << p2 << std::endl;
+          ccomp_.Union(p1, p2);
+        }
+
+        acc_mu.unlock();
+
+        cout_mu.lock();
+        total_matched_points += matches.match.size();
+        std::cout << "thread " << thread_id << " : ";
+        std::cout << "Match: "
+                  << "(" << img_first << ", " << img_second << ")"
+                  << " [" << (from_cache ? "R" : "C") << "]"
+                  << ": matches.size = " << matches.match.size();
+                  // << std::endl;
+        std::cout << ", total_matched_points = " << total_matched_points 
+                  << ", id: " << image_matches_.size() - 1
+                  << std::endl;
+        // std::cout << "thread " << thread_id << " : waiting\n";
+        cout_mu.unlock();
+        
+        // std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+      }
+      // cout_mu.lock();
+      // std::cout << "thread " << thread_id << " : FINISHED! " << std::endl;
+      // cout_mu.unlock();
+    };
+    matcher_threads.push_back(std::thread(matcher, i));
+  }
+
+  for (int i = 0; i < capacity; ++i) {
+    matcher_threads[i].join();
+  }  
+  
+  // int most_match = 0;
+  // int most_match_id = -1;
+  /*
   for (const ImagePair& ip : image_pairs_) {
     int img_first = ip.first;
     int img_second = ip.second;
@@ -171,14 +324,16 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
     matches.image_index.second = img_second;
 
     bool from_cache = true;
-    if(!cache_storage.GetImageMatches(im_data1, im_data2, matches)) {
+    bool tst = true;
+    if(tst || !cache_storage.GetImageMatches(im_data1, im_data2, matches)) {
       from_cache = false;
       ::ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
       // Save to Cache
       cache_storage.SaveImageMatches(im_data1, im_data2, matches);
-    } /* else {
-      std::cout << "Matches restored from CACHE!!!\n";
-    } */
+    } 
+    //  else {
+    //   std::cout << "Matches restored from CACHE!!!\n";
+    // } 
 
     // Restore indexes to the current run
     matches.image_index.first = img_first;
@@ -214,10 +369,10 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
         std::make_pair(p2, image_matches_.size() - 1));
 
     // find most match for debug only
-    if (matches.match.size() > most_match) {
-      most_match = matches.match.size();
-      most_match_id = image_matches_.size() - 1;
-    }
+    // if (matches.match.size() > most_match) {
+    //   most_match = matches.match.size();
+    //   most_match_id = image_matches_.size() - 1;
+    // }
 
     total_matched_points += matches.match.size();
     std::cout << ", total_matched_points = " << total_matched_points 
@@ -237,16 +392,22 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
     }
 
   }
+  */
+  
 
   std::cout << "total_matched_points = " << total_matched_points << std::endl;
-  std::cout << "most_match = " 
-            << image_matches_[most_match_id].image_index.first 
-            << " - " << image_matches_[most_match_id].image_index.second
-            << ", " << most_match
-            << " (id: " << most_match_id << ")"
-            << std::endl;
+  // std::cout << "most_match = " 
+  //           << image_matches_[most_match_id].image_index.first 
+  //           << " - " << image_matches_[most_match_id].image_index.second
+  //           << ", " << most_match
+  //           << " (id: " << most_match_id << ")"
+  //           << std::endl;
   std::cout << "skipped_matches = " << skipped_matches << std::endl;
   std::cout << "image_matches_.size = " << image_matches_.size() << std::endl;
+
+  auto t1 = high_resolution_clock::now();
+  auto dur = duration_cast<microseconds>(t1 - t0);
+  std::cout << "match_features_time = " << dur.count() / 1e+6 << std::endl;
 
 }
 
