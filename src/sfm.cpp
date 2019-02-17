@@ -148,11 +148,30 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
     GenerateAllPairs();
   }
 
+  // Check duplicates
+  // for (int i = 0; i < image_pairs_.size(); ++i) {
+  //   if (image_pairs_[i].first > image_pairs_[i].second) {
+  //     std::cout << "swap " << i << " : " << image_pairs_[i] << std::endl;
+  //     std::swap(image_pairs_[i].first, image_pairs_[i].second);
+  //   }
+  // }
+
+  // std::set<ImagePair> ipset(image_pairs_.begin(), image_pairs_.end());
+
+  // std::sort(image_pairs_.begin(), image_pairs_.end());
+  // for (int i = 0; i < image_pairs_.size() - 1; ++i) {
+  //   if (image_pairs_[i] == image_pairs_[i+1]) {
+  //     std::cout << "dup " << image_pairs_[i] << std::endl;
+  //   }
+  // }
+
+  // return;
+
   using namespace std::chrono;
   auto t0 = high_resolution_clock::now();
 
   int capacity = std::max(
-      static_cast<int>(std::thread::hardware_concurrency() - 2), 1);
+      static_cast<int>(std::thread::hardware_concurrency() - 4), 1);
   std::cout << "image_pairs_.size = " << image_pairs_.size() << std::endl;
   capacity = std::min(capacity, static_cast<int>(image_pairs_.size()));
   std::cout << "Concurrency = " << capacity << std::endl;
@@ -698,7 +717,7 @@ void SfM3D::ReconstructNextView(const int next_img_id) {
   std::cout << "map_error = " << all_error << std::endl;
   */
 
-  OptimizeMap(map_);
+  // OptimizeMap(map_);
 
   // std::cout << std::endl;
 
@@ -729,7 +748,7 @@ void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
   std::cout << ", map = " << map_.size();
   map_mutex.unlock();
 
-  OptimizeMap(map_);
+  // OptimizeMap(map_);
 
   std::cout << std::endl;
 
@@ -750,14 +769,16 @@ void SfM3D::ReconstructAll() {
   double total_time = 0.0;
   int total_views = 0;
 
+  int last_optimitzation_cnt = map_.size();
+  bool need_optimization = false;
+
   while (todo_views_.size() > 0) {
 
-
-    std::cout << "TODO_VIEWS: ";
-    for (auto v : todo_views_) {
-      std::cout << v << ",";
-    }
-    std::cout << std::endl;
+    // std::cout << "TODO_VIEWS: ";
+    // for (auto v : todo_views_) {
+    //   std::cout << v << ",";
+    // }
+    // std::cout << std::endl;
 
     // check finish flag and finish)
     if (proc_status_.load() == FINISH) {
@@ -768,6 +789,16 @@ void SfM3D::ReconstructAll() {
     int todo_size = todo_views_.size();
 
     auto t0 = high_resolution_clock::now();
+
+
+    if (map_.size() - last_optimitzation_cnt > 40000 && need_optimization) {
+      std::cout << "\nOPTIMIZING on " << map_.size() << " ...\n\n";
+      OptimizeMap(map_);
+      std::cout << "\nOPTIMIZATION DONE! (" << map_.size() << ") \n\n";
+      last_optimitzation_cnt = map_.size();
+      need_optimization = false;
+    }
+
 
     // int next_img_id1 = ::GetNextBestView(map_, todo_views_,
     //     ccomp_, image_matches_, matches_index_);
@@ -840,9 +871,21 @@ void SfM3D::ReconstructAll() {
     std::cout << "\nt_left = " << view_avg * todo_views_.size();
     
     std::cout << std::endl;
+
+    need_optimization = true;
+
     // break;
 
   }
+
+
+  if (need_optimization) {
+    std::cout << "\nOPTIMIZING ALLLL ....\n\n";
+    OptimizeMap(map_);
+    std::cout << "\nOPTIMIZATION DONE! \n\n";
+  }
+
+  map_update_.notify_one();
 
 }
 
@@ -1076,7 +1119,50 @@ bool SfM3D::IsPairInOrder(const int p1, const int p2) {
 
 void SfM3D::RestoreImages() {
   images_resized_.clear();
+
   assert(image_data_.size() == cameras_.size());
+
+  using namespace std::chrono;
+  auto t0 = high_resolution_clock::now();
+
+  
+  std::atomic<int> next_idx(0);
+  std::vector<std::thread> resize_threads;
+
+  images_resized_.resize(image_data_.size());
+
+  int capacity = std::max(
+      static_cast<int>(std::thread::hardware_concurrency() - 2), 1);
+  std::cout << "image_data_.size = " << image_data_.size() << std::endl;
+  capacity = std::min(capacity, static_cast<int>(image_data_.size()));
+  std::cout << "Concurrency = " << capacity << std::endl;
+
+  std::mutex cout_mu;
+
+  for (int i = 0; i < capacity; ++i) {
+    auto resizer = [this, &next_idx, &cout_mu](int thread_id) {
+      int idx;
+      while ((idx = next_idx++) < image_data_.size()) {
+
+        cout_mu.lock();
+        std::cout << "[th:" << thread_id << "] Restore image " << idx << " out of " << image_data_.size()
+              <<std::endl;    
+        cout_mu.unlock();
+
+        ImageData& im_data = image_data_[idx];
+        cv::Mat img = ::LoadImage(im_data, resize_scale_);
+        images_resized_[idx] = img;
+
+      }
+    };
+    resize_threads.push_back(std::thread(resizer, i));
+  }
+
+  for(int i = 0; i < capacity; ++i) {
+    resize_threads[i].join();
+  }
+  
+  /*
   for (size_t i = 0; i < image_data_.size(); ++i) {
     std::cout << "Restore image " << i << " out of " << image_data_.size()
               <<std::endl;
@@ -1087,6 +1173,14 @@ void SfM3D::RestoreImages() {
     cv::Mat img = ::LoadImage(im_data, resize_scale_);
     images_resized_.push_back(img);
   }
+  */
+
+
+  auto t1 = high_resolution_clock::now();
+  auto dur = duration_cast<microseconds>(t1 - t0);
+  std::cout << "\nRESTORE_IMAGES_TIME = " << dur.count() / 1e+6 << std::endl;
+
+
 };
 
 void SfM3D::Print(std::ostream& os) const {

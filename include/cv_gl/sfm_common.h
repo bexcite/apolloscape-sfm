@@ -21,6 +21,15 @@ struct ImagePair {
   int second;
 };
 
+inline bool operator==(const ImagePair& ip1, const ImagePair& ip2) {
+  return (ip1.first == ip2.first && ip1.second == ip2.second);
+}
+
+inline bool operator<(const ImagePair& ip1, const ImagePair& ip2) {
+  return (ip1.first != ip2.first ? ip1.first < ip2.first : ip1.second < ip2.second);
+}
+
+
 struct Matches {
   ImagePair image_index;
   std::vector<cv::DMatch> match;

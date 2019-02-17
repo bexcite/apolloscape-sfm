@@ -85,6 +85,20 @@ void PrintVec(const std::string& intro, const std::vector<T> vec,
   os << "]";
 }
 
+template <typename T>
+void RandomPruneVec(std::vector<T>& vec, int max_size = 10000) {
+  int n = vec.size();
+  if (n > max_size) {
+    // filter points
+    for (int i = 0; i < max_size; ++i) {
+      int sel = i + rand() % (n - i);
+      std::swap(vec[i], vec[sel]);
+    }
+    vec.erase(
+        vec.begin() + max_size, vec.end());
+  }
+}
+
 
 
 // ======================================================

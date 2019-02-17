@@ -42,13 +42,13 @@ const float kGlobalScale = 100.0f;
 
 const std::vector<std::string> kRecords = {
   "Record001",
-  // "Record002",
-  // "Record003",
+  "Record002",
+  "Record003",
   "Record004",
-  // "Record006",
-  // "Record007",
-  // "Record008",
-  // "Record009",
+  "Record006",
+  "Record007",
+  "Record008",
+  "Record009",
   // "Record010",
   // "Record011",
   // "Record012",
@@ -166,8 +166,8 @@ int main(int argc, char* argv[]) {
 
       // == Slice record - for testing ==
       int p_camera_pose = 0; // 24
-      int p_camera_start = 21; //22 ==== 36 or 37 - 35
-      int p_camera_finish = 25; //25 ===== 39 or 40  - 39
+      int p_camera_start = 0; //22 ==== 36 or 37 - 35
+      int p_camera_finish = 130; //25 ===== 39 or 40  - 39
 
       p_camera_start = std::min(p_camera_start,
                                 static_cast<int>(camera1_poses.size()));
@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
       camera2_poses_s.insert(camera2_poses_s.begin(),
                             camera2_poses.begin() + p_camera_start, 
                             camera2_poses.begin() + p_camera_finish);
-      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 1);
+      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 2);
 
     }
 
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
 
     sfm.MatchImageFeatures(60);
 
-    // sfm.InitReconstruction();
+    sfm.InitReconstruction();
 
   } else {
 
@@ -230,7 +230,7 @@ int main(int argc, char* argv[]) {
   // return EXIT_SUCCESS;
 
   // sfm.ReconstructAll();
-  return EXIT_SUCCESS;
+  // return EXIT_SUCCESS;
 
 
   std::thread recon_thread([&sfm]() {
@@ -339,6 +339,8 @@ int main(int argc, char* argv[]) {
   int lv = -1;
   sfm.GetMapPointsAndCameras(glm_points, map_cams, lv);
   MakeCameras(cameras, map_cams, sfm, cameras_pool);
+
+  ::RandomPruneVec(glm_points, 1000000);
 
   int origin_cam_id = map_cams.begin()->first;
   CameraInfo origin_cam_info = sfm.GetCameraInfo(origin_cam_id);
@@ -490,6 +492,11 @@ int main(int argc, char* argv[]) {
                                  lversion);
       last_vis_version.store(lversion);
 
+
+      ::RandomPruneVec(glm_points_temp, 1000000);
+
+      std::cout << "\nGLM_POINTS_SIZE = " << glm_points_temp.size() << std::endl;
+
       cameras_points_mu.lock();
       glm_points = glm_points_temp;
       map_cams = map_cams_temp;
@@ -582,6 +589,7 @@ int main(int argc, char* argv[]) {
       
 
     }
+
     if (cameras) {
       renderer->Draw(cameras, true);
     }

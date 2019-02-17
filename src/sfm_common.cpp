@@ -1464,12 +1464,12 @@ void OptimizeBundle(Map3D& map, const std::vector<CameraInfo>& cameras, const st
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = 500;
   options.eta = 1e-2;
-  options.max_solver_time_in_seconds = 1200;
+  options.max_solver_time_in_seconds = 3500;
   options.logging_type = ceres::LoggingType::SILENT;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   // std::cout << std::endl;
-  // std::cout << summary.BriefReport();
+  std::cout << summary.BriefReport();
   // std::cout << summary.FullReport();
   std::cout << ", SolverTime = " << summary.total_time_in_seconds;
 

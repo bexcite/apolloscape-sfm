@@ -163,7 +163,7 @@ private:
   std::unordered_set<int> todo_views_;
   Map3D map_;
 
-  const double resize_scale_ = 0.25;
+  const double resize_scale_ = 0.08;
   bool use_cache = true;
 
   // Preprocessing storage
