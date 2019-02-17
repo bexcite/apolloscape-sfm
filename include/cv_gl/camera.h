@@ -67,8 +67,12 @@ class Camera {
 
   void SetDirection(const glm::vec3& direction_to);
   void SetPosition(const glm::vec3& position);
+  glm::vec3 GetPosition() { return position_; };
   void SetOrigin(const glm::vec3& origin);
   void SetRotation(const float x_angle, const float y_angle, const float z_angle);
+  void SetRotationPitchYaw(const float pitch, const float yaw);
+  float GetRotationPitch() { return pitch_; };
+  float GetRotationYaw() { return yaw_; };
   void SetScale(const float scale);
 
   void Print(std::ostream& os = std::cout) const;

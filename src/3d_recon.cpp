@@ -250,7 +250,8 @@ int main(int argc, char* argv[]) {
       std::make_shared<Camera>(glm::vec3(3.0f * kGlobalScale, 0.0f * kGlobalScale, 1.0f * kGlobalScale)); 
   camera->SetScale(kGlobalScale);
 
-  GLWindow gl_window("OpenGL: 3D Reconstruction", kWindowWidth, kWindowHeight);
+  GLWindow gl_window("3d Recon View: Apolloscape SfM 3D Reconstruction", 
+      kWindowWidth, kWindowHeight);
   gl_window.SetCamera(camera);
 
   // Renderer
@@ -438,6 +439,58 @@ int main(int argc, char* argv[]) {
     change_camera(current_camera_id);
   });
   // <<<<<< Change Camera Events
+
+
+  // ====== View Events
+  int current_view_id = 0;
+  typedef std::pair<glm::vec3, std::pair<float, float> > ViewElem;
+  std::vector<ViewElem> views = {
+    { {235.255341, -1961.739868, 50.880833}, {-3.25981, 44.2441} },
+    { {512.397217, -1867.512329, 54.057720}, {-1.60006, -50.2969} },
+    { {533.660767, -2008.533691, 65.754280}, {-11.5891, -76.6023} },
+    { {628.557861, -2515.430908, 71.207977}, {-20, -134.261} },
+    { {194.383759, -2232.064697, 555.483337}, {-64.3001, -720.077} }
+    // { {}, {} },
+  };
+  int views_size = views.size();
+
+  auto set_camera_view = [&views,
+                        &camera] (int view_id) {
+    std::cout << "view_id = " << view_id << std::endl;
+    camera->SetOrigin(views[view_id].first);
+    camera->SetRotationPitchYaw(
+        views[view_id].second.first, views[view_id].second.second);
+    // camera->SetRotation(cameras[camera_id].rotation_angles[0],
+    //                     cameras[camera_id].rotation_angles[1],
+    //                     cameras[camera_id].rotation_angles[2]);
+  };
+
+  gl_window.AddProcessInput(GLFW_KEY_B, [&current_view_id,
+      &set_camera_view] (float dt) {
+    set_camera_view(current_view_id);
+  });
+  gl_window.AddProcessInput(GLFW_KEY_C, [&current_view_id,
+      &set_camera_view, views_size, &last_camera_change,
+      &gl_window] (float dt) {
+    const double key_rate = 0.2;
+    double now = gl_window.GetTime();
+    if (now - last_camera_change < key_rate) return;
+    last_camera_change = now;
+    current_view_id = (current_view_id + views_size - 1) % views_size;
+    set_camera_view(current_view_id);
+  });
+  gl_window.AddProcessInput(GLFW_KEY_V, [&current_view_id,
+      &set_camera_view, views_size, &last_camera_change,
+      &gl_window] (float dt) {
+    const double key_rate = 0.2;
+    double now = gl_window.GetTime();
+    if (now - last_camera_change < key_rate) return;
+    last_camera_change = now;
+    current_view_id = (current_view_id + 1) % views_size;
+    set_camera_view(current_view_id);
+  });
+
+  // <<<<<< View Events
 
 
   // === Change Camera Alphas

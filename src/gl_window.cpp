@@ -8,6 +8,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
+
 
 GLWindow::GLWindow(const std::string& name, const unsigned int width,
     const unsigned int height) : width_(width), height_(height) {
@@ -99,12 +102,26 @@ bool GLWindow::IsRunning() {
 
   // FPS calc and output
   delta_time_sum_ += delta_time;
-  int freq = 400;
+  int freq = 100;
   if (frames_ % freq == 0) {
     float fps = freq / delta_time_sum_;
     std::cout << "\n\n======== FPS = " << fps << ","
               << ", sleep_for_micro = " << sleep_for_micro_sum_ / freq
               << std::endl;
+
+    if (camera_) {
+      std::cout << "========= Cam.position = " 
+                << glm::to_string(camera_->GetPosition())
+                << "; "
+                << camera_->GetRotationPitch()
+                << ", " << camera_->GetRotationYaw()
+                << std::endl;
+      // std::cout << "========= Cam.pitch,yaw = " 
+      // << camera_->GetRotationPitch()
+      // << ", " << camera_->GetRotationYaw()
+      // << std::endl;
+    }
+
     delta_time_sum_ = 0;
     sleep_for_micro_sum_ = 0;
   }

@@ -208,6 +208,12 @@ void Camera::SetRotation(const float x_angle, const float y_angle, const float z
   // rotation = glm::rotate(rotation, static_cast<float>(M_PI_2), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
+void Camera::SetRotationPitchYaw(const float pitch_deg, const float yaw_deg) {
+  pitch_ = pitch_deg;
+  yaw_ = yaw_deg;
+  UpdateCameraVectors();
+}
+
 void Camera::SetScale(const float scale) {
   scale_ = scale;
 }
