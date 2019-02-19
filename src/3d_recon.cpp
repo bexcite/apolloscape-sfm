@@ -41,14 +41,14 @@ const double kImageHeight = 2056.0;
 const float kGlobalScale = 100.0f;
 
 const std::vector<std::string> kRecords = {
-  "Record001",
+  // "Record001",
   "Record002",
   "Record003",
-  "Record004",
+  // "Record004",
   "Record006",
-  "Record007",
-  "Record008",
-  "Record009",
+  // "Record007",
+  // "Record008",
+  // "Record009",
   // "Record010",
   // "Record011",
   // "Record012",
@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
       camera2_poses_s.insert(camera2_poses_s.begin(),
                             camera2_poses.begin() + p_camera_start, 
                             camera2_poses.begin() + p_camera_finish);
-      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 2);
+      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 1);
 
     }
 
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
 
     sfm.ExtractFeatures();
 
-    sfm.MatchImageFeatures(60);
+    sfm.MatchImageFeatures(7, true);
 
     sfm.InitReconstruction();
 
@@ -230,6 +230,7 @@ int main(int argc, char* argv[]) {
   // return EXIT_SUCCESS;
 
   // sfm.ReconstructAll();
+  // sfm.PrintFinalStats();
   // return EXIT_SUCCESS;
 
 
@@ -320,7 +321,7 @@ int main(int argc, char* argv[]) {
     // co->SetImage(img2);
     // co->SetImage(img2_points);
     // co->SetImage(img_points);
-    co->SetImage(co_img);
+    // co->SetImage(co_img);
     co->SetImageAlpha(0.99);
     cameras_pool[i] = co;
   }
@@ -643,9 +644,9 @@ int main(int argc, char* argv[]) {
 
     }
 
-    if (cameras) {
-      renderer->Draw(cameras, true);
-    }
+    // if (cameras) {
+    //   renderer->Draw(cameras, true);
+    // }
 
     ++frames_cntr;
     gl_window.RunLoop();

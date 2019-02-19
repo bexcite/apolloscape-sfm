@@ -137,6 +137,8 @@ void GetLineImagePoints(const cv::Mat& line, std::vector<cv::Point2f>& line_pts,
 
 void ExtractFeatures(cv::Mat img, Features& features) {
   cv::Mat feature_mask;
+  features.keypoints.clear();
+  features.descriptors = cv::Mat();
   GetFeatureExtractionRegion(img, feature_mask);
   cv::Ptr<cv::AKAZE> detector = cv::AKAZE::create();
   detector->detectAndCompute(img, feature_mask, features.keypoints, features.descriptors);
@@ -174,7 +176,7 @@ void ComputeLineKeyPointsMatch(const Features& features1,
   CalcFundamental(camera_info1, camera_info2, fund);
   // std::cout << "Fundamental Matrix: " << fund << std::endl;
 
-  
+  matches.match.clear();
 
   // == Look for One point correcpondance
   
@@ -202,23 +204,61 @@ void ComputeLineKeyPointsMatch(const Features& features1,
     points2v.at<double>(2, i) = 1.0;
   }
 
+  /*
+  
   cv::Mat kp_lines21 = fund * points2v;
   // std::cout << "points1v = " << points1v.rows << ", " << points1v.cols << std::endl;
+  // std::cout << "points1v.size = " << points1v.size() << std::endl;
   // std::cout << "points2v = " << points2v.rows << ", " << points2v.cols << std::endl;
   // std::cout << "kp_lines21 = " << kp_lines21.size() << std::endl;
 
+  cv::Mat kp_lines_len = kp_lines21.clone();
+  kp_lines_len.row(2) = cv::Scalar(0.0);
+  // std::cout << "kp_lines_len1 = " << kp_lines_len.col(0) << std::endl;
+  kp_lines_len = kp_lines_len.mul(kp_lines_len);
+  // std::cout << "kp_lines_len2 = " << kp_lines_len.col(0) << std::endl;
+  cv::reduce(kp_lines_len, kp_lines_len, 0, CV_REDUCE_SUM);
+  cv::sqrt(kp_lines_len, kp_lines_len);
+  // std::cout << "kp_lines_len.size = " << kp_lines_len.size() << std::endl;
+  // std::cout << "kp_lines_len3 = " << kp_lines_len.col(0) << std::endl;
+  cv::Mat kll;
+  cv::repeat(kp_lines_len, points1v.rows, 1, kll);
+  // std::cout << "kp_lines_len4.size = " << kll.size() << std::endl;
+  // std::cout << "kll.col = " << kp_lines_len.col(0) << std::endl;
+  // std::cout << "kp_lines_len3r = " << kp_lines_len.row(0) << std::endl;
+
   // TODO: Divide by sqrt(a^2 + b^2) - ?
   cv::Mat mask = cv::abs(points1v * kp_lines21);
-  cv::threshold(mask, mask, 0.01, 1, cv::THRESH_BINARY_INV); // 0.01
+
+  // cv::threshold(mask, mask, 0.01, 1, cv::THRESH_BINARY_INV); // 0.01
+
+  cv::divide(mask, kll, mask);
+  // std::cout << "mask.row = " << mask.col(0) << std::endl;
+  // std::cout << "mask.size = " << mask.size() << std::endl;
+  cv::threshold(mask, mask, 80, 1, cv::THRESH_BINARY_INV); // 0.01
+
+  // Get Mask Count
+  cv::Mat mask_cnt;
+  cv::reduce(mask, mask_cnt, 0, CV_REDUCE_SUM);
+  // std::cout << "mask_cnt.size = " << mask_cnt.size() << std::endl;
+  cv::reduce(mask_cnt, mask_cnt, 1, CV_REDUCE_SUM);
+  // std::cout << "mask_cnt.size = " << mask_cnt.size() << std::endl;
+  // std::cout << "mask_cnt = " << mask_cnt.row(0) << std::endl;
+
+  // cv::threshold(mask, mask, 0.01, 1, cv::THRESH_BINARY_INV); // 0.01
   // std::cout << "mask = " << mask.rows << ", " << mask.cols << std::endl;
 
+
+  cv::Mat mask_int;
+  mask.convertTo(mask_int, CV_8UC1);
+  
+  */
 
   cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
   std::vector<std::vector<cv::DMatch> > knnMatches;
   // std::cout << "knnMatch ..." << std::endl;
-  cv::Mat mask_int;
-  mask.convertTo(mask_int, CV_8UC1);
-  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2, mask_int);
+  
+  matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2 /*, mask_int*/);
 
   // std::vector<cv::DMatch> good_matches;
   // Filter matches: Lowe's test
@@ -226,7 +266,43 @@ void ComputeLineKeyPointsMatch(const Features& features1,
   for (int m = 0; m < knnMatches.size(); ++m) {
     if (knnMatches[m].size() < 2) continue; // no match for the points
     if (knnMatches[m][0].distance < ratio_thresh * knnMatches[m][1].distance) {
-      matches.match.push_back(knnMatches[m][0]);
+      cv::DMatch match = knnMatches[m][0];
+      
+
+      cv::Mat points2(3, 1, CV_64F);
+      points2.at<double>(0, 0) = features2.keypoints[match.trainIdx].pt.x;
+      points2.at<double>(1, 0) = features2.keypoints[match.trainIdx].pt.y;
+      points2.at<double>(2, 0) = 1.0;
+
+      cv::Mat points1(1, 3, CV_64F);
+      points1.at<double>(0, 0) = features1.keypoints[match.queryIdx].pt.x;
+      points1.at<double>(0, 1) = features1.keypoints[match.queryIdx].pt.y;
+      points1.at<double>(0, 2) = 1.0;
+
+      // std::cout << "match = " << match.queryIdx 
+      //           << ", " << match.trainIdx
+      //           << std::endl;
+
+      // std::cout << "p1 = " << points1 << std::endl;
+      // std::cout << "p2 = " << points2 << std::endl;
+
+      cv::Mat kp_l2 = fund * points2;
+      double a = kp_l2.at<double>(0);
+      double b = kp_l2.at<double>(1);
+      double d = sqrt(a*a + b*b);
+
+      cv::Mat dd_mat = points1 * kp_l2 / d;
+      double dd = abs(dd_mat.at<double>(0));
+
+      if (dd < 1.0) {
+        matches.match.push_back(match);
+        // std::cout << "dd[" << matches.match.size() - 1 << "] = " << dd << std::endl;
+      }
+
+      // Test distance to the epiline
+      // and decide
+
+
       // good_matches.push_back(cv::DMatch(k, knnMatches[0][0].trainIdx, knnMatches[0][0].distance));
       // std::cout << m << " SQUARE !!!! " << (knnMatches[m][0].distance / knnMatches[m][1].distance)
       // << " (" << knnMatches[m][0].queryIdx << " : " << knnMatches[m][0].trainIdx << ")" << std::endl;
@@ -1244,16 +1320,23 @@ void MergeToTheMapImproved(Map3D& map,
 void CombineMapComponents(Map3D& map, const double max_keep_dist) {
   auto world_point_comp = [](const WorldPoint3D& wp1,
       const WorldPoint3D& wp2) {
-          return wp1.component_id < wp2.component_id;
+          return wp1.component_id != wp2.component_id
+                 ? wp1.component_id < wp2.component_id
+                 : cv::norm(wp1.pt) < cv::norm(wp2.pt);
   };
 
-  auto world_point_val_comp = [](const WorldPoint3D& wp1,
-      const int& v) {
-          return wp1.component_id < v;
-  };
+  // auto world_point_val_comp = [](const WorldPoint3D& wp1,
+  //     const int& v) {
+  //         return wp1.component_id < v;
+  // };
 
   // Sort map by component
   std::sort(map.begin(), map.end(), world_point_comp);
+
+  // std::cout << "Sorted: " << std::endl;
+  // for (auto& wp : map) {
+  //   std::cout << "mp: " << wp << std::endl;
+  // }
 
   // std::cout << "map_ids = ";
   // for (auto m : map) {

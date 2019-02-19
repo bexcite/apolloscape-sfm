@@ -100,9 +100,9 @@ bool GLWindow::IsRunning() {
 
   last_time_ = time_value;
 
-  // FPS calc and output
+  // FPS calc and output cam pos
   delta_time_sum_ += delta_time;
-  int freq = 100;
+  int freq = 400;
   if (frames_ % freq == 0) {
     float fps = freq / delta_time_sum_;
     std::cout << "\n\n======== FPS = " << fps << ","

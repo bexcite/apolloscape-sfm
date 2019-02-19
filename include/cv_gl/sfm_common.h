@@ -133,7 +133,7 @@ void MergeToTheMapImproved(Map3D& map,
                            const Map3D& local_map,
                            CComponents<std::pair<int, int> >& ccomp);
 
-void CombineMapComponents(Map3D& map, const double max_keep_dist = 20.0);
+void CombineMapComponents(Map3D& map, const double max_keep_dist = 1.0);
 void MergeAndCombinePoints(Map3D& map,
                            const Map3D& local_map);
 

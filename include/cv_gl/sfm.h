@@ -74,7 +74,7 @@ public:
                  const bool make_pairs = true, const int look_back = 5);
   void ExtractFeatures();
   void Print(std::ostream& os = std::cout) const;
-  void MatchImageFeatures(const int skip_thresh = 10);
+  void MatchImageFeatures(const int skip_thresh = 10, bool use_cache = true);
 
   void InitReconstruction();
   void ReconstructAll();

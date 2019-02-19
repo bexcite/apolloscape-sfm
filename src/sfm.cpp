@@ -105,6 +105,81 @@ void SfM3D::ExtractFeatures() {
   image_features_.clear();
 
   assert(image_data_.size() == cameras_.size());
+
+
+  using namespace std::chrono;
+  auto t0 = high_resolution_clock::now();
+
+  // bool tst = false;
+
+  
+  int capacity = std::max(
+      static_cast<int>(std::thread::hardware_concurrency() - 2), 1);
+  std::cout << "image_data_.size = " << image_data_.size() << std::endl;
+  capacity = std::min(capacity, static_cast<int>(image_data_.size()));
+  std::cout << "Extract features concurrency = " << capacity << std::endl;
+
+  image_features_.resize(image_data_.size());
+  images_resized_.resize(image_data_.size());
+
+  std::atomic<int> next_idx(0);
+  std::vector<std::thread> extractor_threads;
+
+  std::mutex cout_mu;
+  std::mutex acc_mu;
+
+  
+
+  for (int i = 0; i < capacity; ++i) {
+    auto extractor = [this, &next_idx, &cout_mu](int thread_id) {
+      int idx;
+      while ((idx = next_idx++) < image_data_.size()) {
+
+        std::stringstream ss;
+        
+        ss << "[th:" << thread_id << "] Extract " << idx << " out of " 
+           << image_data_.size();
+        
+
+        ImageData& im_data = image_data_[idx];
+        boost::filesystem::path full_image_path = boost::filesystem::path(im_data.image_dir)
+        / boost::filesystem::path(im_data.filename);
+        cv::Mat img = ::LoadImage(im_data);
+
+        Features features;
+
+        // TODO: Refactor to use ImageData
+        if (!cache_storage.GetFeatures(full_image_path.string(),
+                                      features)) {
+          ss << ": extracted ...";
+          ::ExtractFeatures(img, features);
+          cache_storage.SaveFeatures(full_image_path.string(),
+                                    features);
+          ss << " cached ...";
+        } else {
+          ss << ": restored from cache";
+        }
+        ss << std::endl;
+
+        cv::resize(img, img, cv::Size(), resize_scale_, resize_scale_);
+        images_resized_[idx] = img;
+        image_features_[idx] = features;
+
+        cout_mu.lock();
+        std::cout << ss.str();
+        cout_mu.unlock();
+
+      }
+    };
+    extractor_threads.push_back(std::thread(extractor, i));
+  }
+
+  for(int i = 0; i < capacity; ++i) {
+    extractor_threads[i].join();
+  }
+  
+
+  /*
   for (size_t i = 0; i < image_data_.size(); ++i) {
     std::cout << "Extract " << i << " out of " << image_data_.size();
     ImageData& im_data = image_data_[i];
@@ -139,10 +214,15 @@ void SfM3D::ExtractFeatures() {
 
     image_features_.push_back(features);
   }
+  */
+
+  auto t1 = high_resolution_clock::now();
+  auto dur = duration_cast<microseconds>(t1 - t0);
+  std::cout << "EXTRACT_FEATURES_TIME = " << dur.count() / 1e+6 << std::endl;
   
 }
 
-void SfM3D::MatchImageFeatures(const int skip_thresh) {
+void SfM3D::MatchImageFeatures(const int skip_thresh, bool use_cache) {
   assert(image_features_.size() > 1);
   if (image_pairs_.empty()) {
     GenerateAllPairs();
@@ -170,16 +250,17 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
   using namespace std::chrono;
   auto t0 = high_resolution_clock::now();
 
-  int capacity = std::max(
-      static_cast<int>(std::thread::hardware_concurrency() - 4), 1);
-  std::cout << "image_pairs_.size = " << image_pairs_.size() << std::endl;
-  capacity = std::min(capacity, static_cast<int>(image_pairs_.size()));
-  std::cout << "Concurrency = " << capacity << std::endl;
-
+  
   int total_matched_points = 0;
   int skipped_matches = 0;
 
   
+  int capacity = std::max(
+      static_cast<int>(std::thread::hardware_concurrency() / 2 - 2), 1);
+  std::cout << "image_pairs_.size = " << image_pairs_.size() << std::endl;
+  capacity = std::min(capacity, static_cast<int>(image_pairs_.size()));
+  std::cout << "Concurrency = " << capacity << std::endl;
+
 
   std::atomic<int> next_idx(0);
   std::vector<std::thread> matcher_threads;
@@ -187,10 +268,12 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
   std::mutex cout_mu;
   std::mutex acc_mu;
 
+  // capacity = 2;
+
   for (int i = 0; i < capacity; ++i) {
     auto matcher = [this, &next_idx, &cout_mu, &acc_mu,
                     &skipped_matches, &total_matched_points,
-                    skip_thresh](int thread_id) {
+                    skip_thresh, use_cache](int thread_id) {
       int idx;
       while ((idx = next_idx++) < image_pairs_.size()) {
 
@@ -224,11 +307,16 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
 
         bool from_cache = true;
         // bool tst = true;
-        if(!cache_storage.GetImageMatches(im_data1, im_data2, matches)) {
+        if (use_cache) {
+          if(!cache_storage.GetImageMatches(im_data1, im_data2, matches)) {
+            from_cache = false;
+            ::ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
+            // Save to Cache
+            cache_storage.SaveImageMatches(im_data1, im_data2, matches);
+          }
+        } else {
           from_cache = false;
           ::ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
-          // Save to Cache
-          cache_storage.SaveImageMatches(im_data1, im_data2, matches);
         }
 
         // Restore indexes to the current run
@@ -247,13 +335,16 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
 
         // Don't add empty or small matches
         if (matches.match.size() < skip_thresh) { 
-          std::lock_guard<std::mutex> lck(acc_mu);
+          // std::lock_guard<std::mutex> lck(acc_mu);
+          acc_mu.lock();
           ++skipped_matches;
+          acc_mu.unlock();
           
           cout_mu.lock();
-          std::cout << "thread " << thread_id << " : ";
-          std::cout << "Match: "
-                  << "(" << img_first << ", " << img_second << ")"
+          std::cout << "[th:" << thread_id << "] ";
+          std::cout << "Mtch:"
+                  // << " (" << img_first << "," << img_second << ")"
+                  << " " << idx << " out of " << image_pairs_.size()
                   << " [" << (from_cache ? "R" : "C") << "]"
                   << ": matches.size = " << matches.match.size();
                   // << std::endl;
@@ -293,9 +384,10 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
 
         cout_mu.lock();
         total_matched_points += matches.match.size();
-        std::cout << "thread " << thread_id << " : ";
-        std::cout << "Match: "
-                  << "(" << img_first << ", " << img_second << ")"
+        std::cout << "[th:" << thread_id << "] ";
+        std::cout << "Mtch:"
+                  // << " (" << img_first << "," << img_second << ")"
+                  << " " << idx << " out of " << image_pairs_.size()
                   << " [" << (from_cache ? "R" : "C") << "]"
                   << ": matches.size = " << matches.match.size();
                   // << std::endl;
@@ -317,6 +409,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
   for (int i = 0; i < capacity; ++i) {
     matcher_threads[i].join();
   }  
+  
   
   // int most_match = 0;
   // int most_match_id = -1;
@@ -343,8 +436,8 @@ void SfM3D::MatchImageFeatures(const int skip_thresh) {
     matches.image_index.second = img_second;
 
     bool from_cache = true;
-    bool tst = true;
-    if(tst || !cache_storage.GetImageMatches(im_data1, im_data2, matches)) {
+    // bool tst = true;
+    if(!cache_storage.GetImageMatches(im_data1, im_data2, matches)) {
       from_cache = false;
       ::ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
       // Save to Cache
@@ -480,6 +573,10 @@ void SfM3D::InitReconstruction() {
 
   TriangulatePointsFromViews(first_id, second_id, map_);
 
+  // for (auto& wp : map_) {
+  //   std::cout << "mp: " << wp << std::endl;
+  // }
+
   CombineMapComponents(map_);
 
   OptimizeMap(map_);
@@ -555,11 +652,17 @@ void SfM3D::TriangulatePointsFromViews(const int first_id,
     rep_err1 += errs1[i];
     rep_err2 += errs2[i];
 
-    if (errs1[i] > 3.0 || errs2[i] > 3.0           // reprojection error too big
+    // sqrt(errs1[i]*errs1[i] + errs2[i]*errs2[i]) < 2.0
+    // errs1[i] > 1.0 || errs2[i] > 1.0           // reprojection error too big
+    double d = sqrt(errs1[i]*errs1[i] + errs2[i]*errs2[i]);
+    if ( errs1[i] > 0.5 || errs2[i] > 0.5           // reprojection error too big
         || cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
         || points3d.at<float>(i, 2) < 38.0) {      // it's out of the ground
-      // std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
-      //           << ", " << errs2[i] << std::endl;
+      std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
+                << ", " << errs2[i] 
+                << ", d = " << d
+                << ", z = " << points3d.at<float>(i, 2)
+                << std::endl;
       continue;
     }
 
@@ -772,6 +875,8 @@ void SfM3D::ReconstructAll() {
   int last_optimitzation_cnt = map_.size();
   bool need_optimization = false;
 
+  int cnt = 0;
+
   while (todo_views_.size() > 0) {
 
     // std::cout << "TODO_VIEWS: ";
@@ -874,7 +979,10 @@ void SfM3D::ReconstructAll() {
 
     need_optimization = true;
 
-    // break;
+    ++cnt;
+
+    // if (cnt == 2)
+    //   break;
 
   }
 
