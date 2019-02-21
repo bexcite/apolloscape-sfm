@@ -41,25 +41,28 @@ const double kImageHeight = 2056.0;
 const float kGlobalScale = 100.0f;
 
 const std::vector<std::string> kRecords = {
-  // "Record001",
+  "Record001",
   "Record002",
   "Record003",
-  // "Record004",
+  "Record004",
   "Record006",
-  // "Record007",
-  // "Record008",
-  // "Record009",
-  // "Record010",
-  // "Record011",
-  // "Record012",
-  // "Record013",
-  // "Record014"
+  "Record007",
+  "Record008",
+  "Record009",
+  "Record010",
+  "Record011",
+  "Record012",
+  "Record013",
+  "Record014"
 };
 
 // An ID for Camera in a scene graph
 #define TAG_CAMERA_OBJECT 10
 
 
+DEFINE_string(records, "all", "--records=\"1,4\" set of [1,2, ... 14]"
+                              " or \"all\".  Records to use for"
+                              " reconstruction");
 DEFINE_string(restore, "", "--restore=\"<filename>\" Saved SfM serialization"
                            " to continue SfM reconstruction pipeline");
 DEFINE_string(output, "sfm_out.bin", "--output=\"<filename>\" : Destination"
@@ -102,6 +105,14 @@ int main(int argc, char* argv[]) {
 
   std::cout << "restore_flag=" << FLAGS_restore << std::endl;
   std::cout << "output_flag=" << FLAGS_output << std::endl;
+  std::cout << "records=" << FLAGS_records << std::endl;
+
+  std::vector<std::string> use_records = SelectRoadRecords(kRecords, 
+                                                           FLAGS_records);
+
+  PrintVec("use_records = ", use_records);
+  std::cout << std::endl;
+  // std::cout << "use_records = " << use_records << std::endl;
 
   if (FLAGS_restore.empty()) {
     std::cout << "NO RESTORE\n";
@@ -134,7 +145,7 @@ int main(int argc, char* argv[]) {
 
   if (FLAGS_restore.empty()) {
     // Create new run
-    for (auto record : kRecords) {
+    for (auto record : use_records) {
       std::cout << "==== r = " << record << std::endl;
 
       fs::path camera1_path = fs::path(kApolloDatasetPath) / fs::path(kRoadId)
@@ -166,8 +177,8 @@ int main(int argc, char* argv[]) {
 
       // == Slice record - for testing ==
       int p_camera_pose = 0; // 24
-      int p_camera_start = 0; //22 ==== 36 or 37 - 35
-      int p_camera_finish = 130; //25 ===== 39 or 40  - 39
+      int p_camera_start = 22; //22 ==== 36 or 37 - 35
+      int p_camera_finish = 27; //25 ===== 39 or 40  - 39
 
       p_camera_start = std::min(p_camera_start,
                                 static_cast<int>(camera1_poses.size()));
@@ -644,9 +655,9 @@ int main(int argc, char* argv[]) {
 
     }
 
-    // if (cameras) {
-    //   renderer->Draw(cameras, true);
-    // }
+    if (cameras) {
+      renderer->Draw(cameras, true);
+    }
 
     ++frames_cntr;
     gl_window.RunLoop();

@@ -176,6 +176,45 @@ std::vector<ImageData> ReadCameraPoses(const fs::path file_path,
   return imgs_data;
 }
 
+inline void ltrim(std::string& s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+    return !std::isspace(ch);
+  }));
+}
+
+inline void rtrim(std::string& s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+    return !std::isspace(ch);
+  }).base(), s.end());
+}
+
+void trim(std::string& s) {
+  ltrim(s);
+  rtrim(s);
+}
+
+std::vector<std::string> SelectRoadRecords(const std::vector<std::string>& krecords, 
+                                           const std::string& records_filter) {
+
+  if (records_filter == "all") {
+    return krecords;
+  }
+  auto sp = StringSplit(records_filter, ',');
+
+  std::vector<std::string> records;
+  for (auto p : sp) {
+    trim(p);
+    std::stringstream ss;
+    ss << "Record";
+    ss << std::setfill('0') << std::setw(3) << p;
+    if (std::find(krecords.begin(), krecords.end(), ss.str()) != krecords.end()) {
+      records.push_back(ss.str());
+    }
+  }
+  return records;
+}
+
+
 cv::Mat LoadImage(const ImageData& im_data, double scale_factor) {
   fs::path full_image_path = fs::path(im_data.image_dir)
       / fs::path(im_data.filename);

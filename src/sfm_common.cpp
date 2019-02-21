@@ -254,7 +254,8 @@ void ComputeLineKeyPointsMatch(const Features& features1,
   
   */
 
-  cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
+  cv::Ptr<cv::DescriptorMatcher> matcher = 
+      cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
   std::vector<std::vector<cv::DMatch> > knnMatches;
   // std::cout << "knnMatch ..." << std::endl;
   
@@ -294,9 +295,9 @@ void ComputeLineKeyPointsMatch(const Features& features1,
       cv::Mat dd_mat = points1 * kp_l2 / d;
       double dd = abs(dd_mat.at<double>(0));
 
-      if (dd < 1.0) {
+      if (dd < 100.0) {
         matches.match.push_back(match);
-        // std::cout << "dd[" << matches.match.size() - 1 << "] = " << dd << std::endl;
+        std::cout << "dd[" << matches.match.size() - 1 << "] = " << dd << std::endl;
       }
 
       // Test distance to the epiline

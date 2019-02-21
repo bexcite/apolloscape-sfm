@@ -62,6 +62,9 @@ std::vector<ImageData> ReadCameraPoses(const boost::filesystem::path file_path,
                                        const std::string& record = "",
                                        const int camera_num = -1);
 
+std::vector<std::string> SelectRoadRecords(const std::vector<std::string>& krecords, 
+                                           const std::string& records_filter);
+
 cv::Mat LoadImage(const ImageData& im_data, double scale_factor = 1.0);
 
 // template <typename T>

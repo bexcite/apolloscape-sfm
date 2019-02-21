@@ -44,5 +44,6 @@ void make_rect(vec4 position, float size)
 }
 
 void main() {    
+    // make_rect(gl_in[0].gl_Position, 0.15);
     make_rect(gl_in[0].gl_Position, 0.15);
 }

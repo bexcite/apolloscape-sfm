@@ -655,8 +655,8 @@ void SfM3D::TriangulatePointsFromViews(const int first_id,
     // sqrt(errs1[i]*errs1[i] + errs2[i]*errs2[i]) < 2.0
     // errs1[i] > 1.0 || errs2[i] > 1.0           // reprojection error too big
     double d = sqrt(errs1[i]*errs1[i] + errs2[i]*errs2[i]);
-    if ( errs1[i] > 0.5 || errs2[i] > 0.5           // reprojection error too big
-        || cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
+    if ( // errs1[i] > 1.0 || errs2[i] > 1.0           // reprojection error too big
+         cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
         || points3d.at<float>(i, 2) < 38.0) {      // it's out of the ground
       std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
                 << ", " << errs2[i] 
