@@ -66,6 +66,8 @@ private:
   float delta_time_sum_ = 0;
   long sleep_for_micro_sum_ = 0;
 
+  bool initialized = false;
+
   // QUICK FIX for GLFW bug 3,2,1
   // static int macMoved;
 

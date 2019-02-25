@@ -60,9 +60,26 @@ const std::vector<std::string> kRecords = {
 #define TAG_CAMERA_OBJECT 10
 
 
-DEFINE_string(records, "all", "--records=\"1,4\" set of [1,2, ... 14]"
+DEFINE_string(records, "1,4", "--records=\"1,4\" set of [1,2, ... 14]"
                               " or \"all\".  Records to use for"
                               " reconstruction");
+DEFINE_bool(cameraimage, true, "Render camera images");
+DEFINE_bool(camera, true, "Render cameras");
+DEFINE_bool(viz, true, "Open 3D visualization of the map");
+
+DEFINE_bool(matches_cache, true, "Use cached matches and store newly computed"
+    " into cache");
+DEFINE_double(matches_line_dist_thresh, 10.0, "Max distance to the epiline"
+    " between matched corresponding points");
+DEFINE_int32(matches_num_thresh, 7, "Min number of matches betwee image pairs");
+DEFINE_bool(features_cache, true, "Use cached features and store new features"
+    " into cache");
+
+DEFINE_double(sfm_repr_error_thresh, 1.0, "Max reprojection error allowed"
+    " during points triangulation");
+DEFINE_double(sfm_max_merge_dist, 1.0, "Maximum distance between points"
+    " from different views that we merge into one point");
+
 DEFINE_string(restore, "", "--restore=\"<filename>\" Saved SfM serialization"
                            " to continue SfM reconstruction pipeline");
 DEFINE_string(output, "sfm_out.bin", "--output=\"<filename>\" : Destination"
@@ -76,6 +93,7 @@ DECLARE_bool(helpshort);
 
 namespace fs = boost::filesystem;
 
+void StoreSfM(SfM3D& sfm);
 void MakeCameras(std::shared_ptr<DObject>& cameras,
                  const MapCameras& map_cameras,
                  const SfM3D& sfm,
@@ -142,6 +160,8 @@ int main(int argc, char* argv[]) {
 
   
   SfM3D sfm(camera_intrs);
+  sfm.repr_error_thresh = FLAGS_sfm_repr_error_thresh;
+  sfm.max_merge_dist = FLAGS_sfm_max_merge_dist;
 
   if (FLAGS_restore.empty()) {
     // Create new run
@@ -177,8 +197,8 @@ int main(int argc, char* argv[]) {
 
       // == Slice record - for testing ==
       int p_camera_pose = 0; // 24
-      int p_camera_start = 22; //22 ==== 36 or 37 - 35
-      int p_camera_finish = 27; //25 ===== 39 or 40  - 39
+      int p_camera_start = 0; //22 ==== 36 or 37 - 35
+      int p_camera_finish = 140; //25 ===== 39 or 40  - 39
 
       p_camera_start = std::min(p_camera_start,
                                 static_cast<int>(camera1_poses.size()));
@@ -192,7 +212,7 @@ int main(int argc, char* argv[]) {
       camera2_poses_s.insert(camera2_poses_s.begin(),
                             camera2_poses.begin() + p_camera_start, 
                             camera2_poses.begin() + p_camera_finish);
-      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 1);
+      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 2);
 
     }
 
@@ -201,7 +221,9 @@ int main(int argc, char* argv[]) {
 
     sfm.ExtractFeatures();
 
-    sfm.MatchImageFeatures(7, true);
+    sfm.MatchImageFeatures(FLAGS_matches_num_thresh, 
+                           FLAGS_matches_line_dist_thresh,
+                           FLAGS_matches_cache);
 
     sfm.InitReconstruction();
 
@@ -239,10 +261,17 @@ int main(int argc, char* argv[]) {
   // auto durt = duration_cast<microseconds>(t11 - t00);
   // std::cout << "TOTAL RECON_ALL TIME: " << durt.count() / 1e+6 << std::endl;
   // return EXIT_SUCCESS;
+  
 
-  // sfm.ReconstructAll();
-  // sfm.PrintFinalStats();
-  // return EXIT_SUCCESS;
+  if (!FLAGS_viz) {
+    sfm.ReconstructAll();
+    // sfm.PrintFinalStats();
+    
+    StoreSfM(sfm);
+    // Remove Outliers Test (Top 5% bin)
+  
+    return EXIT_SUCCESS;
+  }
 
 
   std::thread recon_thread([&sfm]() {
@@ -332,7 +361,9 @@ int main(int argc, char* argv[]) {
     // co->SetImage(img2);
     // co->SetImage(img2_points);
     // co->SetImage(img_points);
-    // co->SetImage(co_img);
+    if (FLAGS_cameraimage) {
+      co->SetImage(co_img);
+    }
     co->SetImageAlpha(0.99);
     cameras_pool[i] = co;
   }
@@ -655,7 +686,8 @@ int main(int argc, char* argv[]) {
 
     }
 
-    if (cameras) {
+
+    if (FLAGS_camera && cameras) {
       renderer->Draw(cameras, true);
     }
 
@@ -675,13 +707,13 @@ int main(int argc, char* argv[]) {
   recon_thread.join();
   vis_prep_thread.join();
 
+  StoreSfM(sfm);
 
+  /*
   std::string output_file = FLAGS_output;
   if (!FLAGS_restore.empty()) {
     output_file = FLAGS_restore;
   }
-
-
   {
     std::cout << "Serializing SFM!!!! to: " << output_file << std::endl;
     std::ofstream file(output_file, std::ios::binary);
@@ -691,11 +723,28 @@ int main(int argc, char* argv[]) {
     std::cout << "Serializing SFM!!!! - DONE (" 
               << output_file << ")" << std::endl;
   }
+  */
 
   // Clear Gflags memory
   gflags::ShutDownCommandLineFlags();
 
   return EXIT_SUCCESS; 
+
+}
+
+void StoreSfM(SfM3D& sfm) {
+  std::string output_file = FLAGS_output;
+  if (!FLAGS_restore.empty()) {
+    output_file = FLAGS_restore;
+  }
+
+  std::cout << "Serializing SFM!!!! to: " << output_file << std::endl;
+  std::ofstream file(output_file, std::ios::binary);
+  cereal::BinaryOutputArchive archive(file);
+  archive(sfm);
+  sfm.PrintFinalStats();
+  std::cout << "Serializing SFM!!!! - DONE (" 
+            << output_file << ")" << std::endl;
 
 }
 

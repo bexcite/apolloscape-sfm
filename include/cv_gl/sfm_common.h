@@ -82,6 +82,12 @@ void ComputeLineKeyPointsMatch(const Features& features1,
                                const Features& features2, 
                                const CameraInfo& camera_info2, 
                                Matches& matches);
+void FilterMatchByLineDistance(const Features& features1, 
+                               const CameraInfo camera_info1, 
+                               const Features& features2, 
+                               const CameraInfo& camera_info2, 
+                               Matches& matches, 
+                               const double line_dist);
 
 void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keypoints1,
     const cv::Mat img2, std::vector<cv::KeyPoint>& keypoints2, const cv::Mat fund);
@@ -107,8 +113,19 @@ double GetReprojectionError(
     const Map3D& map,
     const std::vector<CameraInfo>& cameras, 
     const std::vector<Features>& features);
+std::vector<double> GetReprojectionErrors(
+    const Map3D& map,
+    const std::vector<CameraInfo>& cameras, 
+    const std::vector<Features>& features);
+double GetReprojectionError(const WorldPoint3D& point3d,
+                            const std::vector<CameraInfo>& cameras, 
+                            const std::vector<Features>& features);
 std::vector<double> GetZDistanceFromCamera(const CameraInfo& camera_info,
                                            const cv::Mat& points3d);
+void RemoveOutliersByError(Map3D& map,
+                           const std::vector<CameraInfo>& cameras,
+                           const std::vector<Features>& features,
+                           const float percentile);
 
 
 int GetNextBestView(const Map3D& map, 
@@ -133,9 +150,10 @@ void MergeToTheMapImproved(Map3D& map,
                            const Map3D& local_map,
                            CComponents<std::pair<int, int> >& ccomp);
 
-void CombineMapComponents(Map3D& map, const double max_keep_dist = 1.0);
+void CombineMapComponents(Map3D& map, const double max_keep_dist);
 void MergeAndCombinePoints(Map3D& map,
-                           const Map3D& local_map);
+                           const Map3D& local_map,
+                           const double max_keep_dist);
 
 
 void GetKeyPointColors(const cv::Mat& img, 

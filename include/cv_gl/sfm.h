@@ -39,8 +39,10 @@ public:
   SfM3D() : SfM3D{std::vector<CameraIntrinsics>()} {}
   explicit SfM3D(std::vector<CameraIntrinsics> camera_intrs)
       : intrinsics_(camera_intrs), 
-        proc_status_{RECONSTRUCTION},
-        vis_version_{0} {
+        proc_status_(RECONSTRUCTION),
+        vis_version_(0),
+        repr_error_thresh(1.0),
+        max_merge_dist(1.0) {
 
     // TESTS: For serialization
     // p.x = 1.0;
@@ -74,7 +76,9 @@ public:
                  const bool make_pairs = true, const int look_back = 5);
   void ExtractFeatures();
   void Print(std::ostream& os = std::cout) const;
-  void MatchImageFeatures(const int skip_thresh = 10, bool use_cache = true);
+  void MatchImageFeatures(const int skip_thresh = 10, 
+                          const double max_line_dist = 10.0, 
+                          const bool use_cache = true);
 
   void InitReconstruction();
   void ReconstructAll();
@@ -96,6 +100,9 @@ public:
 
   void SetProcStatus(SfMStatus proc_status);
   bool IsFinished();
+
+  double repr_error_thresh;
+  double max_merge_dist;
   
 
   // TODO: https://www.patrikhuber.ch/blog/6-serialising-opencv-matrices-using-boost-and-cereal

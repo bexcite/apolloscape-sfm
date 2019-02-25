@@ -13,7 +13,9 @@
 
 
 GLWindow::GLWindow(const std::string& name, const unsigned int width,
-    const unsigned int height) : width_(width), height_(height) {
+    const unsigned int height) 
+      : width_(width), height_(height), delta_time_sum_(0.0),
+      frames_(0) {
 
   // Load GLFW and Create a Window
   glfwInit();
@@ -72,6 +74,8 @@ GLWindow::GLWindow(const std::string& name, const unsigned int width,
   //     return EXIT_FAILURE;
   // }
 
+  last_time_ = glfwGetTime();
+
   std::cout << "GLWindow - (con)" << std::endl;
 }
 
@@ -103,7 +107,7 @@ bool GLWindow::IsRunning() {
   // FPS calc and output cam pos
   delta_time_sum_ += delta_time;
   int freq = 400;
-  if (frames_ % freq == 0) {
+  if (frames_ > 0 && frames_ % freq == 0) {
     float fps = freq / delta_time_sum_;
     std::cout << "\n\n======== FPS = " << fps << ","
               << ", sleep_for_micro = " << sleep_for_micro_sum_ / freq

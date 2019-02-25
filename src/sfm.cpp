@@ -222,7 +222,9 @@ void SfM3D::ExtractFeatures() {
   
 }
 
-void SfM3D::MatchImageFeatures(const int skip_thresh, bool use_cache) {
+void SfM3D::MatchImageFeatures(const int skip_thresh,
+                               const double max_line_dist,
+                               const bool use_cache) {
   assert(image_features_.size() > 1);
   if (image_pairs_.empty()) {
     GenerateAllPairs();
@@ -253,6 +255,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh, bool use_cache) {
   
   int total_matched_points = 0;
   int skipped_matches = 0;
+  int filtered_by_distance = 0;
 
   
   int capacity = std::max(
@@ -273,7 +276,9 @@ void SfM3D::MatchImageFeatures(const int skip_thresh, bool use_cache) {
   for (int i = 0; i < capacity; ++i) {
     auto matcher = [this, &next_idx, &cout_mu, &acc_mu,
                     &skipped_matches, &total_matched_points,
-                    skip_thresh, use_cache](int thread_id) {
+                    &filtered_by_distance,
+                    skip_thresh, use_cache, max_line_dist
+                    ](int thread_id) {
       int idx;
       while ((idx = next_idx++) < image_pairs_.size()) {
 
@@ -318,6 +323,15 @@ void SfM3D::MatchImageFeatures(const int skip_thresh, bool use_cache) {
           from_cache = false;
           ::ComputeLineKeyPointsMatch(features1, camera_info1, features2, camera_info2, matches);
         }
+
+        int msize = matches.match.size();
+
+        // Filter Matches base on Line Distance
+        FilterMatchByLineDistance(features1, camera_info1,
+                                  features2, camera_info2,
+                                  matches, max_line_dist);
+
+        filtered_by_distance += msize - matches.match.size();
 
         // Restore indexes to the current run
         matches.image_index.first = img_first;
@@ -515,6 +529,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh, bool use_cache) {
   //           << " (id: " << most_match_id << ")"
   //           << std::endl;
   std::cout << "skipped_matches = " << skipped_matches << std::endl;
+  std::cout << "filtered_by_distance = " << filtered_by_distance << std::endl;
   std::cout << "image_matches_.size = " << image_matches_.size() << std::endl;
 
   auto t1 = high_resolution_clock::now();
@@ -577,7 +592,7 @@ void SfM3D::InitReconstruction() {
   //   std::cout << "mp: " << wp << std::endl;
   // }
 
-  CombineMapComponents(map_);
+  CombineMapComponents(map_, max_merge_dist);
 
   OptimizeMap(map_);
   
@@ -655,14 +670,15 @@ void SfM3D::TriangulatePointsFromViews(const int first_id,
     // sqrt(errs1[i]*errs1[i] + errs2[i]*errs2[i]) < 2.0
     // errs1[i] > 1.0 || errs2[i] > 1.0           // reprojection error too big
     double d = sqrt(errs1[i]*errs1[i] + errs2[i]*errs2[i]);
-    if ( // errs1[i] > 1.0 || errs2[i] > 1.0           // reprojection error too big
-         cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
+    if (   errs1[i] > repr_error_thresh    // reprojection error too big
+        || errs2[i] > repr_error_thresh  // reprojection error too big
+        || cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
         || points3d.at<float>(i, 2) < 38.0) {      // it's out of the ground
-      std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
-                << ", " << errs2[i] 
-                << ", d = " << d
-                << ", z = " << points3d.at<float>(i, 2)
-                << std::endl;
+      // std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
+      //           << ", " << errs2[i] 
+      //           << ", d = " << d
+      //           << ", z = " << points3d.at<float>(i, 2)
+      //           << std::endl;
       continue;
     }
 
@@ -804,7 +820,7 @@ void SfM3D::ReconstructNextView(const int next_img_id) {
   map_mutex.lock();
   // ::MergeToTheMap(map_, view_map, ccomp_);
   // ::MergeToTheMapImproved(map_, view_map, ccomp_);
-  MergeAndCombinePoints(map_, view_map);
+  ::MergeAndCombinePoints(map_, view_map, max_merge_dist);
   map_mutex.unlock();
 
   std::cout << ", map = " << map_.size();
@@ -847,7 +863,7 @@ void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
   map_mutex.lock();
   // ::MergeToTheMap(map_, view_map, ccomp_);
   // ::MergeToTheMapImproved(map_, view_map, ccomp_);
-  MergeAndCombinePoints(map_, view_map);
+  ::MergeAndCombinePoints(map_, view_map, max_merge_dist);
   std::cout << ", map = " << map_.size();
   map_mutex.unlock();
 
@@ -990,6 +1006,11 @@ void SfM3D::ReconstructAll() {
   if (need_optimization) {
     std::cout << "\nOPTIMIZING ALLLL ....\n\n";
     OptimizeMap(map_);
+
+    
+
+    // OptimizeMap(map_);
+
     std::cout << "\nOPTIMIZATION DONE! \n\n";
   }
 
@@ -1027,6 +1048,69 @@ void SfM3D::PrintFinalStats() {
   std::cout << "USED_views = " << used_views_.size()
             << " out of " << image_features_.size() << std::endl;
   std::cout << "FINAL_map.size = " << map_.size() << " points" << std::endl;
+
+
+  // ::RemoveOutliersByError(map_, cameras_, image_features_, 0.05);
+  // std::cout << "map res size = " << map_.size() << std::endl;
+
+
+  std::vector<double> errs = ::GetReprojectionErrors(map_, cameras_, image_features_);
+
+  typedef std::pair<int, double> ErrEl;
+  std::vector<ErrEl> errsi(errs.size());
+  for (int i = 0; i < errs.size(); ++i) {
+    errsi[i] = std::make_pair(i, errs[i]);
+  }
+
+  std::sort(errsi.rbegin(), errsi.rend(), [](const ErrEl& a, const ErrEl& b) {
+    return a.second < b.second;
+  });
+
+  std::cout << "=== Top errors:" << std::endl;
+  for (int i = 0; i < 20; ++i) {
+    std::cout << i << ": " << errsi[i].second
+              << ", " << map_[errsi[i].first].views.size()
+              << std::endl;
+  }
+
+  // count errs in bins
+  int num_bins = 10;
+  double min_err = (* std::min_element(errs.begin(), errs.end()));
+  double max_err = (* std::max_element(errs.begin(), errs.end()));
+  std::map<int, int> count_bins;
+  for (int i = 0; i < num_bins; ++i) {
+    count_bins.insert(std::make_pair(i, 0));
+  }
+
+  // TODO: TEST on THIS
+  // make && ./bin/3d_recon --records="1,2" --matches_line_dist_thresh=10.0 --matches_num_thresh=7 --sfm_repr_error_thresh=10.0 --sfm_max_merge_dist=5.0 --noviz
+  // idx = 20
+  double bin_width = (max_err - min_err) / num_bins;
+  // std::cout << "bin_width = " << bin_width << std::endl;
+  for (auto e: errs) {
+    int idx = static_cast<int>(floor((e - min_err) / bin_width));
+
+    if (idx >= num_bins) {
+      idx = num_bins - 1;
+    }
+    
+    // if (e > 30.0) {
+    //   std::cout << e << " -> " << idx << std::endl;
+    //   std::cout << "idx raw0 = " << (e - min_err) / bin_width << std::endl;
+    //   std::cout << "idx raw1 = " << floor((e - min_err) / bin_width) << std::endl;
+    // }
+    ++count_bins[idx];
+    // std::cin.get();
+  }
+
+  
+  std::cout << "=== Errors distribution:" << std::endl;
+  for (int i = 0; i < std::min(20, num_bins); ++i) {
+    std::cout << i << " [" << (bin_width * (i + 1)) << "]: " 
+              << count_bins[i] << std::endl;
+  }
+
+  
   
 }
 

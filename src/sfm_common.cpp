@@ -172,8 +172,8 @@ void ComputeLineKeyPointsMatch(const Features& features1,
                                Matches& matches) {
 
   // == Compute Fundamental Matrix ==
-  cv::Mat fund;
-  CalcFundamental(camera_info1, camera_info2, fund);
+  // cv::Mat fund;
+  // CalcFundamental(camera_info1, camera_info2, fund);
   // std::cout << "Fundamental Matrix: " << fund << std::endl;
 
   matches.match.clear();
@@ -185,12 +185,17 @@ void ComputeLineKeyPointsMatch(const Features& features1,
 
   // cv::Mat mask1 = cv::Mat::zeros(points1.size(), points2.size(), CV_8UC1);
 
-  const std::vector<cv::KeyPoint>& points1 = features1.keypoints;
-  const std::vector<cv::KeyPoint>& points2 = features2.keypoints;
+  
+  
 
   const cv::Mat& descriptors1 = features1.descriptors;
   const cv::Mat& descriptors2 = features2.descriptors;
 
+  /*
+
+  const std::vector<cv::KeyPoint>& points1 = features1.keypoints;
+  const std::vector<cv::KeyPoint>& points2 = features2.keypoints;
+  
   cv::Mat points1v(points1.size(), 3, CV_64F);
   cv::Mat points2v(3, points2.size(), CV_64F);
   for (int i = 0; i < points1.size(); ++i) {
@@ -204,7 +209,7 @@ void ComputeLineKeyPointsMatch(const Features& features1,
     points2v.at<double>(2, i) = 1.0;
   }
 
-  /*
+  
   
   cv::Mat kp_lines21 = fund * points2v;
   // std::cout << "points1v = " << points1v.rows << ", " << points1v.cols << std::endl;
@@ -268,8 +273,10 @@ void ComputeLineKeyPointsMatch(const Features& features1,
     if (knnMatches[m].size() < 2) continue; // no match for the points
     if (knnMatches[m][0].distance < ratio_thresh * knnMatches[m][1].distance) {
       cv::DMatch match = knnMatches[m][0];
-      
+      matches.match.push_back(match);
 
+      /*
+      
       cv::Mat points2(3, 1, CV_64F);
       points2.at<double>(0, 0) = features2.keypoints[match.trainIdx].pt.x;
       points2.at<double>(1, 0) = features2.keypoints[match.trainIdx].pt.y;
@@ -297,8 +304,9 @@ void ComputeLineKeyPointsMatch(const Features& features1,
 
       if (dd < 100.0) {
         matches.match.push_back(match);
-        std::cout << "dd[" << matches.match.size() - 1 << "] = " << dd << std::endl;
+        // std::cout << "dd[" << matches.match.size() - 1 << "] = " << dd << std::endl;
       }
+      */
 
       // Test distance to the epiline
       // and decide
@@ -315,8 +323,67 @@ void ComputeLineKeyPointsMatch(const Features& features1,
     }
   }
 
+  // Filter by distance
+  // FIlterMatchByLineDistance(features1, camera_info1,
+  //                           features2, camera_info2,
+  //                           matches, 100.0);
+
   // std::cout << "lgood_matches.size = " << matches.match.size() << std::endl;
 }
+
+void FilterMatchByLineDistance(const Features& features1, 
+                               const CameraInfo camera_info1, 
+                               const Features& features2, 
+                               const CameraInfo& camera_info2, 
+                               Matches& matches, 
+                               const double line_dist) {
+
+  cv::Mat fund;
+  CalcFundamental(camera_info1, camera_info2, fund);
+
+  auto match = matches.match.begin();
+  while (match != matches.match.end()) {
+    // cv::DMatch match = knnMatches[m][0];
+    
+    cv::Mat points2(3, 1, CV_64F);
+    points2.at<double>(0, 0) = features2.keypoints[match->trainIdx].pt.x;
+    points2.at<double>(1, 0) = features2.keypoints[match->trainIdx].pt.y;
+    points2.at<double>(2, 0) = 1.0;
+
+    cv::Mat points1(1, 3, CV_64F);
+    points1.at<double>(0, 0) = features1.keypoints[match->queryIdx].pt.x;
+    points1.at<double>(0, 1) = features1.keypoints[match->queryIdx].pt.y;
+    points1.at<double>(0, 2) = 1.0;
+
+    // std::cout << "match = " << match.queryIdx 
+    //           << ", " << match.trainIdx
+    //           << std::endl;
+
+    // std::cout << "p1 = " << points1 << std::endl;
+    // std::cout << "p2 = " << points2 << std::endl;
+
+    cv::Mat kp_l2 = fund * points2;
+    double a = kp_l2.at<double>(0);
+    double b = kp_l2.at<double>(1);
+    double d = sqrt(a*a + b*b);
+
+    cv::Mat dd_mat = points1 * kp_l2 / d;
+    double dd = abs(dd_mat.at<double>(0));
+
+    if (dd > line_dist) {
+      // matches.match.push_back(match);
+      match = matches.match.erase(match);
+      continue;
+    } 
+
+    // std::cout << "dd[" << matches.match.size() - 1 << "] = " << dd << std::endl;
+
+    ++match;
+        
+  }
+
+}
+
 
 
 
@@ -900,6 +967,8 @@ double GetReprojectionError(const Map3D& map, const std::vector<CameraInfo>& cam
   double err = 0.0;
 
   for (size_t i = 0; i < map.size(); ++i) {
+    err += GetReprojectionError(map[i], cameras, features);
+    /*
     for (auto& view : map[i].views) {
       cv::Mat proj = GetProjMatrix(cameras[view.first]);
       const cv::Point2f& point = features[view.first].keypoints[view.second].pt;
@@ -914,12 +983,50 @@ double GetReprojectionError(const Map3D& map, const std::vector<CameraInfo>& cam
       // std::cout << "dx, dy = " << dx << ", " << dy << std::endl;
       err += (dx * dx + dy * dy);
     }
+    */
     
   }
 
   return err;
 
 }
+
+std::vector<double> GetReprojectionErrors(
+    const Map3D& map,
+    const std::vector<CameraInfo>& cameras, 
+    const std::vector<Features>& features) {
+
+  std::vector<double> errs(map.size());
+  for (size_t i = 0; i < map.size(); ++i) {
+    errs[i] = GetReprojectionError(map[i], cameras, features);
+    errs[i] /= map[i].views.size();
+  }
+  return errs;
+
+}
+
+
+double GetReprojectionError(const WorldPoint3D& point3d,
+                            const std::vector<CameraInfo>& cameras, 
+                            const std::vector<Features>& features) {
+  double err = 0.0;
+  for (auto& view : point3d.views) {
+    cv::Mat proj = GetProjMatrix(cameras[view.first]);
+    const cv::Point2f& point = features[view.first].keypoints[view.second].pt;
+    cv::Matx41d point3dh(
+      point3d.pt.x, point3d.pt.y, point3d.pt.z, 1.0
+    );
+    cv::Mat pred = proj * cv::Mat(point3dh);
+    pred = pred / pred.at<double>(2);
+    double dx = pred.at<double>(0) - double(point.x);
+    double dy = pred.at<double>(1) - double(point.y);
+    // std::cout << "pred = " << pred << std::endl;
+    // std::cout << "dx, dy = " << dx << ", " << dy << std::endl;
+    err += 0.5 * (dx * dx + dy * dy);
+  }
+  return err;
+}
+
 
 
 std::vector<double> GetZDistanceFromCamera(const CameraInfo& camera_info,
@@ -941,6 +1048,38 @@ std::vector<double> GetZDistanceFromCamera(const CameraInfo& camera_info,
   return zdist;
 
 }
+
+void RemoveOutliersByError(Map3D& map,
+                           const std::vector<CameraInfo>& cameras,
+                           const std::vector<Features>& features,
+                           const float percentile) {
+
+  std::vector<double> errs = ::GetReprojectionErrors(map, cameras, features);
+  
+  double min_err = (* std::min_element(errs.begin(), errs.end()));
+  double max_err = (* std::max_element(errs.begin(), errs.end()));
+  double bound_error = min_err + (max_err - min_err) * (1 - percentile);
+
+  auto w = 0;
+  auto wit = map.begin();
+  auto r = 0;
+  while (r < map.size()) {
+    if (errs[r] < bound_error) {
+      if (r != w) {
+        std::swap(map[r], map[w]);
+      }
+      ++w;
+      ++wit;
+    } else {
+      std::cout << "-- erase " << errs[r] << ": " << map[r] << std::endl;
+    }
+    ++r;
+  }
+
+  map.erase(wit, map.end());
+
+}
+
 
 
 
@@ -1411,14 +1550,15 @@ void CombineMapComponents(Map3D& map, const double max_keep_dist) {
 }
 
 void MergeAndCombinePoints(Map3D& map,
-                           const Map3D& local_map) {
+                           const Map3D& local_map,
+                           const double max_keep_dist) {
 
   using namespace std::chrono;
   auto t0 = high_resolution_clock::now();
 
   // std::cout << "\nMerge AND Combine Points:\n";
   map.insert(map.end(), local_map.begin(), local_map.end());
-  CombineMapComponents(map);
+  ::CombineMapComponents(map, max_keep_dist);
 
   auto t1 = high_resolution_clock::now();
   auto dur = duration_cast<microseconds>(t1 - t0);
