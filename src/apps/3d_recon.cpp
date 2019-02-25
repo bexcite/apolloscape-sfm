@@ -228,22 +228,7 @@ int main(int argc, char* argv[]) {
     sfm.InitReconstruction();
 
   } else {
-
-  // sfm.ReconstructAll();
-
-  // {
-  //   std::cout << "Serializing SFM!!!!\n";
-  //   std::ofstream file("sfm_out.bin", std::ios::binary);
-  //   cereal::BinaryOutputArchive archive(file);
-  //   archive(sfm);
-  //   sfm.PrintFinalStats();
-  //   std::cout << "Serializing SFM!!!! - DONE\n";
-  // }
-
-  //SfM3D sfm;
-  //{
     std::cout << "De-Serializing SFM!!!!\n";
-    // std::ifstream file("sfm_out_2.bin", std::ios::binary);
     std::ifstream file(FLAGS_restore, std::ios::binary);
     cereal::BinaryInputArchive archive(file);
     archive(sfm);
@@ -266,10 +251,7 @@ int main(int argc, char* argv[]) {
   if (!FLAGS_viz) {
     sfm.ReconstructAll();
     // sfm.PrintFinalStats();
-    
     StoreSfM(sfm);
-    // Remove Outliers Test (Top 5% bin)
-  
     return EXIT_SUCCESS;
   }
 
@@ -278,11 +260,6 @@ int main(int argc, char* argv[]) {
     sfm.ReconstructAll();
     sfm.SetProcStatus(SfM3D::FINISH);
   });
-
-
-  // std::cout << sfm << std::endl;
-  // sfm.PrintFinalStats();
-
 
 
   // ====== Create Window and Renderer
@@ -369,30 +346,26 @@ int main(int argc, char* argv[]) {
   }
 
   std::cout << "\ncameras_pool.size = " << cameras_pool.size() << std::endl;
-  // std::cout << "cameras_pool[0] size = " << sizeof(cameras_pool[0]) << std::endl;
 
 
   // Get cameras with points
-  // map: cam_id => vec of (keypoint_id, 3d_point_coords)
-  // std::map<int, std::vector<std::pair<int, Point3DColor> > > map_cameras;
-  // MapCameras map_cameras;
-
+  // map_cams: cam_id => vec of (keypoint_id, 3d_point_coords)
 
   std::vector<Point3DColor> glm_points;
   MapCameras map_cams;
-  int lv = -1;
+  int lv = -1;  // previous version is negative for initial data fetch
   sfm.GetMapPointsAndCameras(glm_points, map_cams, lv);
   MakeCameras(cameras, map_cams, sfm, cameras_pool);
 
-  ::RandomPruneVec(glm_points, 1000000);
+  // Randomly select points (used for quicker rendering on big maps)
+  // ::RandomPruneVec(glm_points, 1000000);
 
   int origin_cam_id = map_cams.begin()->first;
   CameraInfo origin_cam_info = sfm.GetCameraInfo(origin_cam_id);
   
 
-  typedef std::pair<const int, std::vector<std::pair<int, Point3DColor> > > MapCameraEl;
-
   // Set Origin to the Best Camera (with the most matches)
+  // typedef std::pair<const int, std::vector<std::pair<int, Point3DColor> > > MapCameraEl;
   // auto cam_max_points = std::max_element(map_cams.begin(),
   //     map_cams.end(),
   //     [](MapCameraEl& el1,
@@ -409,14 +382,11 @@ int main(int argc, char* argv[]) {
   //                     origin_cam_info.rotation_angles[1],
   //                     origin_cam_info.rotation_angles[2]);
 
-  // std::vector<std::shared_ptr<CameraObject> > camera_refs;
-
 
   // cv windows are not working well with glfw windows
   cv::destroyAllWindows();
 
   // ========= View Debug Objects =================
-
   // std::shared_ptr<ModelObject> debug_cube_obj(
   //     ObjectFactory::CreateModelObject(
   //         "../data/objects/debug_cube/debug_cube.obj"));
@@ -538,10 +508,10 @@ int main(int argc, char* argv[]) {
 
   // === Change Camera Alphas
   float cameras_alpha = 0.2f;
-  auto change_alpha = [&cameras/*, &cameras_alpha*/](float cam_alpha) {
-    auto set_alpha = [/*&cameras_alpha*/cam_alpha](std::shared_ptr<DObject> obj) {
+  auto change_alpha = [&cameras](float cam_alpha) {
+    auto set_alpha = [cam_alpha](std::shared_ptr<DObject> obj) {
       std::shared_ptr<CameraObject> co = std::static_pointer_cast<CameraObject>(obj);
-      co->SetImageAlpha(/*cameras_alpha*/cam_alpha);
+      co->SetImageAlpha(cam_alpha);
     };
     cameras->Apply(TAG_CAMERA_OBJECT, set_alpha);
   };
@@ -551,13 +521,11 @@ int main(int argc, char* argv[]) {
 
   gl_window.AddProcessInput(GLFW_KEY_Z, [&cameras_alpha, &change_alpha](float dt) {
     cameras_alpha = std::max(cameras_alpha - 0.9f * dt, 0.0f);
-    // std::cout << "AddProcessInput!! == Z = " << alpha << std::endl;
     change_alpha(cameras_alpha);
   });
 
   gl_window.AddProcessInput(GLFW_KEY_X, [&cameras_alpha, &change_alpha](float dt) {
     cameras_alpha = std::min(cameras_alpha + 0.9f * dt, 1.0f);
-    // std::cout << "AddProcessInput!! == X = " << alpha << std::endl;
     change_alpha(cameras_alpha);
   });
   // <<<<<< Change Camera Alpha
@@ -588,8 +556,8 @@ int main(int argc, char* argv[]) {
                                  lversion);
       last_vis_version.store(lversion);
 
-
-      ::RandomPruneVec(glm_points_temp, 1000000);
+      // Randomly select points (used for quicker rendering on big maps)
+      // ::RandomPruneVec(glm_points_temp, 1000000);
 
       std::cout << "\nGLM_POINTS_SIZE = " << glm_points_temp.size() << std::endl;
 
@@ -611,7 +579,7 @@ int main(int argc, char* argv[]) {
   double dur_make_cameras = 0;
   double dur_all = 0;
 
-  int drawed_version = -1;
+  int drawn_version = -1;
 
   // points_obj = std::shared_ptr<DObject>(
   //       ObjectFactory::CreatePoints(glm_points, true));
@@ -633,7 +601,7 @@ int main(int argc, char* argv[]) {
     
 
     // Crazy drawing
-    if (drawed_version < last_vis_version.load()) {
+    if (drawn_version < last_vis_version.load()) {
       // if(sfm.GetMapPointsVec(glm_points)) {
         // std::cout << "\n\nglm_points.size = " << glm_points.size() << std::endl;
       auto t00 = high_resolution_clock::now();
@@ -661,11 +629,11 @@ int main(int argc, char* argv[]) {
       auto t11 = high_resolution_clock::now();
       dur_all += duration_cast<microseconds>(t11-t00).count() / 1e+6;
 
-      drawed_version = last_vis_version.load();
+      drawn_version = last_vis_version.load();
     }
 
 
-
+    /*
     if (frames_cntr % 1000 == 0) {
       // std::cout << "\nMAKE_POINTS_TIME = " << dur_make_points / 1000.0 << std::endl;
       // std::cout << "MAKE_CAMERAS_TIME = " << dur_make_cameras / 1000.0 << std::endl;
@@ -674,6 +642,7 @@ int main(int argc, char* argv[]) {
       dur_make_cameras = 0.0;
       dur_all = 0.0;
     }
+    */
 
     
     if (points_obj) {
@@ -696,10 +665,7 @@ int main(int argc, char* argv[]) {
     // std::cout << "<<< END CYCLE ===========" << std::endl;
   }
 
-  // gl_window.Terminate();
-
-  // first.detach();
-
+  gl_window.Terminate();
 
 
   vis_prep_status.store(ThreadStatus::FINISH);
@@ -707,23 +673,8 @@ int main(int argc, char* argv[]) {
   recon_thread.join();
   vis_prep_thread.join();
 
+  // Save sfm model 
   StoreSfM(sfm);
-
-  /*
-  std::string output_file = FLAGS_output;
-  if (!FLAGS_restore.empty()) {
-    output_file = FLAGS_restore;
-  }
-  {
-    std::cout << "Serializing SFM!!!! to: " << output_file << std::endl;
-    std::ofstream file(output_file, std::ios::binary);
-    cereal::BinaryOutputArchive archive(file);
-    archive(sfm);
-    sfm.PrintFinalStats();
-    std::cout << "Serializing SFM!!!! - DONE (" 
-              << output_file << ")" << std::endl;
-  }
-  */
 
   // Clear Gflags memory
   gflags::ShutDownCommandLineFlags();

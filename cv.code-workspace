@@ -89,7 +89,8 @@
       "regex": "cpp",
       "typeindex": "cpp",
       "valarray": "cpp",
-      "variant": "cpp"
+      "variant": "cpp",
+      "condition_variable": "cpp"
     }
   }
 }
