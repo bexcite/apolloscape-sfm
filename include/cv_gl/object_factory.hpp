@@ -5,9 +5,7 @@
 #include <map>
 #include <iostream>
 
-// #include <glm/gtc/matrix_transform.hpp>
 
-// #include <cv_gl/dobject.h>
 #include "cv_gl/mesh.h"
 #include "cv_gl/shader.h"
 #include "cv_gl/sfm_common.h"
