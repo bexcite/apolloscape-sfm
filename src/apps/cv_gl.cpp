@@ -41,12 +41,12 @@
 #include <iomanip>
 #include <memory>
 
-#include "cv_gl/utils.hpp"
+#include "cv_gl/utils.h"
 
 #include "cv_gl/shader.h"
 #include "cv_gl/camera.h"
 #include "cv_gl/mesh.h"
-#include "cv_gl/model.h"
+#include "cv_gl/model.hpp"
 
 // #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

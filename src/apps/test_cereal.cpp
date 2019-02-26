@@ -6,7 +6,6 @@
 
 
 
-// #include "test_class.hpp"
 #include "cv_gl/sfm.h"
 
 #include <opencv2/opencv.hpp>
@@ -18,7 +17,7 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/xml.hpp>
 
-#include "cv_gl/test_class.hpp"
+#include "cv_gl/test_class.h"
 #include "cv_gl/test_class_serialization.hpp"
 #include "cv_gl/serialization.hpp"
 

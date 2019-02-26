@@ -12,12 +12,12 @@
 #include "cv_gl/camera.h"
 #include "cv_gl/mesh.h"
 #include "cv_gl/shader.h"
-#include "cv_gl/utils.hpp"
+#include "cv_gl/utils.h"
 
 #include "cv_gl/gl_window.h"
 
-#include "cv_gl/renderer.h"
-#include "cv_gl/dobject.h"
+#include "cv_gl/renderer.hpp"
+#include "cv_gl/dobject.hpp"
 #include "cv_gl/object_factory.hpp"
 
 

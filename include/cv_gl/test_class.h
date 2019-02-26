@@ -4,7 +4,7 @@
 
 // #include <cereal/cereal.hpp>
 
-#include "cv_gl/utils.hpp"
+#include "cv_gl/utils.h"
 #include "cv_gl/camera.h"
 // #include "cv_gl/serialization_mat.hpp"
 

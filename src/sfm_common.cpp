@@ -5,7 +5,7 @@
 #include <opencv2/xfeatures2d.hpp>
 #include <ceres/ceres.h>
 
-#include "cv_gl/utils.hpp"
+#include "cv_gl/utils.h"
 #include "cv_gl/sfm_common.h"
 // #include "cv_gl/ccomp.hpp"
 
@@ -1055,7 +1055,7 @@ void RemoveOutliersByError(Map3D& map,
                            const float percentile) {
 
   std::vector<double> errs = ::GetReprojectionErrors(map, cameras, features);
-  
+
   double min_err = (* std::min_element(errs.begin(), errs.end()));
   double max_err = (* std::max_element(errs.begin(), errs.end()));
   double bound_error = min_err + (max_err - min_err) * (1 - percentile);

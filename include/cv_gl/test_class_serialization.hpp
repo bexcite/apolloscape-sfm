@@ -4,7 +4,7 @@
 
 #include <cereal/cereal.hpp>
 #include <opencv2/opencv.hpp>
-#include "cv_gl/test_class.hpp"
+#include "cv_gl/test_class.h"
 
 template<class Archive>
 void save(Archive& ar, const TClass& tclass) {

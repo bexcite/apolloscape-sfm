@@ -10,7 +10,7 @@
 
 #include <iomanip>
 
-#include "cv_gl/utils.hpp"
+#include "cv_gl/utils.h"
 
 
 // #define GLM_ENABLE_EXPERIMENTAL

@@ -1,4 +1,4 @@
-#include "cv_gl/test_class.hpp"
+#include "cv_gl/test_class.h"
 
 void TClass::MakeData() {
   tc[0] = 10;

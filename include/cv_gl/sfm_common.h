@@ -7,7 +7,7 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "cv_gl/utils.hpp"
+#include "cv_gl/utils.h"
 #include "cv_gl/camera.h"
 #include "cv_gl/ccomp.hpp"
 

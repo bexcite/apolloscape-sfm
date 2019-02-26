@@ -4,7 +4,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "cv_gl/utils.hpp"
+#include "cv_gl/utils.h"
 #include "cv_gl/sfm.h"
 
 #include <boost/filesystem.hpp>

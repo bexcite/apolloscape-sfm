@@ -6,8 +6,8 @@
 
 #include <glm/glm.hpp>
 #include "cv_gl/camera.h"
-#include "cv_gl/utils.hpp"
-#include "cv_gl/model.h"
+#include "cv_gl/utils.h"
+#include "cv_gl/model.hpp"
 
 #include <opencv2/opencv.hpp>
 

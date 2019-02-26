@@ -3,7 +3,7 @@
 #define CV_GL_RENDERER_H_
 
 #include "cv_gl/camera.h"
-#include "cv_gl/dobject.h"
+#include "cv_gl/dobject.hpp"
 
 class Renderer {
 
