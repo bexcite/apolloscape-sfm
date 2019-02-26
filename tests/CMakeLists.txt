@@ -1,1 +1,1 @@
-message("================== Hello from TESTS!")
+message("================== TODO: TESTS!")

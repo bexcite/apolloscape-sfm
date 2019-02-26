@@ -25,11 +25,11 @@ set_target_properties(cv_gl_lib PROPERTIES
 
 #[[
 ]]
-add_executable(${PROJECT_NAME} main.cpp)
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
-# target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE_DIRS} )
-target_link_libraries(${PROJECT_NAME} PUBLIC cv_gl_lib)
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set(CV_GL_NAME cv_gl)
+add_executable(${CV_GL_NAME} apps/cv_gl.cpp)
+set_property(TARGET ${CV_GL_NAME} PROPERTY CXX_STANDARD 11)
+target_link_libraries(${CV_GL_NAME} PUBLIC cv_gl_lib)
+set_target_properties(${CV_GL_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
