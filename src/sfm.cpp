@@ -844,8 +844,9 @@ void SfM3D::ReconstructNextView(const int next_img_id) {
 
   todo_views_.erase(next_img_id);
 
-  ++vis_version_;
-  map_update_.notify_one();
+  // ++vis_version_;
+  // map_update_.notify_one();
+  EmitMapUpdate();
 
 }
 
@@ -877,8 +878,9 @@ void SfM3D::ReconstructNextViewPair(const int first_id, const int second_id) {
   todo_views_.erase(first_id);
   todo_views_.erase(second_id);
 
-  ++vis_version_;
-  map_update_.notify_one();
+  // ++vis_version_;
+  // map_update_.notify_one();
+  EmitMapUpdate();
 }
 
 void SfM3D::ReconstructAll() {
@@ -1014,7 +1016,8 @@ void SfM3D::ReconstructAll() {
     std::cout << "\nOPTIMIZATION DONE! \n\n";
   }
 
-  map_update_.notify_one();
+  // map_update_.notify_one();
+  EmitMapUpdate();
 
 }
 
@@ -1114,7 +1117,8 @@ void SfM3D::PrintFinalStats() {
   
 }
 
-bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) {
+bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points,
+                            const float ratio) {
 
   // if(!map_mutex.try_lock()) return false;
 
@@ -1122,11 +1126,24 @@ bool SfM3D::GetMapPointsVec(std::vector<Point3DColor>& glm_points) {
 
   glm_points.clear();
 
+  std::cout << "\n>> reduce map ratio = "
+            << map_points_ratio_ << std::endl;
+  Map3D map = ::ReduceMapByError(map_, cameras_, image_features_, map_points_ratio_);
+
+  // ::RemoveOutliersByError(map_, cameras_, image_features_, 0.5);
+
+  // if (retain_ratio < 1.0) {
+  //   int steps = 0;
+  //   int start_size = map.size();
+  //   int end_size = map.size() * retain_ratio;
+  //   while ()
+  // }
+
   using namespace std::chrono;
   auto t0 = high_resolution_clock::now();
 
   // std::cout << "GET MAP POINTS VEC <<<<<<!!!!!!!!!!! = " << map_.size();
-  for (auto& wp: map_) {
+  for (auto& wp: map) {
     Point3DColor p3d;
     glm::vec3 v(wp.pt.x, wp.pt.y, wp.pt.z);
     p3d.pt = v;
@@ -1246,14 +1263,16 @@ bool SfM3D::GetMapCamerasWithPointsVec(MapCameras& map_cameras) {
 
 void SfM3D::GetMapPointsAndCameras(std::vector<Point3DColor>& glm_points,
                               MapCameras& map_cameras,
-                              int& last_version) {
+                              int& last_version,
+                              const float& ratio) {
 
   std::unique_lock<std::mutex> lck(map_mutex);
   // map_update_.wait(lck);
   map_update_.wait(lck, [&]() { return last_version < vis_version_.load(); }); //return last_version < vis_version_.load();
-  // std::cout << "\n>> GET_MAP_POINTS_AND_CAMERAS !!!!!!!!!!!!!!!!!!\n";
+  std::cout << "\n>> GET_MAP_POINTS_AND_CAMERAS !!!!!!!!!!!!!!!!!! ratio = "
+            << ratio << std::endl;
 
-  GetMapPointsVec(glm_points);
+  GetMapPointsVec(glm_points, ratio);
   GetMapCamerasWithPointsVec(map_cameras);
 
   last_version = vis_version_.load();
@@ -1292,15 +1311,30 @@ int SfM3D::ImageCount() const {
   return image_data_.size();
 }
 
+int SfM3D::MapSize() const {
+  return map_.size();
+}
+
 void SfM3D::SetProcStatus(SfMStatus proc_status) {
   proc_status_.store(proc_status);
 
-  ++vis_version_;
-  map_update_.notify_all();
+  // ++vis_version_;
+  // map_update_.notify_all();
+  EmitMapUpdate();
 }
 
 bool SfM3D::IsFinished() {
   return proc_status_.load() == SfM3D::FINISH;
+}
+
+void SfM3D::EmitMapUpdate() {
+  ++vis_version_;
+  map_update_.notify_all();
+}
+
+void SfM3D::SetMapPointsRatio(const float ratio) {
+  map_points_ratio_ = ratio;
+  EmitMapUpdate();
 }
 
 bool SfM3D::IsPairInOrder(const int p1, const int p2) {

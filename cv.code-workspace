@@ -91,6 +91,7 @@
       "valarray": "cpp",
       "variant": "cpp",
       "condition_variable": "cpp"
-    }
+    },
+    "git.ignoreLimitWarning": true
   }
 }

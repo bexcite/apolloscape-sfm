@@ -127,6 +127,12 @@ void RemoveOutliersByError(Map3D& map,
                            const std::vector<Features>& features,
                            const float percentile);
 
+Map3D ReduceMapByError(const Map3D& map,
+                       const std::vector<CameraInfo>& cameras,
+                       const std::vector<Features>& features,
+                       const float ratio);
+
+
 
 int GetNextBestView(const Map3D& map, 
     const std::unordered_set<int>& views, 

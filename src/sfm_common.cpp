@@ -1080,6 +1080,49 @@ void RemoveOutliersByError(Map3D& map,
 
 }
 
+Map3D ReduceMapByError(const Map3D& map,
+                       const std::vector<CameraInfo>& cameras,
+                       const std::vector<Features>& features,
+                       const float ratio) {
+
+  if (ratio == 1.0) return Map3D(map);
+
+  
+  std::vector<double> errs = ::GetReprojectionErrors(map, cameras, features);
+
+  typedef std::pair<int, double> ErrEl;
+  std::vector<ErrEl> errsi(errs.size());
+  for (int i = 0; i < errs.size(); ++i) {
+    errsi[i] = std::make_pair(i, errs[i]);
+  }
+
+  std::sort(errsi.begin(), errsi.end(), [](const ErrEl& a, const ErrEl& b) {
+    return a.second < b.second;
+  });
+
+  int new_size = map.size() * ratio;
+  Map3D mapr(new_size);
+
+  // std::cout << "=== Top errors:" << std::endl;
+  for (int i = 0; i < new_size; ++i) {
+    mapr[i] = map[errsi[i].first];
+    // if (i < 50) {
+    //   std::cout << i << ": " << errsi[i].second
+    //             << ", " << map[errsi[i].first].views.size()
+    //             << std::endl;
+    // }
+  }
+
+  std::cout << "Reduced map: from.size = " << map.size()
+            << " to.size = " << mapr.size()
+            << " (ratio: " << ratio << ")"
+            << std::endl;
+
+  return mapr;
+
+}
+
+
 
 
 
