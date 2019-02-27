@@ -84,13 +84,11 @@ public:
   void ReconstructAll();
   void PrintFinalStats();
 
-  bool GetMapPointsVec(std::vector<Point3DColor>& glm_points,
-                       const float retain_ratio = 1.0);
+  bool GetMapPointsVec(std::vector<Point3DColor>& glm_points);
   bool GetMapCamerasWithPointsVec(MapCameras& map_cameras);
   void GetMapPointsAndCameras(std::vector<Point3DColor>& glm_points,
                               MapCameras& map_cameras,
-                              int& last_version, 
-                              const float& ratio = 1.0);
+                              int& last_version);
 
   cv::Mat GetImage(int cam_id, bool full_size = false) const;
   CameraInfo GetCameraInfo(int cam_id) const;
@@ -105,7 +103,6 @@ public:
   bool IsFinished();
   void EmitMapUpdate();
 
-  void SetMapPointsRatio(const float ratio);
 
   double repr_error_thresh;
   double max_merge_dist;
@@ -186,8 +183,6 @@ private:
   std::mutex map_mutex;
   std::condition_variable map_update_;
   std::atomic<long> vis_version_;
-
-  float map_points_ratio_ = 1.0;
 
   std::atomic<SfMStatus> proc_status_;
 

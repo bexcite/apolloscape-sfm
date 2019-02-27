@@ -50,13 +50,14 @@ struct WorldPoint3D {
 struct Point3DColor {
   Point3DColor() :
       pt{0.0}, color{0.0}, color_br{0.0}, color_bl{0.0}, color_tr{0.0},
-      color_tl{0.0} {}
+      color_tl{0.0}, err{0.0} {}
   glm::vec3 pt;
   glm::vec3 color;
   glm::vec3 color_br;
   glm::vec3 color_bl;
   glm::vec3 color_tr;
   glm::vec3 color_tl;
+  double err;
   // int comp_id;
 };
 

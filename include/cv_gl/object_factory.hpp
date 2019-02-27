@@ -201,10 +201,20 @@ public:
     return mesh;
   }
 
-  static std::shared_ptr<Mesh> CreatePoints(std::vector<Point3DColor>& points) {
+  static std::shared_ptr<Mesh> CreatePoints(std::vector<Point3DColor>& points,
+      const float use_ratio = 1.0) {
+    assert(use_ratio > 0);
     std::vector<Texture> textures;
     std::vector<Vertex> vertices(points.size());
-    for (int i = 0; i < points.size(); ++i) {
+    int psize = points.size();
+    if (use_ratio < 1.0) {
+      psize = use_ratio * psize;
+      std::cout << "CREATE points SIZED reduced from "
+                << points.size() << " to " << psize
+                << " ratio " << use_ratio
+                << std::endl;
+    }
+    for (int i = 0; i < psize; ++i) {
       vertices[i].position = points[i].pt;
       vertices[i].color = points[i].color;
       vertices[i].color_tl = points[i].color_tl;
@@ -443,11 +453,12 @@ public:
   /* ================ Points Color ================================*/
   static ColorObject* CreatePoints(std::vector<Point3DColor>& points, 
           const bool extend_points = false,
-          const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)) {
+          const glm::vec4& color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+          const float use_ratio = 1.0) {
 
     // std::cout << "\nCREATE_POINTS!!!\n";
 
-    auto mesh = MeshFactory::CreatePoints(points);
+    auto mesh = MeshFactory::CreatePoints(points, use_ratio);
 
     std::shared_ptr<Shader> shader_color;
     if (extend_points) {

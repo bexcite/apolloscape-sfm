@@ -360,8 +360,7 @@ int main(int argc, char* argv[]) {
   float glm_points_ratio = 0.15;
   MapCameras map_cams;
   int lv = -1;  // previous version is negative for initial data fetch
-  sfm.SetMapPointsRatio(glm_points_ratio);
-  sfm.GetMapPointsAndCameras(glm_points, map_cams, lv, glm_points_ratio);
+  sfm.GetMapPointsAndCameras(glm_points, map_cams, lv);
   MakeCameras(cameras, map_cams, sfm, cameras_pool);
 
   // Randomly select points (used for quicker rendering on big maps)
@@ -538,38 +537,37 @@ int main(int argc, char* argv[]) {
   // <<<<<< Change Camera Alpha
 
 
+  int drawn_version = -1;
+
   // ====== Change glm_points_ratio - number of filtered map points
 
   gl_window.AddProcessInput(GLFW_KEY_COMMA, [&glm_points_ratio,
-      &last_camera_change, &gl_window, &sfm] (float dt) {
-    const double key_rate = 0.2;
+      &last_camera_change, &gl_window,
+      &drawn_version] (float dt) {
+    const double key_rate = 0.1;
     double now = gl_window.GetTime();
     if (now - last_camera_change < key_rate) return;
     last_camera_change = now;
-    std::cout << "AddProcessInput!! == COMMA = " << dt 
-              << ", time = " << gl_window.GetTime() << std::endl;
-    glm_points_ratio = glm_points_ratio > 0.05 
-                       ? glm_points_ratio - 0.05
-                       : 0.025;
-    // sfm.EmitMapUpdate();
-    sfm.SetMapPointsRatio(glm_points_ratio);
+    // std::cout << "AddProcessInput!! == COMMA = " << dt 
+    //           << ", time = " << gl_window.GetTime() << std::endl;
+    glm_points_ratio = glm_points_ratio - 0.05;
+    if (glm_points_ratio < 0.05) glm_points_ratio = 0.05;
+    drawn_version = -1; // add-hoc for redraw
     std::cout << "glm_points_ratio = " << glm_points_ratio << std::endl;
   });
 
   gl_window.AddProcessInput(GLFW_KEY_PERIOD, [&glm_points_ratio,
-      &last_camera_change, &gl_window, &sfm] (float dt) {
-    const double key_rate = 0.2;
+      &last_camera_change, &gl_window,
+      &drawn_version] (float dt) {
+    const double key_rate = 0.1;
     double now = gl_window.GetTime();
     if (now - last_camera_change < key_rate) return;
     last_camera_change = now;
-    std::cout << "AddProcessInput!! == PERIOD = " << dt 
-              << ", time = " << gl_window.GetTime() << std::endl;
-    glm_points_ratio = glm_points_ratio < 0.95
-                       ? glm_points_ratio + 0.05
-                       : 1.0;
-    // if (glm_points_ratio > 1.0) glm_points_ratio = 1.0;
-    // sfm.EmitMapUpdate();
-    sfm.SetMapPointsRatio(glm_points_ratio);
+    // std::cout << "AddProcessInput!! == PERIOD = " << dt 
+    //           << ", time = " << gl_window.GetTime() << std::endl;
+    glm_points_ratio = glm_points_ratio + 0.05;
+    if (glm_points_ratio > 1.0) glm_points_ratio = 1.0;
+    drawn_version = -1; // add-hoc for redraw
     std::cout << "glm_points_ratio = " << glm_points_ratio << std::endl;
   });
   // <<<<<<<< glm_points_ratio
@@ -578,25 +576,24 @@ int main(int argc, char* argv[]) {
 
 
   std::atomic<int> last_vis_version(0);
-  int drawn_version = -1;
+  
   
   // Fetch Points and Cameras for Drawing
   std::mutex cameras_points_mu;
   std::atomic<ThreadStatus> vis_prep_status(ThreadStatus::PROCESSING);
 
   std::thread vis_prep_thread([&vis_prep_status, &glm_points, &map_cams, &sfm,
-                        &cameras_points_mu, &last_vis_version,
-                        &glm_points_ratio]() {
+                        &cameras_points_mu, &last_vis_version]() {
     
     while(vis_prep_status.load() != ThreadStatus::FINISH 
-            /* && !sfm.IsFinished() */) {
+             && !sfm.IsFinished() ) {
       
       std::vector<Point3DColor> glm_points_temp;
       MapCameras map_cams_temp;
 
       int lversion = last_vis_version.load();
       sfm.GetMapPointsAndCameras(glm_points_temp, map_cams_temp,
-                                 lversion, glm_points_ratio);
+                                 lversion);
       last_vis_version.store(lversion);
 
       // Randomly select points (used for quicker rendering on big maps)
@@ -613,14 +610,14 @@ int main(int argc, char* argv[]) {
       // std::cout << "\n TICKING ... \n";
       //std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-      if (abs(sfm.MapSize() * glm_points_ratio - glm_points.size()) > 1) {
-        std::cout << "====================== EMIT MAP UPDATE ====================== "
-                  << sfm.MapSize() * glm_points_ratio << ", "
-                  << glm_points.size() << " = "
-                  << abs(sfm.MapSize() * glm_points_ratio - glm_points.size())
-                  << std::endl;
-        sfm.EmitMapUpdate();
-      }
+      // if (abs(sfm.MapSize() * glm_points_ratio - glm_points.size()) > 1) {
+      //   std::cout << "====================== EMIT MAP UPDATE ====================== "
+      //             << sfm.MapSize() * glm_points_ratio << ", "
+      //             << glm_points.size() << " = "
+      //             << abs(sfm.MapSize() * glm_points_ratio - glm_points.size())
+      //             << std::endl;
+      //   sfm.EmitMapUpdate();
+      // }
 
 
     }
@@ -671,7 +668,10 @@ int main(int argc, char* argv[]) {
       cameras_points_mu.lock();
       auto t0 = high_resolution_clock::now();
       points_obj = std::shared_ptr<DObject>(
-        ObjectFactory::CreatePoints(glm_points, true));
+        ObjectFactory::CreatePoints(glm_points,
+                                    true,
+                                    glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+                                    glm_points_ratio));
       auto t1 = high_resolution_clock::now();
       double dur_mp = duration_cast<microseconds>(t1-t0).count() / 1e+6;
       dur_make_points += dur_mp;
