@@ -98,14 +98,18 @@ public:
   int MapSize() const;
 
   void RestoreImages();
+  void ClearImages();
 
   void SetProcStatus(SfMStatus proc_status);
   bool IsFinished();
   void EmitMapUpdate();
 
+  // void SetResizeScale(const double scale) { resize_scale_ = scale; }
+
 
   double repr_error_thresh;
   double max_merge_dist;
+  double resize_scale = 0.08;
   
 
   // TODO: https://www.patrikhuber.ch/blog/6-serialising-opencv-matrices-using-boost-and-cereal
@@ -122,6 +126,10 @@ public:
     archive(image_data_);
     archive(cameras_);
     // archive(images_);
+    archive(resize_scale);
+    archive(repr_error_thresh);
+    archive(max_merge_dist);
+    archive(images_resized_);
     archive(image_features_);
     archive(image_pairs_);
     archive(image_matches_);
@@ -173,7 +181,7 @@ private:
   std::unordered_set<int> todo_views_;
   Map3D map_;
 
-  const double resize_scale_ = 0.08;
+  
   bool use_cache = true;
 
   // Preprocessing storage

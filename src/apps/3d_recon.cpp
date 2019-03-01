@@ -71,25 +71,29 @@ DEFINE_int32(pairs_look_back, 2, "Number of images to look back for"
 DEFINE_bool(cameraimage, true, "Render camera images");
 DEFINE_bool(camera, true, "Render cameras");
 DEFINE_bool(viz, true, "Open 3D visualization of the map");
+DEFINE_double(viz_image_scale, 0.15, "Image resize ratio for texture visualization");
 
 
 DEFINE_bool(matches_cache, true, "Use cached matches and store newly computed"
     " into cache");
-DEFINE_double(matches_line_dist_thresh, 10.0, "Max distance to the epiline"
+DEFINE_double(matches_line_dist_thresh, 40.0, "Max distance to the epiline"
     " between matched corresponding points");
 DEFINE_int32(matches_num_thresh, 7, "Min number of matches betwee image pairs");
 DEFINE_bool(features_cache, true, "Use cached features and store new features"
     " into cache");
 
-DEFINE_double(sfm_repr_error_thresh, 1.0, "Max reprojection error allowed"
+DEFINE_double(sfm_repr_error_thresh, 40.0, "Max reprojection error allowed"
     " during points triangulation");
-DEFINE_double(sfm_max_merge_dist, 1.0, "Maximum distance between points"
+DEFINE_double(sfm_max_merge_dist, 3.0, "Maximum distance between points"
     " from different views that we merge into one point");
 
 DEFINE_string(restore, "", "--restore=\"<filename>\" Saved SfM serialization"
                            " to continue SfM reconstruction pipeline");
 DEFINE_string(output, "sfm_out.bin", "--output=\"<filename>\" : Destination"
                       " for SfM serialization");
+DEFINE_bool(save_images, false, "Saved resized images to the serialized archive");
+
+
 DEFINE_bool(h, false, "Show help");
 
 DECLARE_bool(help);
@@ -168,6 +172,7 @@ int main(int argc, char* argv[]) {
   SfM3D sfm(camera_intrs);
   sfm.repr_error_thresh = FLAGS_sfm_repr_error_thresh;
   sfm.max_merge_dist = FLAGS_sfm_max_merge_dist;
+  sfm.resize_scale = FLAGS_viz_image_scale;
 
   if (FLAGS_restore.empty()) {
     // Create new run
@@ -441,7 +446,7 @@ int main(int argc, char* argv[]) {
     // std::cout << "AddProcessInput!! == J = " << dt 
     //           << ", time = " << gl_window.GetTime() << std::endl;
     // do {
-      current_camera_id = (current_camera_id + 1) % cameras_size;
+      current_camera_id = (current_camera_id + 2) % cameras_size;
     // } while (!used_views.count(current_camera_id));
 
     change_camera(current_camera_id);
@@ -458,11 +463,32 @@ int main(int argc, char* argv[]) {
     // std::cout << "AddProcessInput!! == K = " << dt 
     //           << ", time = " << gl_window.GetTime() << std::endl;
     // do {
-      current_camera_id = (current_camera_id + cameras_size - 1) % cameras_size;
+      current_camera_id = (current_camera_id + cameras_size - 2) % cameras_size;
     // } while (!used_views.count(current_camera_id));
 
     change_camera(current_camera_id);
   });
+  gl_window.AddProcessInput(GLFW_KEY_L, [&current_camera_id,
+      &last_camera_change, &cameras, &gl_window, // &used_views,
+      &change_camera] (float dt) {
+    int cameras_size = cameras->GetChildrenSize();
+    const double key_rate = 0.2;
+    double now = gl_window.GetTime();
+    if (now - last_camera_change < key_rate) return;
+    last_camera_change = now;
+    std::cout << "AddProcessInput!! == L = " << dt 
+              << ", time = " << gl_window.GetTime() << std::endl;
+    // do {
+    if (current_camera_id % 2 == 0) {
+      current_camera_id = (current_camera_id + 1) % cameras_size;
+    } else {
+      current_camera_id = current_camera_id - 1;
+    }
+    // } while (!used_views.count(current_camera_id));
+
+    change_camera(current_camera_id);
+  });
+
   // <<<<<< Change Camera Events
 
 
@@ -758,6 +784,10 @@ void StoreSfM(SfM3D& sfm) {
   std::string output_file = FLAGS_output;
   if (!FLAGS_restore.empty()) {
     output_file = FLAGS_restore;
+  }
+
+  if (!FLAGS_save_images) {
+    sfm.ClearImages();
   }
 
   std::cout << "Serializing SFM!!!! to: " << output_file << std::endl;

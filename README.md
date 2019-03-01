@@ -2,6 +2,8 @@
 
 3D reconstruction and Structure from Motion are an essential parts of many algorithms of today's research in Visual Odometry, SLAM and localization tasks. In this project I've build the sparse 3D reconstruction from known poses implementing Structure from Motion pipeline with bundle andjustment on C++ and OpenGL visualization.
 
+![3D Reconstruction Fly](./results/3d_reconstruction_fly.gif)
+
 Previously, I've explored the Apolloscape dataset in the [project for localization task](https://github.com/bexcite/apolloscape-loc) via building Pytorch reader and training PoseNet to directly regress the car pose.
 
 # Dependencies & Build
@@ -19,6 +21,19 @@ cd build
 cmake ..
 make
 ```
+
+# Quick Run
+
+Quick test of visualization on stored tiny reconstruction of just 10 images:
+```
+./bin/3d_recon --restore=../results/sfm_out_sample.bin
+```
+
+Controls:
+- W,A,S,D - move camera around
+- Z,X - camera texture transparency
+- J,K,L - change camera forward, backward, lateral
+- 0 - return to the last camera (useful when you fly out and want to return)
 
 # Data Folder
 
