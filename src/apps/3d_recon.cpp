@@ -63,9 +63,15 @@ const std::vector<std::string> kRecords = {
 DEFINE_string(records, "1,4", "--records=\"1,4\" set of [1,2, ... 14]"
                               " or \"all\".  Records to use for"
                               " reconstruction");
+
+DEFINE_int32(pairs_look_back, 2, "Number of images to look back for"
+    " making pairs. It's also determines the distance to make pairs"
+    " between records.");
+
 DEFINE_bool(cameraimage, true, "Render camera images");
 DEFINE_bool(camera, true, "Render cameras");
 DEFINE_bool(viz, true, "Open 3D visualization of the map");
+
 
 DEFINE_bool(matches_cache, true, "Use cached matches and store newly computed"
     " into cache");
@@ -212,7 +218,7 @@ int main(int argc, char* argv[]) {
       camera2_poses_s.insert(camera2_poses_s.begin(),
                             camera2_poses.begin() + p_camera_start, 
                             camera2_poses.begin() + p_camera_finish);
-      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, 2);
+      sfm.AddImages(camera1_poses_s, camera2_poses_s, true, FLAGS_pairs_look_back);
 
     }
 
@@ -357,7 +363,7 @@ int main(int argc, char* argv[]) {
   // map_cams: cam_id => vec of (keypoint_id, 3d_point_coords)
 
   std::vector<Point3DColor> glm_points;
-  float glm_points_ratio = 0.15;
+  float glm_points_ratio = 1.0;
   MapCameras map_cams;
   int lv = -1;  // previous version is negative for initial data fetch
   sfm.GetMapPointsAndCameras(glm_points, map_cams, lv);

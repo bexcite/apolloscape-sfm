@@ -1077,7 +1077,7 @@ void SfM3D::PrintFinalStats() {
   }
 
   // count errs in bins
-  int num_bins = 10;
+  int num_bins = 20;
   double min_err = (* std::min_element(errs.begin(), errs.end()));
   double max_err = (* std::max_element(errs.begin(), errs.end()));
   std::map<int, int> count_bins;
