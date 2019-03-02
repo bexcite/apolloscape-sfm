@@ -29,11 +29,11 @@ Quick test of visualization on stored tiny reconstruction of just 10 images:
 ./bin/3d_recon --restore=../results/sfm_out_sample.bin
 ```
 
-Controls:
-- W,A,S,D - move camera around
-- Z,X - camera texture transparency
-- J,K,L - change camera forward, backward, lateral
-- 0 - return to the last camera (useful when you fly out and want to return)
+Control Navigation:
+- `W`,`A`,`S`,`D` - move camera around
+- `Z`,`X` - camera texture transparency
+- `J`,`K`,`L` - change camera forward, backward, lateral
+- `0` - return to the last camera (useful when you fly out and want to return)
 
 # Data Folder
 
@@ -65,8 +65,8 @@ Extracted features and matched pairs of keypoints with descriptors are stored in
 
 ## Serialization
 
-Cached featured and the final map serialization is implemented with Cereal. So the quickest way to see something is to restore the previous map. In the results folder there is one such map that can be viewed without reconstruction step as:
+Cached featured and the final map serialization is implemented with Cereal. So the quickest way to see something is to restore the previous map. In the results folder there is `sfm_out_sample.bin` map that can be viewed without reconstruction step as:
 ```
-# TBD the example map
-./bin/3d_recon --restore=../results/sfm_example.bin
+cd build
+./bin/3d_recon --restore=../results/sfm_out_sample.bin
 ```
