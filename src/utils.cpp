@@ -294,14 +294,15 @@ void DrawKeypointsWithResize(const cv::Mat& input_img,
   auto t1_0 = high_resolution_clock::now();
   cv::resize(input_img, img_resized, cv::Size(), scale, scale, cv::INTER_AREA);
   auto t1_1 = high_resolution_clock::now();
-  cv::drawKeypoints(img_resized, kpoints_scaled, out_img);
+  // cv::drawKeypoints(img_resized, kpoints_scaled, out_img);
+  cv::drawKeypoints(input_img, kpoints_scaled, out_img);
   auto t1_2 = high_resolution_clock::now();
-  std::cout << "\n  >> resize_TIME = " 
-            << duration_cast<microseconds>(t1_1-t1_0).count() / 1e+6 
-            << std::endl;
-  std::cout << "\n  >> draw_TIME = " 
-            << duration_cast<microseconds>(t1_2-t1_1).count() / 1e+6 
-            << std::endl;
+  // std::cout << "\n  >> resize_TIME = " 
+  //           << duration_cast<microseconds>(t1_1-t1_0).count() / 1e+6 
+  //           << std::endl;
+  // std::cout << "\n  >> draw_TIME = " 
+  //           << duration_cast<microseconds>(t1_2-t1_1).count() / 1e+6 
+  //           << std::endl;
 }
 
 void DrawMatchesWithResize(const cv::Mat& img1,
@@ -323,17 +324,23 @@ void DrawMatchesWithResize(const cv::Mat& img1,
     kpoints2_scaled[k].pt.y = static_cast<int>(kpoints2_scaled[k].pt.y * scale);
   }
   cv::Mat img1_resized, img2_resized;
-  cv::resize(img1, img1_resized, cv::Size(), scale, scale);
-  cv::resize(img2, img2_resized, cv::Size(), scale, scale);
+  // cv::resize(img1, img1_resized, cv::Size(), scale, scale);
+  // cv::resize(img2, img2_resized, cv::Size(), scale, scale);
   if (match.size() == 0 && kpoints1.size() == kpoints2.size()) {
     std::vector<cv::DMatch> matches(kpoints1.size());
     for (size_t i = 0; i < kpoints1.size(); ++i) {
       matches[i].queryIdx = i;
       matches[i].trainIdx = i;
     }
-    cv::drawMatches(img1_resized, kpoints1_scaled, img2_resized, kpoints2_scaled, matches, img_matches);
+    cv::drawMatches(img1, kpoints1_scaled, img2, kpoints2_scaled, 
+                    matches, img_matches, cv::Scalar::all(-1),
+                    cv::Scalar::all(-1), std::vector<char>(),
+                    cv::DrawMatchesFlags::DEFAULT);
   } else {
-    cv::drawMatches(img1_resized, kpoints1_scaled, img2_resized, kpoints2_scaled, match, img_matches);
+    cv::drawMatches(img1, kpoints1_scaled, img2, kpoints2_scaled, 
+                    match, img_matches, cv::Scalar::all(-1),
+                    cv::Scalar::all(-1), std::vector<char>(),
+                    cv::DrawMatchesFlags::DEFAULT);
   }
   
 }
@@ -361,10 +368,10 @@ void ImShowMatchesWithResize(const cv::Mat& img1,
   cv::Mat img1_points, img2_points, img_matches;
   DrawKeypointsWithResize(img1, kpoints1m, img1_points, scale);
   DrawKeypointsWithResize(img2, kpoints2m, img2_points, scale);
-  ImShow("img1", img1_points);
-  cv::moveWindow("img1", win_x, win_y);
   ImShow("img2", img2_points);
-  cv::moveWindow("img2", win_x + img1_points.size().width, win_y);
+  cv::moveWindow("img2", win_x, win_y);
+  ImShow("img1", img1_points);
+  cv::moveWindow("img1", win_x + img2_points.size().width, win_y);
 
   if (!match.empty()) {
     
@@ -377,7 +384,7 @@ void ImShowMatchesWithResize(const cv::Mat& img1,
                           img_matches, 
                           scale, new_match);
     ImShow("img_matches", img_matches);
-    cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 20);
+    cv::moveWindow("img_matches", win_x, win_y + img1_points.size().height + 12);
   }
 
 }

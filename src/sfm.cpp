@@ -60,35 +60,21 @@ void SfM3D::AddImages(const std::vector<ImageData>& camera1_images,
     }
     std::cout << "pairs.size = " << image_pairs_.size() << std::endl;
 
-    // TODO: Looks for conics intersections
+    // TODO: Look for conics intersections?
     if (first_index > 0) {
 
-      // double d0 = ::GetCamerasDistance(cameras_[first_index-1], cameras_[first_index-3]);
-      // std::cout << "d0 = " << d0 << std::endl;
-
-      // Add pair based on distance < 25m (works for apolloscape case only)
+      // Add pair based on distance < 11m * n (works for apolloscape case only)
       for (int i = 0; i < first_index - 1; ++i) {
         for (int j = first_index; j < cameras_.size(); ++j) {
           double d = ::GetCamerasDistance(cameras_[i], cameras_[j]);
           if (d < look_back * 11.0) {
             image_pairs_.push_back({ i, j });
-            std::cout << "d = " << d << ": added pair ["
-                      << i << ", " << j << "]"
-                      << std::endl;
+            // std::cout << "d = " << d << ": added pair ["
+            //           << i << ", " << j << "]"
+            //           << std::endl;
           }
         }
       }
-
-      // Make random pairs to the previous images
-      // int d = image_data_.size() - first_index;
-      // int r_num = std::min(first_index, d);
-      // for (int i = 0; i < r_num; ++i) {
-      //   int p1 = std::rand() % first_index;
-      //   int p2 = first_index + std::rand() % d;
-      //   std::cout << "new pair [" << i << "]: " << p1 << ", " << p2 << std::endl;
-      //   image_pairs_.push_back({ p1, p2 });
-      // }
-
 
     }
 
@@ -127,7 +113,6 @@ void SfM3D::ExtractFeatures() {
 
   std::mutex cout_mu;
   std::mutex acc_mu;
-
   
 
   for (int i = 0; i < capacity; ++i) {
@@ -178,47 +163,15 @@ void SfM3D::ExtractFeatures() {
     extractor_threads[i].join();
   }
   
-
-  /*
-  for (size_t i = 0; i < image_data_.size(); ++i) {
-    std::cout << "Extract " << i << " out of " << image_data_.size();
-    ImageData& im_data = image_data_[i];
-    boost::filesystem::path full_image_path = boost::filesystem::path(im_data.image_dir)
-        / boost::filesystem::path(im_data.filename);
-    // cv::Mat img = cv::imread(full_image_path.string().c_str());
-
-    cv::Mat img = ::LoadImage(im_data);
-
-
-    // std::cout << "full_image_path = " << full_image_path.string() << std::endl;
-
-    Features features;
-
-    // TODO: Refactor to use ImageData
-    if (!cache_storage.GetFeatures(full_image_path.string(),
-                                   features)) {
-      std::cout << ": extracted ...";
-      ::ExtractFeatures(img, features);
-      cache_storage.SaveFeatures(full_image_path.string(),
-                                 features);
-      std::cout << " cached ...";
-    } else {
-      std::cout << ": restored from cache";
-    }
-    std::cout << std::endl;
-
-    cv::resize(img, img, cv::Size(), resize_scale, resize_scale);
-    images_resized_.push_back(img);
-
-    // images_.push_back();
-
-    image_features_.push_back(features);
-  }
-  */
-
   auto t1 = high_resolution_clock::now();
   auto dur = duration_cast<microseconds>(t1 - t0);
   std::cout << "EXTRACT_FEATURES_TIME = " << dur.count() / 1e+6 << std::endl;
+
+
+  // ShowFeatures(128); // Records008
+  // for (int i = 0; i < image_features_.size(); i += 2) {
+  //   ShowFeatures(i);
+  // }
   
 }
 
@@ -227,6 +180,7 @@ void SfM3D::MatchImageFeatures(const int skip_thresh,
                                const bool use_cache) {
   assert(image_features_.size() > 1);
   if (image_pairs_.empty()) {
+    // Fall back case when pair are not generated on AddImages
     GenerateAllPairs();
   }
 
@@ -326,6 +280,8 @@ void SfM3D::MatchImageFeatures(const int skip_thresh,
 
         int msize = matches.match.size();
 
+        // ShowMatchesLineConstraints(matches, max_line_dist);
+
         // Filter Matches base on Line Distance
         FilterMatchByLineDistance(features1, camera_info1,
                                   features2, camera_info2,
@@ -424,6 +380,17 @@ void SfM3D::MatchImageFeatures(const int skip_thresh,
     matcher_threads[i].join();
   }  
   
+
+  // Show Matches
+  // for (int i = 0; i < image_matches_.size(); ++i) {
+  //   std::cout << "Show matches: " << i 
+  //             << ", match.size = " << image_matches_[i].match.size()
+  //             << std::endl; 
+  //   ShowMatches(image_matches_[i]);
+  //   // ShowMatchesLineConstraints(image_matches_[i], max_line_dist);
+  // }
+  
+
   
   // int most_match = 0;
   // int most_match_id = -1;
@@ -581,6 +548,8 @@ void SfM3D::InitReconstruction() {
             << " (id: " << most_match_id << ")"
             << std::endl;
 
+  // ShowMatches(image_matches_[most_match_id]);
+
   int first_id = image_matches_[most_match_id].image_index.first;
   int second_id = image_matches_[most_match_id].image_index.second;
 
@@ -595,6 +564,8 @@ void SfM3D::InitReconstruction() {
   CombineMapComponents(map_, max_merge_dist);
 
   OptimizeMap(map_);
+
+  std::cout << "init map size = " << map_.size() << std::endl;
   
   // Add used images
   used_views_.insert(first_id);
@@ -663,9 +634,32 @@ void SfM3D::TriangulatePointsFromViews(const int first_id,
   double rep_err1 = 0.0;
   double rep_err2 = 0.0;
 
+
+  // Show distances from camera
+  /*
+  std::vector<std::pair<int, double> > izs(cam1_zdist.size());
+  for (int i = 0; i < cam1_zdist.size(); ++i) {
+    izs[i] = std::make_pair(i, cam1_zdist[i]);
+  }
+  std::sort(izs.begin(), izs.end(), [](std::pair<int, double>& a1,
+      std::pair<int, double>& a2) { return a1.second > a2.second; });
+  for (int i = 0; i < izs.size(); ++i) {
+    if (cam1_zdist[izs[i].first] > 100.0 || cam2_zdist[izs[i].first] > 100.0) {
+      std::cout << i << ": zd1 = " << cam1_zdist[izs[i].first] 
+                << ", zd2 = " << cam2_zdist[izs[i].first] 
+                << " (" << izs[i].first << ")"
+                << " out of " << izs.size() 
+                << std::endl;
+    }
+  }
+  */
+  
+
   for (size_t i = 0; i < errs1.size(); ++i) {
     rep_err1 += errs1[i];
     rep_err2 += errs2[i];
+
+    
 
     // sqrt(errs1[i]*errs1[i] + errs2[i]*errs2[i]) < 2.0
     // errs1[i] > 1.0 || errs2[i] > 1.0           // reprojection error too big
@@ -673,6 +667,7 @@ void SfM3D::TriangulatePointsFromViews(const int first_id,
     if (   errs1[i] > repr_error_thresh    // reprojection error too big
         || errs2[i] > repr_error_thresh  // reprojection error too big
         || cam1_zdist[i] < 0 || cam2_zdist[i] < 0  // points on the back of the camera
+        || cam1_zdist[i] > 100.0 || cam2_zdist[i] > 100.0  // points too far from the camera
         || points3d.at<float>(i, 2) < 38.0) {      // it's out of the ground
       // std::cout << i << " [SKIP] : errs1, errs2 = " << errs1[i]
       //           << ", " << errs2[i] 
@@ -896,6 +891,17 @@ void SfM3D::ReconstructAll() {
   int cnt = 0;
 
   while (todo_views_.size() > 0) {
+
+    /*
+    if (cnt == 3) {
+      // Test visualization
+      std::cout << "Quit early! - optimize\n";
+      std::cout << "\nOPTIMIZING on " << map_.size() << " ...\n\n";
+      OptimizeMap(map_);
+      std::cout << "\nOPTIMIZATION DONE! (" << map_.size() << ") \n\n";
+      break;
+    }
+    */
 
     // std::cout << "TODO_VIEWS: ";
     // for (auto v : todo_views_) {
@@ -1414,6 +1420,143 @@ void SfM3D::RestoreImages() {
 
 void SfM3D::ClearImages() {
   images_resized_.clear();
+}
+
+void SfM3D::ShowFeatures(int img_id) {
+  // Show Image Features
+  int first_id = img_id;
+  int second_id;
+  if (img_id % 2 == 0) {
+    second_id =  img_id + 1;
+  } else {
+    second_id = first_id;
+    first_id = second_id - 1;
+  }
+
+  std::cout << "Show Features: " << first_id << ","
+            << second_id << std::endl;
+  
+  // int show_id = 0;
+  std::vector<cv::KeyPoint> points1, points2;
+  points1 = image_features_[first_id].keypoints;
+  points2 = image_features_[second_id].keypoints;
+  int win_x = 0;
+  int win_y = 100;
+  double win_scale = resize_scale;
+  // == Show Camera Images (Keypoints) ==
+  cv::Mat img1_points, img2_points, img_matches;
+  DrawKeypointsWithResize(images_resized_[first_id], points1, img1_points, win_scale);
+  DrawKeypointsWithResize(images_resized_[second_id], points2, img2_points, win_scale);
+
+  std::cout << "features1.size = " << points1.size() << std::endl;
+  std::cout << "features2.size = " << points2.size() << std::endl;
+
+
+  // Debug: Show points
+  ImShow("img2", img2_points);
+  cv::moveWindow("img2", win_x, win_y);
+  ImShow("img1", img1_points);
+  cv::moveWindow("img1", win_x + img2_points.size().width, win_y);
+  cv::waitKey();
+}
+
+void SfM3D::ShowMatches(const Matches& matches) {
+
+  int first_id = matches.image_index.first;
+  int second_id = matches.image_index.second;
+
+  ::ImShowMatchesWithResize(images_resized_[first_id],
+                            image_features_[first_id].keypoints, 
+                            images_resized_[second_id],
+                            image_features_[second_id].keypoints, 
+                            matches.match,
+                            resize_scale,
+                            10, 10);
+  cv::waitKey();
+  cv::destroyAllWindows();
+
+}
+
+void SfM3D::ShowMatchesLineConstraints(const Matches& matches,
+                                       const double line_dist) {
+  cv::Mat fund;
+  int first_id = matches.image_index.first;
+  int second_id = matches.image_index.second;
+  CalcFundamental(cameras_[first_id], cameras_[second_id], fund);
+
+  // double line_dist = 0.0;
+
+  // cv::Mat img1 = images_resized_[first_id].clone();
+  // cv::Mat img2 = images_resized_[second_id].clone();
+
+  for (int i = 0; i < matches.match.size(); ++i) {
+    auto match = matches.match[i];
+    cv::Mat points2(3, 1, CV_64F);
+    points2.at<double>(0, 0) = image_features_[second_id].keypoints[match.trainIdx].pt.x;
+    points2.at<double>(1, 0) = image_features_[second_id].keypoints[match.trainIdx].pt.y;
+    points2.at<double>(2, 0) = 1.0;
+
+    cv::Mat points1(1, 3, CV_64F);
+    points1.at<double>(0, 0) = image_features_[first_id].keypoints[match.queryIdx].pt.x;
+    points1.at<double>(0, 1) = image_features_[first_id].keypoints[match.queryIdx].pt.y;
+    points1.at<double>(0, 2) = 1.0;
+
+    cv::Mat kp_l2 = fund * points2;
+    double a = kp_l2.at<double>(0);
+    double b = kp_l2.at<double>(1);
+    double d = sqrt(a*a + b*b);
+
+    cv::Mat dd_mat = points1 * kp_l2 / d;
+    double dd = abs(dd_mat.at<double>(0));
+
+    if (dd > line_dist) {
+      // Draw point & line
+      cv::Mat img1 = images_resized_[first_id].clone();
+      cv::Mat img2 = images_resized_[second_id].clone();
+
+      std::vector<cv::Point2f> line_pts;
+      GetLineImagePoints(kp_l2, line_pts, img1.size().width / resize_scale, img1.size().height / resize_scale);
+
+      std::cout << i << ": dd = " << dd
+                << std::endl;
+
+      cv::drawMarker(img2, cv::Point2f(points2.at<double>(0, 0) * resize_scale,
+                                       points2.at<double>(1, 0) * resize_scale),
+                     cv::Scalar(100.0, 100.0, 255.0), cv::MARKER_CROSS,
+                     15, 2);
+
+      cv::drawMarker(img1, cv::Point2f(points1.at<double>(0, 0) * resize_scale,
+                                       points1.at<double>(0, 1) * resize_scale),
+                     cv::Scalar(100.0, 100.0, 255.0), cv::MARKER_CROSS,
+                     15, 2);
+
+      cv::line(img1, 
+               line_pts[0] * resize_scale, 
+               line_pts[1] * resize_scale, 
+               cv::Scalar(0.0, 0.0, 255.0), 1);
+
+      int win_x = 10;
+      int win_y = 10;
+      // Debug: Show points
+      ImShow("img2", img2);
+      cv::moveWindow("img2", win_x, win_y);
+      ImShow("img1", img1);
+      cv::moveWindow("img1", win_x + img2.size().width, win_y);
+      cv::waitKey();
+    }
+
+  }
+
+  // int win_x = 10;
+  // int win_y = 10;
+  // // Debug: Show points
+  // ImShow("img2", img2);
+  // cv::moveWindow("img2", win_x, win_y);
+  // ImShow("img1", img1);
+  // cv::moveWindow("img1", win_x + img2.size().width, win_y);
+  // cv::waitKey();
+
+
 }
 
 void SfM3D::Print(std::ostream& os) const {

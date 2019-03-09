@@ -141,6 +141,8 @@ void ExtractFeatures(cv::Mat img, Features& features) {
   features.descriptors = cv::Mat();
   GetFeatureExtractionRegion(img, feature_mask);
   cv::Ptr<cv::AKAZE> detector = cv::AKAZE::create();
+  // int min_hessian = 400;
+  // cv::Ptr<cv::SURF> detector = cv::SURF::create(min_hessian);
   detector->detectAndCompute(img, feature_mask, features.keypoints, features.descriptors);
   std::cout << "features.keypoints: " << features.keypoints.size() << std::endl;
   std::cout << "features.descriptors: " << features.descriptors.size() << std::endl;
@@ -261,13 +263,18 @@ void ComputeLineKeyPointsMatch(const Features& features1,
 
   cv::Ptr<cv::DescriptorMatcher> matcher = 
       cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
+
+  // cv::Ptr<cv::DescriptorMatcher> matcher = 
+  //     cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASES);
+
+  
   std::vector<std::vector<cv::DMatch> > knnMatches;
   // std::cout << "knnMatch ..." << std::endl;
   
   matcher->knnMatch(descriptors1, descriptors2, knnMatches, 2 /*, mask_int*/);
 
   // std::vector<cv::DMatch> good_matches;
-  // Filter matches: Lowe's test
+  // Filter matches: Lowe's ratio test
   const float ratio_thresh = 0.5f; //0.6
   for (int m = 0; m < knnMatches.size(); ++m) {
     if (knnMatches[m].size() < 2) continue; // no match for the points
@@ -372,6 +379,7 @@ void FilterMatchByLineDistance(const Features& features1,
 
     if (dd > line_dist) {
       // matches.match.push_back(match);
+      // TODO: make remove more efficient in one sweep
       match = matches.match.erase(match);
       continue;
     } 
@@ -833,6 +841,7 @@ cv::Mat GetRotationTranslationTransform(const CameraInfo& camera_info) {
   proj = glm::transpose(r) * proj;
   // std::cout << "proj1 = " << glm::to_string(proj1) << std::endl;
 
+  // copy to Mat
   cv::Mat mat_rt(3, 4, CV_64F);
   for (size_t col = 0; col < 4; ++col) {
     for (size_t row = 0; row < 3; ++row) {

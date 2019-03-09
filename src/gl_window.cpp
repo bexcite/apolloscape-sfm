@@ -105,7 +105,7 @@ bool GLWindow::IsRunning() {
   last_time_ = time_value;
 
   // FPS calc and output cam pos
-  /*
+  
   delta_time_sum_ += delta_time;
   int freq = 400;
   if (frames_ > 0 && frames_ % freq == 0) {
@@ -115,11 +115,12 @@ bool GLWindow::IsRunning() {
               << std::endl;
 
     if (camera_) {
-      std::cout << "========= Cam.position = " 
+      std::cout << "========= Cam.position = {" 
                 << glm::to_string(camera_->GetPosition())
-                << "; "
+                << "}, {"
                 << camera_->GetRotationPitch()
                 << ", " << camera_->GetRotationYaw()
+                << "}"
                 << std::endl;
       // std::cout << "========= Cam.pitch,yaw = " 
       // << camera_->GetRotationPitch()
@@ -130,7 +131,7 @@ bool GLWindow::IsRunning() {
     delta_time_sum_ = 0;
     sleep_for_micro_sum_ = 0;
   }
-  */
+  
   ++frames_;
 
   // Clear everything

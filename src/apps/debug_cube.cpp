@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
         renderer->Draw(axes_obj);
 
     
-        renderer->Draw(nanosuit_obj);
+        // renderer->Draw(nanosuit_obj);
         renderer->Draw(light_bulb_obj);
         renderer->Draw(moon_obj);
 

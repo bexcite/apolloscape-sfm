@@ -90,6 +90,9 @@ void FilterMatchByLineDistance(const Features& features1,
                                Matches& matches, 
                                const double line_dist);
 
+void GetLineImagePoints(const cv::Mat& line, std::vector<cv::Point2f>& line_pts,
+                        const double image_width, const double image_height);
+
 void GetLineMatchedSURFKeypoints(const cv::Mat img1, std::vector<cv::KeyPoint>& keypoints1,
     const cv::Mat img2, std::vector<cv::KeyPoint>& keypoints2, const cv::Mat fund);
 

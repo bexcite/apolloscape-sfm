@@ -104,6 +104,13 @@ public:
   bool IsFinished();
   void EmitMapUpdate();
 
+
+  // Debug methods
+  void ShowFeatures(int img_id);
+  void ShowMatches(const Matches& matches);
+  void ShowMatchesLineConstraints(const Matches& matches, const double line_dist );
+
+
   // void SetResizeScale(const double scale) { resize_scale_ = scale; }
 
 

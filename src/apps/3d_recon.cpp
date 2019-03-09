@@ -64,25 +64,25 @@ DEFINE_string(records, "1,4", "--records=\"1,4\" set of [1,2, ... 14]"
                               " or \"all\".  Records to use for"
                               " reconstruction");
 
-DEFINE_int32(pairs_look_back, 2, "Number of images to look back for"
+DEFINE_int32(pairs_look_back, 4, "Number of images to look back for"
     " making pairs. It's also determines the distance to make pairs"
     " between records.");
 
 DEFINE_bool(cameraimage, true, "Render camera images");
 DEFINE_bool(camera, true, "Render cameras");
 DEFINE_bool(viz, true, "Open 3D visualization of the map");
-DEFINE_double(viz_image_scale, 0.15, "Image resize ratio for texture visualization");
+DEFINE_double(viz_image_scale, 0.2, "Image resize ratio for texture visualization");
 
 
 DEFINE_bool(matches_cache, true, "Use cached matches and store newly computed"
     " into cache");
-DEFINE_double(matches_line_dist_thresh, 40.0, "Max distance to the epiline"
+DEFINE_double(matches_line_dist_thresh, 10.0, "Max distance to the epiline"
     " between matched corresponding points");
 DEFINE_int32(matches_num_thresh, 7, "Min number of matches betwee image pairs");
 DEFINE_bool(features_cache, true, "Use cached features and store new features"
     " into cache");
 
-DEFINE_double(sfm_repr_error_thresh, 40.0, "Max reprojection error allowed"
+DEFINE_double(sfm_repr_error_thresh, 10.0, "Max reprojection error allowed"
     " during points triangulation");
 DEFINE_double(sfm_max_merge_dist, 3.0, "Maximum distance between points"
     " from different views that we merge into one point");
@@ -208,8 +208,8 @@ int main(int argc, char* argv[]) {
 
       // == Slice record - for testing ==
       int p_camera_pose = 0; // 24
-      int p_camera_start = 0; //22 ==== 36 or 37 - 35
-      int p_camera_finish = 140; //25 ===== 39 or 40  - 39
+      int p_camera_start = 0; //22 ==== 36 or 37 - 35 --- 64 -- 63
+      int p_camera_finish = 140; //25 ===== 39 or 40  - 39 -- 66 -- 67
 
       p_camera_start = std::min(p_camera_start,
                                 static_cast<int>(camera1_poses.size()));
@@ -231,6 +231,14 @@ int main(int argc, char* argv[]) {
 
 
     sfm.ExtractFeatures();
+
+
+    
+
+
+
+
+
 
     sfm.MatchImageFeatures(FLAGS_matches_num_thresh, 
                            FLAGS_matches_line_dist_thresh,
@@ -496,11 +504,12 @@ int main(int argc, char* argv[]) {
   int current_view_id = 0;
   typedef std::pair<glm::vec3, std::pair<float, float> > ViewElem;
   std::vector<ViewElem> views = {
-    { {235.255341, -1961.739868, 50.880833}, {-3.25981, 44.2441} },
-    { {512.397217, -1867.512329, 54.057720}, {-1.60006, -50.2969} },
-    { {533.660767, -2008.533691, 65.754280}, {-11.5891, -76.6023} },
-    { {628.557861, -2515.430908, 71.207977}, {-20, -134.261} },
-    { {194.383759, -2232.064697, 555.483337}, {-64.3001, -720.077} }
+    { {514.250854, -1877.440796, 49.462147}, {-19.1698, -33.5846} }, // init recon view
+    // { {235.255341, -1961.739868, 50.880833}, {-3.25981, 44.2441} },
+    // { {512.397217, -1867.512329, 54.057720}, {-1.60006, -50.2969} },
+    // { {533.660767, -2008.533691, 65.754280}, {-11.5891, -76.6023} },
+    // { {628.557861, -2515.430908, 71.207977}, {-20, -134.261} },
+    // { {194.383759, -2232.064697, 555.483337}, {-64.3001, -720.077} }
     // { {}, {} },
   };
   int views_size = views.size();
@@ -827,9 +836,11 @@ void MakeCameras(std::shared_ptr<DObject>& cameras,
 
     std::shared_ptr<CameraObject> co = cameras_pool[cam_id];
 
+    
     /*
+    // Add Projected Points
     auto t4_0 = high_resolution_clock::now();
-    // cv::Mat co_img = sfm.GetImage(cam_id);
+    cv::Mat co_img = sfm.GetImage(cam_id);
     auto t4_1 = high_resolution_clock::now();
     dur_gm += duration_cast<microseconds>(t4_1-t4_0).count() / 1e+6;
 
@@ -852,7 +863,7 @@ void MakeCameras(std::shared_ptr<DObject>& cameras,
 
     cv::Mat img_points;
     auto t1_0 = high_resolution_clock::now();
-    // DrawKeypointsWithResize(co_img, kpoints, img_points, 0.3);
+    DrawKeypointsWithResize(co_img, kpoints, img_points, sfm.resize_scale);
     auto t1_1 = high_resolution_clock::now();
     dur_dkwr += duration_cast<microseconds>(t1_1-t1_0).count() / 1e+6;
     
@@ -860,18 +871,19 @@ void MakeCameras(std::shared_ptr<DObject>& cameras,
     CameraInfo cam_info = sfm.GetCameraInfo(cam_id);
     
     auto t2_0 = high_resolution_clock::now();
-    std::shared_ptr<CameraObject> co(
-        new CameraObject(cam_info.intr, kImageWidth, kImageHeight));
-    co->SetTag(TAG_CAMERA_OBJECT);
-    co->SetImageTransparency(true);
-    co->SetTranslation(cam_info.translation);
-    co->SetRotation(cam_info.rotation_angles[0], 
-                    cam_info.rotation_angles[1], 
-                    cam_info.rotation_angles[2]);
+    // std::shared_ptr<CameraObject> co(
+    //     new CameraObject(cam_info.intr, kImageWidth, kImageHeight));
+    // co->SetTag(TAG_CAMERA_OBJECT);
+    // co->SetImageTransparency(true);
+    // co->SetTranslation(cam_info.translation);
+    // co->SetRotation(cam_info.rotation_angles[0], 
+    //                 cam_info.rotation_angles[1], 
+    //                 cam_info.rotation_angles[2]);
     // co->SetImage(img2);
     // co->SetImage(img2_points);
     // co->SetImage(img_points);
-    co->SetImageAlpha(0.99);
+    // co->SetImageAlpha(0.99);
+    co->SetImage(img_points);
     
     auto t2_1 = high_resolution_clock::now();
     dur_cc += duration_cast<microseconds>(t2_1-t2_0).count() / 1e+6;
@@ -879,7 +891,7 @@ void MakeCameras(std::shared_ptr<DObject>& cameras,
 
     // co->AddProjectedPoints(glm_points);
     auto t3_0 = high_resolution_clock::now();
-    co->AddProjectedPoints(points_3d);
+    // co->AddProjectedPoints(points_3d);
     auto t3_1 = high_resolution_clock::now();
     dur_app += duration_cast<microseconds>(t3_1-t3_0).count() / 1e+6;
     */
