@@ -3,6 +3,8 @@
 
 ![3D Reconstruction Fly](./results/3d_reconstruction_fly.gif)
 
+More details available in the blog post https://capsulesbot.com/blog/2019/03/12/apolloscape-sfm.html
+
 Previously, I've explored the Apolloscape dataset in the [project for localization task](https://github.com/bexcite/apolloscape-loc) via building Pytorch reader and training PoseNet to directly regress the car pose.
 
 # Dependencies & Build
