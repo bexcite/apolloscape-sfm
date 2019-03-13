@@ -1,4 +1,4 @@
-3D reconstruction and Structure from Motion (SfM) are an essential parts of many algorithms of today's research in Visual Odometry, SLAM and localization tasks. In this project I've built the sparse 3D reconstruction from known poses implementing SfM pipeline with bundle andjustment optimization on C++ and used pure OpenGL for visualization.
+3D reconstruction and Structure from Motion (SfM) are essential parts of many algorithms of today's research in Visual Odometry, SLAM and localization tasks. In this project, I've built the sparse 3D reconstruction from known poses implementing SfM pipeline with bundle adjustment optimization on C++ and used pure OpenGL for visualization.
 
 ![3D Reconstruction Fly](./results/3d_reconstruction_fly.gif)
 
@@ -24,6 +24,7 @@ make
 
 Quick test of visualization on stored tiny reconstruction of just 10 images:
 ```
+# from ./build directory
 ./bin/3d_recon --restore=../results/sfm_out_sample.bin
 ```
 
@@ -32,6 +33,7 @@ Control Navigation:
 - `Z`,`X` - camera texture transparency
 - `J`,`K`,`L` - change camera forward, backward, lateral
 - `0` - return to the last camera (useful when you fly out and want to return)
+- `ESC` - close visualizer and store SfM Map to a file
 
 # Data Folder
 

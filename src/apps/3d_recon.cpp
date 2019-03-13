@@ -152,6 +152,7 @@ int main(int argc, char* argv[]) {
   // return EXIT_SUCCESS;
   
 
+  // Apolloscape ZPark Dataset /zpark-sample/camera_params/Camera_[12].cam
   CameraIntrinsics intr1;
   intr1.fx = 1450.317230113;
   intr1.fy = 1451.184836113;
@@ -227,18 +228,8 @@ int main(int argc, char* argv[]) {
 
     }
 
-    // return EXIT_SUCCESS;
-
 
     sfm.ExtractFeatures();
-
-
-    
-
-
-
-
-
 
     sfm.MatchImageFeatures(FLAGS_matches_num_thresh, 
                            FLAGS_matches_line_dist_thresh,
