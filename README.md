@@ -1,3 +1,4 @@
+# SfM with OpenGL visualization on Apolloscape Dataset
 3D reconstruction and Structure from Motion (SfM) are essential parts of many algorithms of today's research in Visual Odometry, SLAM and localization tasks. In this project, I've built the sparse 3D reconstruction from known poses implementing SfM pipeline with bundle adjustment optimization on C++ and used pure OpenGL for visualization.
 
 ![3D Reconstruction Fly](./results/3d_reconstruction_fly.gif)
