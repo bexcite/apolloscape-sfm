@@ -22,7 +22,6 @@ target_link_libraries(cv_gl_lib PUBLIC
 set_target_properties(cv_gl_lib PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-
 #[[
 ]]
 set(CV_GL_NAME cv_gl)
@@ -87,7 +86,7 @@ target_include_directories(${TS_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS} )
 target_link_libraries(${TS_NAME} PUBLIC cv_gl_lib cereal )
 set_target_properties(${TS_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    
+
     
     
 

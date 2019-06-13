@@ -4,6 +4,8 @@
 
 #include <string>
 #include <vector>
+#include <functional>
+
 #include "cv_gl/camera.h"
 
 #include <glad/glad.h>

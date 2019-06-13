@@ -1,12 +1,13 @@
 // Copyright Pavlo 2017
 
-#include <glad/glad.h>
+#include "cv_gl/shader.h"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
-#include "cv_gl/shader.h"
+#include <glad/glad.h>
+
 
 int Shader::count_ = 0;
 

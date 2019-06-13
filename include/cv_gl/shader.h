@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <string>
+#include <memory>
 
 class Shader {
   // Shader();
